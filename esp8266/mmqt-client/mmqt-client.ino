@@ -13,6 +13,7 @@ const char password[] = WIFI_PASSWORD;
 const char mqtt_server[] = MMQT_SERVER;
 const char mqtt_username[] = MMQT_USERNAME;
 const char mqtt_password[] = MMQT_PASSWORD;
+const char mqtt_topic[] = "summer-residence/ground-floor/moisture/avocado1";
 
 // A single, global CertStore which can be used by all connections.
 // Needs to stay live the entire time any of the WiFiClientBearSSLs
@@ -102,9 +103,9 @@ void reconnect() {
     if (client->connect(clientId.c_str(), mqtt_username, mqtt_password)) {
       Serial.println("connected");
       // Once connected, publish an announcement…
-      client->publish("testTopic", "hello world");
+      client->publish(mqtt_topic, "hello world");
       // … and resubscribe
-      client->subscribe("testTopic");
+      client->subscribe(mqtt_topic);
     } else {
       Serial.print("failed, rc = ");
       Serial.print(client->state());
@@ -161,6 +162,6 @@ void loop() {
     snprintf (msg, MSG_BUFFER_SIZE, "hello world #%ld", value);
     Serial.print("Publish message: ");
     Serial.println(msg);
-    client->publish("testTopic", msg);
+    client->publish(mqtt_topic, msg);
   }
 }
