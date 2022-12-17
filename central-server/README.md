@@ -13,7 +13,6 @@ To serve ignition file
 python3 -m http.server
 ```
 Install docker-compose + git
-```
 ```shell
 sudo rpm-ostree install git docker-compose
 ```
