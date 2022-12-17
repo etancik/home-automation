@@ -14,5 +14,9 @@ homeassistant:
   language: en
   packages: !include_dir_named packages/
 
+person:
+  - name: Lukas
+    id: etancik  
+
 # Loads default set of integrations. Do not remove.
 default_config:
