@@ -18,10 +18,10 @@ sudo rpm-ostree install docker-compose
 sudo rpm-ostree install git
 ```
 ```shell
-mkdir docker-compose && cd docker-compose
+mkdir git && cd git
 git init
 git remote add -f origin https://github.com/etancik/home-automation.git
-git config core.sparseCheckout true
-echo "central-server/docker-compose/" >> .git/info/sparse-checkout
+git sparse-checkout init
+git sparse-checkout set "central-server/docker-compose/"
 git pull origin master
 ```
