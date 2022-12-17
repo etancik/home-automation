@@ -1,3 +1,6 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
 homeassistant:
   # Name of the location where Home Assistant is running
   name: "Summer Residence"
@@ -16,7 +19,6 @@ homeassistant:
 
 person:
   - name: Lukas
-    id: etancik  
-
-# Loads default set of integrations. Do not remove.
-default_config:
+    id: 01
+  - name: Barca
+    id: 02
