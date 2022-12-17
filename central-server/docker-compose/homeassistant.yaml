@@ -5,7 +5,7 @@ services:
     image: "ghcr.io/home-assistant/home-assistant:stable"
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./home-assistant:/config
+      - ~/home-assistant:/config
     restart: unless-stopped
     privileged: true
     network_mode: host

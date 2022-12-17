@@ -9,6 +9,6 @@ services:
     network_mode: host
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ./mmqt/conf:/mosquitto/conf
-      - ./mmqt/data:/mosquitto/data
-      - ./mmqt/log:/mosquitto/log
+      - ~/mmqt/conf:/mosquitto/conf
+      - ~/mmqt/data:/mosquitto/data
+      - ~/mmqt/log:/mosquitto/log
