@@ -1,0 +1,31 @@
+version: '3'
+services:
+  telegraf:
+    image: telegraf:latest
+    depends_on:
+      - influxdb
+    network_mode: host
+    privileged: true
+    volumes:
+      - ~/monitoring/telegraf:/etc/telegraf/:ro
+
+  influxdb:
+    image: influxdb:latest
+    env_file: configuration.env
+    network_mode: host
+    privileged: true
+    volumes:
+      - ~/monitoring/influx/imports:/imports
+      - ~/monitoring/influx/data:/var/lib/influxdb
+
+  grafana:
+    image: grafana:latest
+    depends_on:
+      - influxdb
+    env_file: configuration.env
+    network_mode: host
+    privileged: true
+    volumes:
+      - ~/monitoring/grafana/data:/var/lib/grafana
+      - ~/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
+      - ~/monitoring/grafana/dashboards/:/var/lib/grafana/dashboards/
