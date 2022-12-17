@@ -11,7 +11,7 @@ services:
 
   influxdb:
     image: influxdb:latest
-    env_file: configuration.env
+    env_file: ~/monitoring/configuration.env
     network_mode: host
     privileged: true
     volumes:
@@ -22,7 +22,7 @@ services:
     image: grafana:latest
     depends_on:
       - influxdb
-    env_file: configuration.env
+    env_file: ~/monitoring/configuration.env
     network_mode: host
     privileged: true
     volumes:
