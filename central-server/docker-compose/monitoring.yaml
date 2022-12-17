@@ -19,7 +19,7 @@ services:
       - ~/monitoring/influx/data:/var/lib/influxdb
 
   grafana:
-    image: grafana:latest
+    image: grafana/grafana:latest
     depends_on:
       - influxdb
     env_file: ~/monitoring/configuration.env
