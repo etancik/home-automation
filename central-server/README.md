@@ -33,7 +33,8 @@ mkdir git && cd git
 git init
 git remote add -f origin https://github.com/etancik/home-automation.git
 git sparse-checkout init
-git sparse-checkout set "central-server/docker-compose/"
+git sparse-checkout add "central-server/docker-compose/"
+git sparse-checkout add "central-server/initiall-config/"
 git pull origin master
 ```
 
