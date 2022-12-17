@@ -1,7 +1,6 @@
-version: '3'
+version: '2'
 services:
   homebridge:
-    container_name: homebridge
     image: oznu/homebridge:latest
     restart: always
     network_mode: host
@@ -11,4 +10,4 @@ services:
       driver: json-file
       options:
         max-size: "10mb"
-        max-file: "1"  
+        max-file: "1"
