@@ -11,4 +11,4 @@ homeassistant:
   unit_system: metric
   # Pick yours from here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: "Europe/Prague"
-  configs: !include_dir_named configs/
+  packages: !include_dir_named packages/
