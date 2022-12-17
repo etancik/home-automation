@@ -28,4 +28,4 @@ services:
     volumes:
       - ~/monitoring/grafana/data:/var/lib/grafana
       - ~/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
-      - ~/monitoring/grafana/dashboards/:/var/lib/grafana/dashboards/
+      - ~/monitoring/grafana/log:/var/log/grafana
