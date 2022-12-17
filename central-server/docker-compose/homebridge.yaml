@@ -4,6 +4,7 @@ services:
     image: oznu/homebridge:latest
     restart: always
     network_mode: host
+    privileged: true
     volumes:
       - ~/homebridge:/homebridge
     logging:
