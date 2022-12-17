@@ -3,13 +3,9 @@ services:
   mosquitto:
     container_name: mqtt
     image: eclipse-mosquitto
-    ports:
-      - "1883:1883"
-      - "9001:9001"
     network_mode: host
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ~/mqtt/conf:/mosquitto/conf
       - ~/mqtt/data:/mosquitto/data
       - ~/mqtt/log:/mosquitto/log
-      
