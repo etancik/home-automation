@@ -45,7 +45,8 @@ cp -r git/central-server/initial-config/* ~
 ```
 
 ### Modules
-Run [Home Assitant](https://www.home-assistant.io/) 
 ```shell
-docker-compose -f git/central-server/initial-config/homeassistant.yaml up -d
+docker-compose -f ~/git/central-server/docker-compose/homebridge.yaml up -d
+docker-compose -f ~/git/central-server/docker-compose/mqtt.yaml up -d
+docker-compose -f ~/git/central-server/docker-compose/monitoring.yaml up -d
 ```
