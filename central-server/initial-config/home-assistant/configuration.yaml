@@ -1,3 +1,6 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
 homeassistant:
   # Name of the location where Home Assistant is running
   name: "Summer Residence"
@@ -8,4 +11,4 @@ homeassistant:
   unit_system: metric
   # Pick yours from here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: "Europe/Prague"
-  customize: !include customize.yaml
+  configs: !include_dir_named configs/

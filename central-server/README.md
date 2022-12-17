@@ -34,13 +34,18 @@ git init
 git remote add -f origin https://github.com/etancik/home-automation.git
 git sparse-checkout init
 git sparse-checkout add "central-server/docker-compose/"
-git sparse-checkout add "central-server/initiall-config/"
+git sparse-checkout add "central-server/initial-config/"
 git pull origin master
+cd ..
+```
+
+### Initial config for modules
+```shell
+cp -r git/central-server/initial-config/* ~
 ```
 
 ### Modules
 Run [Home Assitant](https://www.home-assistant.io/) 
 ```shell
-cd ./central-server/docker-compose/
-docker-compose -f homeassistant.yaml up -d
+docker-compose -f git/central-server/initial-config/homeassistant.yaml up -d
 ```
