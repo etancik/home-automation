@@ -12,11 +12,12 @@ To serve ignition file
 ```shell
 python3 -m http.server
 ```
-After install
-```shell
-sudo rpm-ostree install docker-compose
-sudo rpm-ostree install git
+Install docker-compose + git
 ```
+```shell
+sudo rpm-ostree install git docker-compose
+```
+get repo subfolder with all compose files
 ```shell
 mkdir git && cd git
 git init
@@ -24,4 +25,9 @@ git remote add -f origin https://github.com/etancik/home-automation.git
 git sparse-checkout init
 git sparse-checkout set "central-server/docker-compose/"
 git pull origin master
+```
+Run [Home Assitant](https://www.home-assistant.io/) 
+```shell
+cd ./central-server/docker-compose/
+docker-compose -f homeassistant.yaml up -d
 ```
