@@ -3,5 +3,8 @@ version: 1.4.0
 passwd:
   users:
     - name: etancik
+      groups:
+        - sudo
+        - wheel
       ssh_authorized_keys:
         - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC96/LkTSPdMMSmPjh1KQPsCMkOiNdYoJ85dq9t5dYwvNLNpxOusN8+bgPW7A2QUATdpUzgVgprPKgzPYEW2b7yUUInk2AU+TyAQXepR29sg88gMhRieH4X/uGORTn9WJ6I0JLa223JRgz42kfybXmq2SUuOvKvaOstmjXc1aFiZM/2+Pn1cb7Zttm3rk8eg/NF0HO1RLXLgDP8cKlOUnjJ0F+4Fb0FYq4itTU6gQQUiZ6qpiBJqYk2u+iABqRjE0rts3dXs7Cox9ehHc2wUaqGPtboRQY85m6abUX9FbjD5aSz40/9dSE7Bouucguxa3U4ljQrSlmfwu2m1mUdN/nH rsa-key-20221205
