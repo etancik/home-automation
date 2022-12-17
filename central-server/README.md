@@ -1,6 +1,10 @@
-https://docs.fedoraproject.org/en-US/fedora-coreos/bare-metal/
+## OS Install
+
+### Ignition file
 
 https://docs.fedoraproject.org/en-US/fedora-coreos/producing-ign/
+
+https://docs.fedoraproject.org/en-US/fedora-coreos/authentication/
 
 https://github.com/coreos/butane/releases
 
@@ -12,6 +16,13 @@ To serve ignition file
 ```shell
 python3 -m http.server
 ```
+
+### Base Instalation
+
+https://docs.fedoraproject.org/en-US/fedora-coreos/bare-metal/
+
+### Git + Docker 
+
 Install docker-compose + git
 ```shell
 sudo rpm-ostree install git docker-compose
@@ -25,6 +36,8 @@ git sparse-checkout init
 git sparse-checkout set "central-server/docker-compose/"
 git pull origin master
 ```
+
+### Modules
 Run [Home Assitant](https://www.home-assistant.io/) 
 ```shell
 cd ./central-server/docker-compose/
