@@ -7,5 +7,4 @@ services:
     privileged: true
     network_mode: host
     volumes:
-      - /etc/localtime:/etc/localtime:ro
       - ~/homebridge:/homebridge
