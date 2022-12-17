@@ -1,0 +1,10 @@
+version: '3'
+services:
+  homebridge:
+    container_name: homebridge
+    image: oznu/homebridge:latest
+    restart: always
+    network_mode: host
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ~/homebridge:/homebridge
