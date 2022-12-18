@@ -9,3 +9,24 @@ passwd:
         - docker
       ssh_authorized_keys:
         - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC96/LkTSPdMMSmPjh1KQPsCMkOiNdYoJ85dq9t5dYwvNLNpxOusN8+bgPW7A2QUATdpUzgVgprPKgzPYEW2b7yUUInk2AU+TyAQXepR29sg88gMhRieH4X/uGORTn9WJ6I0JLa223JRgz42kfybXmq2SUuOvKvaOstmjXc1aFiZM/2+Pn1cb7Zttm3rk8eg/NF0HO1RLXLgDP8cKlOUnjJ0F+4Fb0FYq4itTU6gQQUiZ6qpiBJqYk2u+iABqRjE0rts3dXs7Cox9ehHc2wUaqGPtboRQY85m6abUX9FbjD5aSz40/9dSE7Bouucguxa3U4ljQrSlmfwu2m1mUdN/nH rsa-key-20221205
+storage:
+  links:
+    - path: /etc/localtime
+      target: ../usr/share/zoneinfo/Europe/Prague
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      contents:
+        inline: nuc-summer-residence
+    - path: /etc/NetworkManager/system-connections/Wired connection 1.nmconnection
+      mode: 0600
+      contents:
+        inline: |
+          [connection]
+          id=Wired connection 1
+          type=ethernet
+          interface-name=eno1
+          [ipv4]
+          address1=192.168.1.96/24,192.168.1.1
+          dns=192.168.1.1;
+          method=manual

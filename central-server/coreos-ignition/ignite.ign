@@ -16,5 +16,31 @@
         ]
       }
     ]
+  },
+  "storage": {
+    "files": [
+      {
+        "path": "/etc/hostname",
+        "contents": {
+          "compression": "",
+          "source": "data:,nuc-summer-residence"
+        },
+        "mode": 420
+      },
+      {
+        "path": "/etc/NetworkManager/system-connections/Wired connection 1.nmconnection",
+        "contents": {
+          "compression": "",
+          "source": "data:,%5Bconnection%5D%0Aid%3DWired%20connection%201%0Atype%3Dethernet%0Ainterface-name%3Deno1%0A%5Bipv4%5D%0Aaddress1%3D192.168.1.96%2F24%2C192.168.1.1%0Adns%3D192.168.1.1%3B%0Amethod%3Dmanual"
+        },
+        "mode": 384
+      }
+    ],
+    "links": [
+      {
+        "path": "/etc/localtime",
+        "target": "../usr/share/zoneinfo/Europe/Prague"
+      }
+    ]
   }
 }

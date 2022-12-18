@@ -25,7 +25,7 @@ https://docs.fedoraproject.org/en-US/fedora-coreos/bare-metal/
 
 Install docker-compose + git
 ```shell
-sudo rpm-ostree install git docker-compose
+sudo rpm-ostree install git docker-compose && sudo systemctl reboot
 ```
 get repo subfolder with all compose files
 ```shell
