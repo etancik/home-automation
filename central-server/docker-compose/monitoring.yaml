@@ -10,18 +10,27 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ~/monitoring/telegraf:/etc/telegraf/:ro
-
   influxdb:
     container_name: influxdb
     image: influxdb:latest
-    env_file: ~/monitoring/configuration.env
     network_mode: host
     privileged: true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ~/monitoring/influx/imports:/imports
-      - ~/monitoring/influx/data:/var/lib/influxdb
-
+      - ~/monitoring/influx/influx-data:/var/lib/influxdb2
+  influxdb_cli:
+    container_name: influxdb-cli
+    image: influxdb:latest
+    env_file: ~/monitoring/configuration.env
+    depends_on:
+      - influxdb
+    entrypoint: ["./entrypoint.sh"]
+    restart: on-failure:10
+    volumes:
+      # Mount for influxdb data directory and configuration
+      - ~/monitoring/influx/influx-data:/var/lib/influxdb2
+      # - ./ssl/influxdb-selfsigned.crt:/etc/ssl/influxdb-selfsigned.crt:rw
+      # - ./ssl/influxdb-selfsigned.key:/etc/ssl/influxdb-selfsigned.key:rw
   grafana:
     container_name: grafana
     image: grafana/grafana:latest
@@ -39,3 +48,4 @@ services:
       - ~/monitoring/grafana/log:/var/log/grafana
 volumes:
   grafana-data:
+  influx-data:
