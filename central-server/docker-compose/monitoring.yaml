@@ -8,6 +8,7 @@ services:
     privileged: true
     volumes:
       - ~/monitoring/telegraf:/etc/telegraf/:ro
+      - /var/run/docker.sock:/var/run/docker.sock
 
   influxdb:
     image: influxdb:latest
