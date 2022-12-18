@@ -35,5 +35,5 @@ services:
       - ~/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
       - ~/monitoring/grafana/log:/var/log/grafana
 volumes:
-  grafana-data
+  grafana-data:
     external: true
