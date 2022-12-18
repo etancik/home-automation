@@ -31,7 +31,9 @@ services:
     privileged: true
     volumes:
       - ~/monitoring/grafana/data:/var/lib/grafana
-        external: true
       - ~/monitoring/grafana/data/plugins:/var/lib/grafana/plugins
       - ~/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
       - ~/monitoring/grafana/log:/var/log/grafana
+volumes:
+  ~/monitoring/grafana/data
+    external: true
