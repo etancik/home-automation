@@ -21,6 +21,8 @@ services:
   influxdb_cli:
     container_name: influxdb-cli
     image: influxdb:latest
+    network_mode: host
+    privileged: true
     env_file: ~/monitoring/configuration.env
     depends_on:
       - influxdb
