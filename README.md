@@ -22,11 +22,6 @@ python3 -m http.server
 https://docs.fedoraproject.org/en-US/fedora-coreos/bare-metal/
 
 ### Git + Docker 
-
-Install docker-compose + git
-```shell
-sudo rpm-ostree install git docker-compose && sudo systemctl reboot
-```
 get repo subfolder with all compose files
 ```shell
 mkdir git && cd git
