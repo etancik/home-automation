@@ -23,7 +23,7 @@
         "path": "/etc/hostname",
         "contents": {
           "compression": "",
-          "source": "data:,nuc"
+          "source": "data:,nuc-summer-residence"
         },
         "mode": 420
       },
