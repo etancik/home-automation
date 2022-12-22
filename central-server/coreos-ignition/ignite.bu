@@ -17,7 +17,7 @@ storage:
     - path: /etc/hostname
       mode: 0644
       contents:
-        inline: nuc-summer-residence
+        inline: nuc
     - path: /etc/NetworkManager/system-connections/Wired connection 1.nmconnection
       mode: 0600
       contents:
