@@ -6,5 +6,5 @@ services:
     restart: unless-stopped
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ~/compose-volumes:~/central-server/initial-config/
-      - ~/docker-compose:~/central-server/docker-compose
+      - /git/compose-volumes:~/central-server/initial-config/
+      - /git/docker-compose:~/central-server/docker-compose
