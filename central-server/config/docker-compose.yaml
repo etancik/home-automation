@@ -1,0 +1,10 @@
+version: "3"
+services:
+  setup:
+    build: .
+    container_name: setup
+    restart: unless-stopped
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ~/compose-volumes:~/git/central-server/initial-config/
+      - ~/docker-compose:~/git/central-server/docker-compose
