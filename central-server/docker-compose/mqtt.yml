@@ -7,6 +7,6 @@ services:
     privileged: true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ~/mqtt/conf:/mosquitto/config
-      - ~/mqtt/data:/mosquitto/data
-      - ~/mqtt/log:/mosquitto/log
+      - ~/compose-volumes/mqtt/conf:/mosquitto/config
+      - ~/compose-volumes/mqtt/data:/mosquitto/data
+      - ~/compose-volumes/mqtt/log:/mosquitto/log

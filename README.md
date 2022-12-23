@@ -36,7 +36,7 @@ cd ..
 
 ### Initial config for modules
 ```shell
-cp -r git/central-server/initial-config/* ~
+cp -r git/central-server/initial-config/* ~/compose-volumes
 ```
 
 ### Modules
