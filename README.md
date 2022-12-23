@@ -22,10 +22,6 @@ python3 -m http.server
 https://docs.fedoraproject.org/en-US/fedora-coreos/bare-metal/
 
 ### Git + Docker 
-```
-curl --remote-name-all https://raw.githubusercontent.com/etancik/home-automation/master/central-server/config/Dockerfile https://raw.githubusercontent.com/etancik/home-automation/master/central-server/config/docker-compose.yml
-```
-
 get repo subfolder with all compose files
 ```shell
 mkdir git && cd git
