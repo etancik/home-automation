@@ -4,6 +4,7 @@ services:
     build: .
     container_name: setup
     restart: unless-stopped
+    privileged: true
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ~/compose-volumes:/git/central-server/initial-config/
