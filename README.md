@@ -22,6 +22,10 @@ python3 -m http.server
 https://docs.fedoraproject.org/en-US/fedora-coreos/bare-metal/
 
 ### Git + Docker 
+```
+curl --remote-name-all https://raw.githubusercontent.com/etancik/home-automation/master/central-server/config/Dockerfile https://raw.githubusercontent.com/etancik/home-automation/master/central-server/config/docker-compose.yml
+```
+
 get repo subfolder with all compose files
 ```shell
 mkdir git && cd git
@@ -41,7 +45,7 @@ cp -r git/central-server/initial-config/* ~
 
 ### Modules
 ```shell
-docker-compose -f ~/git/central-server/docker-compose/homebridge.yaml up -d
-docker-compose -f ~/git/central-server/docker-compose/mqtt.yaml up -d
-docker-compose -f ~/git/central-server/docker-compose/monitoring.yaml up -d
+docker-compose -f ~/git/central-server/docker-compose/homebridge.yml up -d
+docker-compose -f ~/git/central-server/docker-compose/mqtt.yml up -d
+docker-compose -f ~/git/central-server/docker-compose/monitoring.yml up -d
 ```
