@@ -36,12 +36,29 @@ cd ..
 
 ### Initial config for modules
 ```shell
-cp -r git/central-server/initial-config/* ~/compose-volumes
+mkdir ~/compose-volumes && cp -r git/central-server/initial-config/* ~/compose-volumes
 ```
 
 ### Modules
+
+#### MQTT
+1. Start
+```shell
+docker-compose -f ~/git/central-server/docker-compose/mqtt.yml up -d
+```
+2. Add users
+```shell
+docker exec -it $(docker ps -q --filter "name=mqtt") mosquitto_passwd -b /mosquitto/config/password.txt user password
+```
+3. Restart to apply new users
+```shell
+docker-compose -f ~/git/central-server/docker-compose/mqtt.yml restart
+```
+#### Homebridge
 ```shell
 docker-compose -f ~/git/central-server/docker-compose/homebridge.yml up -d
-docker-compose -f ~/git/central-server/docker-compose/mqtt.yml up -d
+```
+#### Monitoring
+```shell
 docker-compose -f ~/git/central-server/docker-compose/monitoring.yml up -d
 ```
