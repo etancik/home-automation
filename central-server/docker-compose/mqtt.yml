@@ -5,6 +5,7 @@ services:
     image: eclipse-mosquitto
     network_mode: host
     privileged: true
+    restart: always
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ~/compose-volumes/mqtt/conf:/mosquitto/config
