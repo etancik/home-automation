@@ -37,5 +37,5 @@ services:
       - ~/compose-volumes/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
       - ~/compose-volumes/monitoring/grafana/log:/var/log/grafana
 volumes:
-  grafana_data: {}
-  influxdb_data: {}
+  grafana-data: {}
+  influxdb-data: {}
