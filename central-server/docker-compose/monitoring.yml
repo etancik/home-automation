@@ -6,32 +6,20 @@ services:
     depends_on:
       - influxdb
     network_mode: host
+    restart: always
     privileged: true
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ~/compose-volumes/monitoring/telegraf:/etc/telegraf/:ro
   influxdb:
     container_name: influxdb
-    image: influxdb:latest
+    image: influxdb:1.8-alpine
     network_mode: host
+    restart: always
     privileged: true
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - ~/compose-volumes/monitoring/influx/influx-data:/var/lib/influxdb2
-  influxdb_cli:
-    container_name: influxdb-cli
-    image: influxdb:latest
-    privileged: true
-    env_file: ~/compose-volumes/monitoring/configuration.env
-    depends_on:
-      - influxdb
-    entrypoint: ["./entrypoint.sh"]
-    restart: on-failure:10
-    volumes:
-      # Mount for influxdb data directory and configuration
-      - ~/compose-volumes/monitoring/influx/influx-data:/var/lib/influxdb2
-      # - ./ssl/influxdb-selfsigned.crt:/etc/ssl/influxdb-selfsigned.crt:rw
-      # - ./ssl/influxdb-selfsigned.key:/etc/ssl/influxdb-selfsigned.key:rw
+      - ~/compose-volumes/monitoring/influx/influx-data:/var/lib/influxdb
   grafana:
     container_name: grafana
     image: grafana/grafana:latest
@@ -39,6 +27,7 @@ services:
       - influxdb
     env_file: ~/compose-volumes/monitoring/configuration.env
     network_mode: host
+    restart: always
     privileged: true
     volumes:
       - /etc/localtime:/etc/localtime:ro
@@ -48,5 +37,5 @@ services:
       - ~/compose-volumes/monitoring/grafana/provisioning/:/etc/grafana/provisioning/
       - ~/compose-volumes/monitoring/grafana/log:/var/log/grafana
 volumes:
-  grafana-data:
-  influx-data:
+  grafana_data: {}
+  influxdb_data: {}
