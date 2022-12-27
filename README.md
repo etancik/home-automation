@@ -48,7 +48,7 @@ docker-compose -f ~/git/central-server/docker-compose/mqtt.yml up -d
 ```
 2. Add users
 ```shell
-docker exec -it $(docker ps -q --filter "name=mqtt") mosquitto_passwd -b /mosquitto/config/password.txt user password
+docker exec -it mqtt mosquitto_passwd -b /mosquitto/config/password.txt user password
 ```
 3. Restart to apply new users
 ```shell
