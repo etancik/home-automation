@@ -24,13 +24,13 @@ https://docs.fedoraproject.org/en-US/fedora-coreos/bare-metal/
 ### Git + Docker 
 get repo subfolder with all compose files
 ```shell
-mkdir git && cd git && /
-git init && /
-git remote add -f origin https://github.com/etancik/ && /home-automation.git && /
-git sparse-checkout init && /
-git sparse-checkout add "central-server/docker-compose/" && /
-git sparse-checkout add "central-server/initial-config/" && /
-git pull origin master && /
+mkdir git && cd git && \
+git init && \
+git remote add -f origin https://github.com/etancik/home-automation.git && \
+git sparse-checkout init && \
+git sparse-checkout add "central-server/docker-compose/" && \
+git sparse-checkout add "central-server/initial-config/" && \
+git pull origin master && \
 cd ..
 ```
 
