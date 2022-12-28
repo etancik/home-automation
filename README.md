@@ -36,7 +36,7 @@ cd ..
 
 ### Initial config for modules
 ```shell
-mkdir ~/compose-volumes && cp -r git/central-server/initial-config/* ~/compose-volumes
+mkdir ~/compose-volumes && cp -r ~/git/central-server/initial-config/* ~/compose-volumes
 ```
 
 ### Modules
