@@ -1,20 +1,13 @@
-# config file version
 apiVersion: 1
 
-# list of datasources that should be deleted from the database
-deleteDatasources:
-  - name: InfluxDB
-    orgId: 1
-
 datasources:
-  - name: InfluxDB
+  - name: influx
     type: influxdb
     access: proxy
+    database: site
+    user: grafana
     url: http://localhost:8086
     jsonData:
-      version: Flux
-      organization: none
-      defaultBucket: bucket
-      tlsSkipVerify: true
+      httpMode: GET
     secureJsonData:
-      token: mytoken
+      password: grafana
