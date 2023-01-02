@@ -26,10 +26,10 @@ Wiring:
 ![Config selection](./assets/setup.jpg)
 
 Sources: 
-https://paulbanks.org/projects/lidl-zigbee/#overview
-https://community.openhab.org/t/hacking-the-lidl-silvercrest-zigbee-gateway-a-step-by-step-tutorial/129660
-https://www.elvisek.cz/2021/08/zigbee-modifikace-lidl-silvercrest-zb-gateway/
-https://www.zigbee2mqtt.io/advanced/remote-adapter/connect_to_a_remote_sonoff_zbbridge.html
+* https://paulbanks.org/projects/lidl-zigbee/#overview
+* https://community.openhab.org/t/hacking-the-lidl-silvercrest-zigbee-gateway-a-step-by-step-tutorial/129660
+* https://www.elvisek.cz/2021/08/zigbee-modifikace-lidl-silvercrest-zb-gateway/
+* https://www.zigbee2mqtt.io/advanced/remote-adapter/connect_to_a_remote_sonoff_zbbridge.html
 
 ## Additional commands
 
