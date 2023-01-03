@@ -22,6 +22,7 @@ const char mqtt_topic[] = MQTT_TOPIC;
 BearSSL::CertStore certStore;
 
 WiFiClientSecure espClient;
+WiFiClient unsecureClient;
 PubSubClient * client;
 unsigned long lastMsg = 0;
 #define MSG_BUFFER_SIZE (500)
@@ -141,7 +142,9 @@ void setup() {
   // Integrate the cert store with this connection
   bear->setCertStore(&certStore);
 
-  client = new PubSubClient(*bear);
+  // TODO use secure client here 
+  // client = new PubSubClient(*bear);
+  client = new PubSubClient(unsecureClient); 
 
   client->setServer(mqtt_server, mqtt_port);
   client->setCallback(callback);
