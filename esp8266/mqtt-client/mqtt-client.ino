@@ -10,7 +10,7 @@
 const char ssid[] = WIFI_SSID;
 const char password[] = WIFI_PASSWORD;
 const char mqtt_server[] = MQTT_SERVER;
-const int mqtt_port = MQTT_PORT
+const int mqtt_port = MQTT_PORT;
 const char mqtt_username[] = MQTT_USERNAME;
 const char mqtt_password[] = MQTT_PASSWORD;
 const char mqtt_client_id[] = MQTT_CLIENT_ID;
