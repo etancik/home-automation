@@ -7,13 +7,14 @@
 #include <CertStoreBearSSL.h>
 #include "credentials.h"
 
-// Update these with values suitable for your network.
 const char ssid[] = WIFI_SSID;
 const char password[] = WIFI_PASSWORD;
-const char mqtt_server[] = MMQT_SERVER;
-const char mqtt_username[] = MMQT_USERNAME;
-const char mqtt_password[] = MMQT_PASSWORD;
-const char mqtt_topic[] = "summer-residence/ground-floor/moisture/avocado1";
+const char mqtt_server[] = MQTT_SERVER;
+const int mqtt_port = MQTT_PORT
+const char mqtt_username[] = MQTT_USERNAME;
+const char mqtt_password[] = MQTT_PASSWORD;
+const char mqtt_client_id[] = MQTT_CLIENT_ID;
+const char mqtt_topic[] = MQTT_TOPIC;
 
 // A single, global CertStore which can be used by all connections.
 // Needs to stay live the entire time any of the WiFiClientBearSSLs
@@ -100,7 +101,7 @@ void reconnect() {
     String clientId = "ESP8266Client - MyClient";
     // Attempt to connect
     // Insert your password
-    if (client->connect(clientId.c_str(), mqtt_username, mqtt_password)) {
+    if (client->connect(mqtt_client_id, mqtt_username, mqtt_password)) {
       Serial.println("connected");
       // Once connected, publish an announcement…
       client->publish(mqtt_topic, "hello world");
@@ -145,7 +146,7 @@ void setup() {
 
   client = new PubSubClient(*bear);
 
-  client->setServer(mqtt_server, 8883);
+  client->setServer(mqtt_server, mqtt_port);
   client->setCallback(callback);
 }
 
