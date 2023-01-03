@@ -98,9 +98,6 @@ void reconnect() {
   // Loop until we’re reconnected
   while (!client->connected()) {
     Serial.print("Attempting MQTT connection…");
-    String clientId = "ESP8266Client - MyClient";
-    // Attempt to connect
-    // Insert your password
     if (client->connect(mqtt_client_id, mqtt_username, mqtt_password)) {
       Serial.println("connected");
       // Once connected, publish an announcement…
