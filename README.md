@@ -62,3 +62,13 @@ docker-compose -f ~/git/central-server/docker-compose/homebridge.yml up -d
 ```shell
 docker-compose -f ~/git/central-server/docker-compose/monitoring.yml up -d
 ```
+
+## List of ports
+
+* 1883: mqtt
+* 3000: grafana
+* 8080: zigbee2mqtt 
+* 8086: Influxdb HTTP service
+* 8088: Influxdb RPC service
+* 8581: HomeBridge
+* 20108: ezsp for zigbee2mqtt

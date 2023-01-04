@@ -11,3 +11,12 @@ services:
       - ~/compose-volumes/mqtt/conf:/mosquitto/config
       - ~/compose-volumes/mqtt/data:/mosquitto/data
       - ~/compose-volumes/mqtt/log:/mosquitto/log
+  zigbee2mqtt:
+    container_name: zigbee2mqtt
+    image: koenkk/zigbee2mqtt
+    network_mode: host
+    privileged: true
+    restart: always
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ~/compose-volumes/zigbee2mqtt:/app/data
