@@ -71,4 +71,4 @@ docker-compose -f ~/git/central-server/docker-compose/monitoring.yml up -d
 * 8086: Influxdb HTTP service
 * 8088: Influxdb RPC service
 * 8581: HomeBridge
-* 20108: ezsp for zigbee2mqtt
+* 8888: ezsp for zigbee2mqtt

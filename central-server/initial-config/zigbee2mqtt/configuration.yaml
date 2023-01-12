@@ -3,10 +3,12 @@ permit_join: true
 # Docker-Compose makes the MQTT-Server available using "mqtt" hostname
 mqtt:
   base_topic: zigbee2mqtt
-  server: mqtt://mqtt
+  server: mqtt://localhost
+  user: zigbee2mqtt_user
+  password: zigbee2mqtt_password
 # Zigbee Adapter path
 serial:
-  port: 'tcp://192.168.1.97:20108'
+  port: 'tcp://192.168.1.28:8888'
   adapter: ezsp
 # Enable the Zigbee2MQTT frontend
 frontend:
