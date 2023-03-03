@@ -8,7 +8,7 @@ mqtt:
   password: zigbee2mqtt_password
 # Zigbee Adapter path
 serial:
-  port: 'tcp://192.168.1.28:8888'
+  port: /dev/ttyACM0
   adapter: ezsp
 # Enable the Zigbee2MQTT frontend
 frontend:

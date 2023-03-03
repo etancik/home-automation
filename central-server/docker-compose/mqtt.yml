@@ -20,3 +20,5 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ~/compose-volumes/zigbee2mqtt:/app/data
+    devices:
+      - /dev/ttyACM0:/dev/ttyACM0
