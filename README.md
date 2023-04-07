@@ -44,7 +44,7 @@ mkdir ~/compose-volumes && cp -r ~/git/central-server/initial-config/* ~/compose
 #### MQTT
 1. Start
 ```shell
-docker-compose -f ~/git/central-server/docker-compose/mqtt.yml up -d
+docker-compose -f ~/git/central-server/docker-compose/smart-home.yml up -d
 ```
 2. Add users
 ```shell
@@ -52,7 +52,7 @@ docker exec -it mqtt mosquitto_passwd -b /mosquitto/config/password.txt user pas
 ```
 3. Restart to apply new users
 ```shell
-docker-compose -f ~/git/central-server/docker-compose/mqtt.yml restart
+docker-compose -f ~/git/central-server/docker-compose/smart-home.yml restart
 ```
 #### Homebridge
 ```shell
