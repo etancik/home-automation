@@ -14,6 +14,8 @@ services:
   zigbee2mqtt:
     container_name: zigbee2mqtt
     image: koenkk/zigbee2mqtt
+    depends_on:
+      - mosquitto
     network_mode: host
     privileged: true
     restart: always
@@ -22,3 +24,13 @@ services:
       - ~/compose-volumes/zigbee2mqtt:/app/data
     devices:
       - /dev/ttyACM0:/dev/ttyACM0
+  homebridge:
+    container_name: homebridge
+    image: oznu/homebridge:latest
+    depends_on:
+      - mosquitto
+    privileged: true
+    network_mode: host
+    restart: always
+    volumes:
+      - ~/compose-volumes/homebridge:/homebridge    
