@@ -12,14 +12,21 @@ To change regenerate ignition file for the yaml config
 ```shell
 butane --pretty --strict ignite.bu > ignite.ign
 ```
-To serve ignition file
-```shell
-python3 -m http.server
-```
 
 ### Base Instalation
 
 https://docs.fedoraproject.org/en-US/fedora-coreos/bare-metal/
+
+To embed ingnition file to the iso:
+
+```shell
+podman run --rm --tty --interactive \
+    --volume ${PWD}:/data:z --workdir /data \
+    quay.io/coreos/coreos-installer:release \
+        iso ignition embed -i ./ignite.ign ./<iso_to_update.iso> -f
+```
+
+Create bootable flash from iso with [balenaEtcher](https://etcher.balena.io/)
 
 ### Git + Docker 
 get repo subfolder with all compose files
