@@ -14,3 +14,7 @@
 # Temporary files
 *.tmp
 *.bak
+# Local configuration files
+.env
+config.local
+wifi_config.h
