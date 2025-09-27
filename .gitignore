@@ -1,1 +1,16 @@
+# Python virtual environment
 .venv
+
+# PlatformIO build and library files
+.pio/
+.vscode/
+
+# ESPHome build artifacts
+.esphome/
+
+# macOS system files
+.DS_Store
+
+# Temporary files
+*.tmp
+*.bak
