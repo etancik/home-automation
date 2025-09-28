@@ -43,6 +43,7 @@ bool wifiConnected = false;
 bool mqttConnected = false;
 unsigned long lastDiscoveryPublish = 0;
 bool forceDiscovery = false;
+bool displayAvailable = false;  // Track if display is working
 
 // Function declarations
 void showStartupScreen();
@@ -67,10 +68,13 @@ void setup() {
     // Initialize I2C with ESPlan-specific pins
     Wire.begin(SDA_PIN, SCL_PIN);
     
-    // Initialize OLED
-    if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-        Serial.println("OLED initialization failed");
-        return;
+    // Initialize OLED (optional - device works without display)
+    if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+        displayAvailable = true;
+        Serial.println("OLED display initialized");
+    } else {
+        displayAvailable = false;
+        Serial.println("OLED display not available - continuing without display");
     }
     
     // Initialize SCD41 sensor
@@ -130,6 +134,7 @@ void loop() {
 }
 
 void showStartupScreen() {
+    if (!displayAvailable) return;
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
     display.setTextSize(1);
@@ -145,6 +150,7 @@ void showStartupScreen() {
 }
 
 void showWaitingScreen() {
+    if (!displayAvailable) return;
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
     display.setTextSize(1);
@@ -158,6 +164,7 @@ void showWaitingScreen() {
 }
 
 void showErrorScreen(uint16_t error) {
+    if (!displayAvailable) return;
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
     display.setTextSize(1);
@@ -171,6 +178,8 @@ void showErrorScreen(uint16_t error) {
 }
 
 void updateCO2Display(uint16_t co2, float temp, float humidity) {
+    if (!displayAvailable) return;
+    
     display.clearDisplay();
     display.setTextColor(SSD1306_WHITE);
     
