@@ -53,6 +53,10 @@ bool mqttConnected = false;
 unsigned long lastDiscoveryPublish = 0;
 bool forceDiscovery = false;
 bool displayAvailable = false;  // Track if display is working
+unsigned long lastWiFiCheck = 0;
+unsigned long lastWiFiReconnectAttempt = 0;
+const unsigned long WIFI_CHECK_INTERVAL = 10000;  // Check WiFi every 10 seconds
+const unsigned long WIFI_RECONNECT_INTERVAL = 30000;  // Try reconnecting every 30 seconds
 
 // Function declarations
 void showStartupScreen();
@@ -60,6 +64,7 @@ void showWaitingScreen();
 void showErrorScreen(uint16_t error);
 void updateCO2Display(uint16_t co2, float temp, float humidity);
 void connectWiFi();
+void checkWiFiConnection();
 void connectMQTT();
 void publishHomeAssistantDiscovery();
 void publishSensorData(uint16_t co2, float temp, float humidity);
@@ -81,13 +86,29 @@ void setup() {
     // Initialize I2C with board-specific pins
     Wire.begin(SDA_PIN, SCL_PIN);
     
-    // Initialize OLED (optional - device works without display)
-    if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-        displayAvailable = true;
-        Serial.println("OLED display initialized");
+    // Test for display presence with single I2C probe
+    Serial.print("Checking for OLED display... ");
+    Wire.beginTransmission(SCREEN_ADDRESS);
+    byte displayError = Wire.endTransmission();
+    
+    if (displayError == 0) {
+        // Display detected, try to initialize
+        if (display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+            displayAvailable = true;
+            Serial.println("✓ Connected and initialized");
+            display.clearDisplay();
+            display.setTextSize(1);
+            display.setTextColor(SSD1306_WHITE);
+            display.setCursor(0,0);
+            display.println("CO2 Sensor Starting...");
+            display.display();
+        } else {
+            displayAvailable = false;
+            Serial.println("⚠️  Detected but initialization failed");
+        }
     } else {
         displayAvailable = false;
-        Serial.println("OLED display not available - continuing without display");
+        Serial.println("✗ Not detected - headless mode");
     }
     
     // Initialize SCD41 sensor
@@ -113,6 +134,9 @@ void setup() {
 
 void loop() {
     static unsigned long lastReading = 0;
+    
+    // Check WiFi connection status and reconnect if needed
+    checkWiFiConnection();
     
     handleMQTT();
     
@@ -227,8 +251,10 @@ void updateCO2Display(uint16_t co2, float temp, float humidity) {
     display.setCursor(85, 55);
     if (wifiConnected && mqttConnected) {
         display.println("HA");
-    } else if (wifiConnected) {
+    } else if (wifiConnected && !mqttConnected) {
         display.println("WiFi");
+    } else if (!wifiConnected && strlen(wifi_ssid) > 0) {
+        display.println("Retry");
     } else {
         display.println("Local");
     }
@@ -259,7 +285,64 @@ void connectWiFi() {
         Serial.println(" connected!");
         Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
     } else {
+        wifiConnected = false;
         Serial.println(" failed - offline mode");
+    }
+}
+
+void checkWiFiConnection() {
+    // Skip if WiFi not configured
+    if (strlen(wifi_ssid) == 0) return;
+    
+    // Check WiFi status periodically
+    if (millis() - lastWiFiCheck > WIFI_CHECK_INTERVAL) {
+        lastWiFiCheck = millis();
+        
+        bool currentlyConnected = (WiFi.status() == WL_CONNECTED);
+        
+        // Detect WiFi disconnection
+        if (wifiConnected && !currentlyConnected) {
+            Serial.println("⚠ WiFi connection lost!");
+            wifiConnected = false;
+            mqttConnected = false;  // MQTT will also be disconnected
+        }
+        
+        // Attempt reconnection if disconnected
+        if (!wifiConnected && !currentlyConnected) {
+            // Only try reconnecting every WIFI_RECONNECT_INTERVAL
+            if (millis() - lastWiFiReconnectAttempt > WIFI_RECONNECT_INTERVAL) {
+                lastWiFiReconnectAttempt = millis();
+                Serial.println("🔄 Attempting WiFi reconnection...");
+                
+                // Force WiFi restart
+                WiFi.disconnect();
+                delay(1000);
+                WiFi.begin(wifi_ssid, wifi_password);
+                
+                // Quick connection check (non-blocking)
+                int attempts = 0;
+                while (WiFi.status() != WL_CONNECTED && attempts < 10) {
+                    delay(500);
+                    attempts++;
+                }
+                
+                if (WiFi.status() == WL_CONNECTED) {
+                    wifiConnected = true;
+                    forceDiscovery = true;  // Re-announce to HA
+                    Serial.println("✓ WiFi reconnected successfully!");
+                    Serial.printf("IP: %s\n", WiFi.localIP().toString().c_str());
+                } else {
+                    Serial.println("✗ WiFi reconnection failed, will retry later");
+                }
+            }
+        }
+        
+        // Update status if connection was restored externally
+        if (!wifiConnected && currentlyConnected) {
+            wifiConnected = true;
+            forceDiscovery = true;
+            Serial.println("✓ WiFi connection restored");
+        }
     }
 }
 
@@ -282,12 +365,24 @@ void connectMQTT() {
 }
 
 void handleMQTT() {
-    if (!wifiConnected) return;
+    if (!wifiConnected) {
+        if (mqttConnected) {
+            mqttConnected = false;
+            Serial.println("MQTT disconnected (WiFi down)");
+        }
+        return;
+    }
     
     if (!mqtt.connected()) {
+        if (mqttConnected) {
+            Serial.println("MQTT connection lost, attempting reconnect...");
+        }
         mqttConnected = false;
         connectMQTT();
     } else {
+        if (!mqttConnected) {
+            Serial.println("MQTT connection restored");
+        }
         mqttConnected = true;
         mqtt.loop();
     }
