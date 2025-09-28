@@ -1,14 +1,30 @@
 /*
- * ESP32 CO2 Sensor with Home Assistant Integration
- * Hardware: LaskaKit ESPlan ESP32 + SCD41 CO2 sensor
+ * ESP32 CO2 Sensor with Home Assistant Integration - SCALABLE VERSION
+ * Hardware: ESP32 + SCD41 CO2 sensor with OLED display
  * 
- * CRITICAL RESOURCES:
- * - LaskaKit ESPlan pinout: https://github.com/LaskaKit/ESPlan/
+ * DEPLOYMENT FOR MULTIPLE DEVICES:
+ * 1. Copy device_config.h for each device deployment
+ * 2. Update DEVICE_ID, DEVICE_NAME, and DEVICE_LOCATION in device_config.h
+ * 3. Examples:
+ *    - Living Room: DEVICE_ID="living_room_co2", DEVICE_NAME="Living Room CO2 Sensor"
+ *    - Bedroom: DEVICE_ID="bedroom_co2", DEVICE_NAME="Bedroom CO2 Sensor"
+ *    - Office: DEVICE_ID="office_co2", DEVICE_NAME="Office CO2 Sensor"
+ * 4. Each device appears as separate device in Home Assistant with automatic grouping
+ * 5. MQTT topics are automatically namespaced (e.g., living_room_co2/state)
+ * 
+ * FEATURES:
+ * - Automatic Home Assistant MQTT discovery with device grouping
+ * - Resilient operation (continues without display if disconnected)
+ * - Configurable publishing intervals and discovery refresh
+ * - Proper sensor history tracking with state_class: measurement
+ * - Legacy discovery message cleanup for smooth upgrades
+ * 
+ * RESOURCES:
  * - SCD41 datasheet: https://sensirion.com/products/catalog/SCD41/
  * - Home Assistant MQTT Discovery: https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
- * - PubSubClient buffer limit fix: https://github.com/knolleary/pubsubclient
+ * - PubSubClient buffer configuration: https://github.com/knolleary/pubsubclient
  * 
- * SECURITY: wifi_config.h contains credentials and is gitignored
+ * CONFIGURATION: All settings are in device_config.h (gitignored for security)
  */
 
 #include <Wire.h>
@@ -19,17 +35,11 @@
 #define MQTT_MAX_PACKET_SIZE 1024
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
-#include "../wifi_config.h"
-
-// ESPlan board-specific pins (CRITICAL: different from standard ESP32)
-#define SDA_PIN 33      // ESPlan I2C SDA (not GPIO21)
-#define SCL_PIN 32      // ESPlan I2C SCL (not GPIO22)  
-#define POWER_PIN 2     // μŠup connector power control
+#include "device_config.h"
 
 // OLED display configuration
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-#define SCREEN_ADDRESS 0x3C
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 SensirionI2CScd4x scd4x;
@@ -38,7 +48,6 @@ PubSubClient mqtt(espClient);
 
 // Global variables
 unsigned long lastMqttPublish = 0;
-const unsigned long mqttPublishInterval = 30000; // 30 seconds
 bool wifiConnected = false;
 bool mqttConnected = false;
 unsigned long lastDiscoveryPublish = 0;
@@ -55,17 +64,21 @@ void connectMQTT();
 void publishHomeAssistantDiscovery();
 void publishSensorData(uint16_t co2, float temp, float humidity);
 void handleMQTT();
+String buildDiscoveryTopic(const char* sensorType);
+String buildStateTopic();
+void publishSensorDiscovery(const char* sensorType, const char* name, const char* unit, 
+                           const char* deviceClass, const char* valueTemplate);
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("ESPlan CO2 Sensor");
+    Serial.printf("ESPlan CO2 Sensor - Device: %s\n", DEVICE_ID);
     
-    // CRITICAL: Power up μŠup connectors
+    // Power up sensor connectors
     pinMode(POWER_PIN, OUTPUT);
     digitalWrite(POWER_PIN, HIGH);
     delay(100);
     
-    // Initialize I2C with ESPlan-specific pins
+    // Initialize I2C with board-specific pins
     Wire.begin(SDA_PIN, SCL_PIN);
     
     // Initialize OLED (optional - device works without display)
@@ -104,7 +117,7 @@ void loop() {
     handleMQTT();
     
     // Send discovery messages on first connection and periodically
-    unsigned long discoveryInterval = (millis() < 600000) ? 60000 : 300000;
+    unsigned long discoveryInterval = (millis() < 600000) ? DISCOVERY_INTERVAL_STARTUP : DISCOVERY_INTERVAL_NORMAL;
     if (mqttConnected && (forceDiscovery || (millis() - lastDiscoveryPublish > discoveryInterval))) {
         publishHomeAssistantDiscovery();
         lastDiscoveryPublish = millis();
@@ -186,7 +199,7 @@ void updateCO2Display(uint16_t co2, float temp, float humidity) {
     // Header
     display.setTextSize(1);
     display.setCursor(0, 0);
-    display.println("LIVING ROOM");
+    display.println(DEVICE_LOCATION);
     
     // Large CO2 reading
     display.setTextSize(3);
@@ -255,7 +268,7 @@ void connectMQTT() {
     
     Serial.printf("Connecting to MQTT: %s:%d\n", mqtt_server, mqtt_port);
     
-    String clientId = "esplan_co2_sensor";
+    String clientId = String("co2sensor_") + DEVICE_ID;
     bool connected = mqtt.connect(clientId.c_str(), mqtt_user, mqtt_password);
     
     if (connected) {
@@ -280,82 +293,69 @@ void handleMQTT() {
     }
 }
 
+String buildDiscoveryTopic(const char* sensorType) {
+    return String("homeassistant/sensor/") + DEVICE_ID + "/" + sensorType + "/config";
+}
+
+String buildStateTopic() {
+    return String(DEVICE_ID) + "/state";
+}
+
+void publishSensorDiscovery(const char* sensorType, const char* name, const char* unit, 
+                           const char* deviceClass, const char* valueTemplate) {
+    StaticJsonDocument<1024> doc;
+    
+    // Device information - consistent across all sensors for grouping
+    JsonObject device = doc.createNestedObject("device");
+    device["identifiers"] = DEVICE_ID;
+    device["name"] = DEVICE_NAME;
+    device["model"] = "ESP32 + SCD41";
+    device["manufacturer"] = "DIY";
+    device["sw_version"] = "2.0";
+    
+    // Sensor configuration
+    doc["state_topic"] = buildStateTopic();
+    doc["value_template"] = valueTemplate;
+    doc["unique_id"] = String(DEVICE_ID) + "_" + sensorType;
+    doc["name"] = name;
+    doc["unit_of_measurement"] = unit;
+    doc["device_class"] = deviceClass;
+    doc["state_class"] = "measurement";
+    
+    String payload;
+    serializeJson(doc, payload);
+    
+    String topic = buildDiscoveryTopic(sensorType);
+    mqtt.publish(topic.c_str(), payload.c_str());
+    
+    Serial.printf("✓ Discovery: %s -> %s\n", name, topic.c_str());
+    delay(100);
+}
+
 void publishHomeAssistantDiscovery() {
     if (!mqttConnected) return;
     
-    StaticJsonDocument<1536> doc;
-    String payload;
+    Serial.printf("Publishing discovery for device: %s\n", DEVICE_ID);
     
-    // CRITICAL: Device information enables Home Assistant device grouping
-    // All sensors with same "identifiers" appear as single device
-    JsonObject device = doc.createNestedObject("device");
-    device["identifiers"] = "esplan_co2_sensor";
-    device["name"] = "ESPlan CO2 Sensor";
-    device["model"] = "ESP32 + SCD41";
-    device["manufacturer"] = "LaskaKit";
-    device["sw_version"] = "1.0";
+    // Clean up old discovery messages with previous topic structure
+    mqtt.publish("homeassistant/sensor/esplan_co2/co2/config", "");
+    mqtt.publish("homeassistant/sensor/esplan_co2/temperature/config", "");  
+    mqtt.publish("homeassistant/sensor/esplan_co2/humidity/config", "");
+    mqtt.publish("homeassistant/sensor/esplan_co2_sensor/co2/config", "");
+    mqtt.publish("homeassistant/sensor/esplan_co2_sensor/temperature/config", "");  
+    mqtt.publish("homeassistant/sensor/esplan_co2_sensor/humidity/config", "");
+    delay(200);
     
-    // CO2 sensor discovery
-    doc["state_topic"] = "esplan_co2/state";
-    doc["value_template"] = "{{ value_json.co2 }}";
-    doc["unique_id"] = "esplan_co2";
-    doc["name"] = "CO2";
-    doc["unit_of_measurement"] = "ppm";
-    doc["device_class"] = "carbon_dioxide";
-    doc["state_class"] = "measurement";
+    // Publish discovery messages for each sensor
+    publishSensorDiscovery("co2", "CO2", "ppm", "carbon_dioxide", "{{ value_json.co2 }}");
+    publishSensorDiscovery("temperature", "Temperature", "°C", "temperature", "{{ value_json.temperature }}");
+    publishSensorDiscovery("humidity", "Humidity", "%", "humidity", "{{ value_json.humidity }}");
     
-    serializeJson(doc, payload);
-    mqtt.publish("homeassistant/sensor/esplan_co2/co2/config", payload.c_str());
-    delay(100);
-    
-    // Temperature sensor discovery
-    doc.clear();
-    device = doc.createNestedObject("device");
-    device["identifiers"] = "esplan_co2_sensor";
-    device["name"] = "ESPlan CO2 Sensor";
-    device["model"] = "ESP32 + SCD41";
-    device["manufacturer"] = "LaskaKit";
-    device["sw_version"] = "1.0";
-    
-    doc["state_topic"] = "esplan_co2/state";
-    doc["value_template"] = "{{ value_json.temperature }}";
-    doc["unique_id"] = "esplan_temperature";
-    doc["name"] = "Temperature";
-    doc["unit_of_measurement"] = "°C";
-    doc["device_class"] = "temperature";
-    doc["state_class"] = "measurement";
-    
-    payload = "";
-    serializeJson(doc, payload);
-    mqtt.publish("homeassistant/sensor/esplan_co2/temperature/config", payload.c_str());
-    delay(100);
-    
-    // Humidity sensor discovery
-    doc.clear();
-    device = doc.createNestedObject("device");
-    device["identifiers"] = "esplan_co2_sensor";
-    device["name"] = "ESPlan CO2 Sensor";
-    device["model"] = "ESP32 + SCD41";
-    device["manufacturer"] = "LaskaKit";
-    device["sw_version"] = "1.0";
-    
-    doc["state_topic"] = "esplan_co2/state";
-    doc["value_template"] = "{{ value_json.humidity }}";
-    doc["unique_id"] = "esplan_humidity";
-    doc["name"] = "Humidity";
-    doc["unit_of_measurement"] = "%";
-    doc["device_class"] = "humidity";
-    doc["state_class"] = "measurement";
-    
-    payload = "";
-    serializeJson(doc, payload);
-    mqtt.publish("homeassistant/sensor/esplan_co2/humidity/config", payload.c_str());
-    
-    Serial.println("Published Home Assistant discovery messages");
+    Serial.println("✓ All discovery messages published");
 }
 
 void publishSensorData(uint16_t co2, float temp, float humidity) {
-    if (!mqttConnected || (millis() - lastMqttPublish < mqttPublishInterval)) return;
+    if (!mqttConnected || (millis() - lastMqttPublish < PUBLISH_INTERVAL)) return;
     
     StaticJsonDocument<200> doc;
     doc["co2"] = co2;
@@ -366,8 +366,11 @@ void publishSensorData(uint16_t co2, float temp, float humidity) {
     String payload;
     serializeJson(doc, payload);
     
-    if (mqtt.publish("esplan_co2/state", payload.c_str())) {
+    String stateTopic = buildStateTopic();
+    if (mqtt.publish(stateTopic.c_str(), payload.c_str())) {
         lastMqttPublish = millis();
-        Serial.printf("✓ MQTT: CO2=%d, T=%.1f, H=%.1f\n", co2, temp, humidity);
+        Serial.printf("✓ MQTT [%s]: CO2=%d, T=%.1f, H=%.1f\n", DEVICE_ID, co2, temp, humidity);
+    } else {
+        Serial.printf("✗ MQTT publish failed to %s\n", stateTopic.c_str());
     }
 }

@@ -17,4 +17,4 @@
 # Local configuration files
 .env
 config.local
-wifi_config.h
+device_config.h
