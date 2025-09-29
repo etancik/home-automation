@@ -1,19 +1,30 @@
 # Home Assistant Configuration - House Location
 # GitOps managed via Git Pull add-on
 
+# Basic Home Assistant configuration
+homeassistant:
+  # Name of the location
+  name: "House"
+  # Location coordinates (use your actual coordinates)
+  latitude: !secret house_latitude
+  longitude: !secret house_longitude
+  elevation: !secret house_elevation
+  # Unit system and locale
+  unit_system: metric
+  country: CZ
+  time_zone: Europe/Prague
+  currency: CZK
+  # Core shared packages
+  packages: !include_dir_named ../../core/packages
+  # Location customizations
+  customize: !include customize.yaml
+
 # Loads default set of integrations. Do not remove.
 default_config:
 
 # Load frontend themes from the themes folder  
 frontend:
   themes: !include_dir_merge_named themes
-
-# Package-based organization
-homeassistant:
-  # Core shared packages
-  packages: !include_dir_named ../../core/packages
-  # Location customizations
-  customize: !include customize.yaml
 
 # Core configuration files
 automation: !include automations.yaml
