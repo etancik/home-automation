@@ -5,7 +5,7 @@
 homeassistant:
   # Name of the location
   name: "House"
-  # Location coordinates (use your actual coordinates)
+  # Location coordinates (Prague defaults - update secrets.yaml with real values)
   latitude: !secret house_latitude
   longitude: !secret house_longitude
   elevation: !secret house_elevation
