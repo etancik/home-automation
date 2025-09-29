@@ -1,0 +1,35 @@
+# Zigbee2MQTT Configuration - House Location
+# This file will be managed by Git and deployed via Git Pull add-on
+
+version: 4
+
+# MQTT integration (managed by Home Assistant add-on)
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://core-mosquitto:1883
+  user: addons
+  password: !secret mqtt_password
+
+# Coordinator settings
+serial:
+  port: /dev/ttyACM0
+  adapter: ember
+  baudrate: 115200
+  rtscts: false
+
+# Advanced settings with network configuration
+advanced:
+  log_level: info
+  channel: 15
+  network_key: !secret zigbee_network_key
+  pan_id: !secret zigbee_pan_id
+  ext_pan_id: !secret zigbee_ext_pan_id
+
+# Frontend
+frontend:
+  enabled: true
+  port: 8099
+
+# Home Assistant integration
+homeassistant:
+  enabled: true
