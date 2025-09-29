@@ -1,26 +1,36 @@
-# House Deployment Notes
+# House Manual Setup Instructions
 
-## Required Manual Setup
+After the Git Pull add-on successfully deploys the configuration, you need to manually create the secrets.yaml file.
 
-After Git Pull deployment, you MUST create a `secrets.yaml` file manually on the House NUC with:
+## Required: Create secrets.yaml
 
-```yaml
-# House location coordinates (replace with your actual coordinates)
-house_latitude: 50.0755
-house_longitude: 14.4378  
-house_elevation: 399
-```
+1. **Connect to your House NUC** (SSH or Home Assistant terminal add-on)
 
-## Steps:
+2. **Create secrets.yaml** in the /config directory:
+   ```bash
+   nano /config/secrets.yaml
+   ```
 
-1. **SSH into House NUC** or use Home Assistant File Editor add-on
-2. **Create `/config/secrets.yaml`** with your actual coordinates
-3. **Restart Home Assistant** after creating secrets.yaml
+3. **Copy this template and customize with your coordinates**:
+   ```yaml
+   # House Location Secrets - Replace with your actual location
+   house_latitude: YOUR_LATITUDE_HERE
+   house_longitude: YOUR_LONGITUDE_HERE
+   house_elevation: YOUR_ELEVATION_HERE
+   ```
 
-## Why this is needed:
+4. **Save the file** (Ctrl+O, Ctrl+X in nano)
 
-The configuration references `!secret house_latitude` etc., so Home Assistant needs the secrets.yaml file to complete the setup and avoid the onboarding wizard.
+5. **Restart Home Assistant** or run Git Pull add-on again
 
-## Security Note:
+## Why This is Needed
 
-Never commit secrets.yaml to Git! It's already in .gitignore for safety.
+The configuration references `!secret house_latitude` etc., but Home Assistant expects these values to exist in secrets.yaml. Without this file, HA will show the onboarding wizard.
+
+## After Setup
+
+Once secrets.yaml exists:
+- ✅ No onboarding wizard  
+- ✅ Your house location will be properly set
+- ✅ All sensors and automations will work
+- ✅ Git Pull add-on will update configuration automatically
