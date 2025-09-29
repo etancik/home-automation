@@ -26,14 +26,8 @@ default_config:
 frontend:
   themes: !include_dir_merge_named themes
 
-# MQTT Integration (for Zigbee2MQTT and other devices)
-mqtt:
-  broker: core-mosquitto
-  port: 1883
-  username: addons
-  password: !secret mqtt_password
-  discovery: true
-  discovery_prefix: homeassistant
+# Note: MQTT integration is configured via UI (Settings > Devices & Services)
+# The Zigbee2MQTT add-on will automatically configure MQTT discovery
 
 # Core configuration files
 automation: !include automations.yaml
