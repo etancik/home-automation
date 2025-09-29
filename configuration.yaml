@@ -12,8 +12,6 @@ frontend:
 homeassistant:
   # Core shared packages
   packages: !include_dir_named ../../core/packages
-  # Location-specific packages  
-  location_packages: !include_dir_named packages
   # Location customizations
   customize: !include customize.yaml
 
