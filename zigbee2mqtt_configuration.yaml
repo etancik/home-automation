@@ -33,3 +33,17 @@ frontend:
 # Home Assistant integration
 homeassistant:
   enabled: true
+
+# Device configurations (Git-managed friendly names)
+devices:
+  '0x54ef441000edf7c1':
+    friendly_name: 'Food Storage Sensor'
+    retain: false
+    description: 'Kitchen food storage temperature and humidity sensor'
+  '0xb4e3f9fffea76436':
+    friendly_name: 'Living Room Light'
+    retain: false  
+    description: 'Main living room light bulb'
+
+# Groups (for Zigbee groups if needed)
+groups: {}
