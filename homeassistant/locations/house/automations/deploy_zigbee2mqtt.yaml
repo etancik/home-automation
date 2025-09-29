@@ -1,0 +1,26 @@
+# Zigbee2MQTT GitOps Deployment Automation
+# This automation copies Git-managed Z2M config to the actual Z2M location
+
+- alias: "Deploy Zigbee2MQTT Configuration from Git"
+  description: "Automatically deploy Git-managed Z2M config when changed"
+  trigger:
+    # Trigger when the Git-managed config file changes
+    - platform: event
+      event_type: folder_watcher
+      event_data:
+        event_type: modified
+        path: /config/zigbee2mqtt_configuration.yaml
+    # Also trigger on Home Assistant startup
+    - platform: homeassistant
+      event: start
+  action:
+    # Copy Git-managed config to Z2M location
+    - service: shell_command.deploy_zigbee2mqtt_config
+      data: {}
+    # Wait a moment
+    - delay: 5
+    # Restart Zigbee2MQTT add-on to apply changes
+    - service: hassio.addon_restart
+      data:
+        addon: 45df7312_zigbee2mqtt  # Your Z2M add-on slug
+  mode: single

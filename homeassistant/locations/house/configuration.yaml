@@ -31,6 +31,11 @@ automation: !include automations.yaml
 script: !include scripts.yaml  
 scene: !include scenes.yaml
 
+# Shell commands for GitOps deployment
+shell_command:
+  deploy_zigbee2mqtt_config: >
+    cp /config/zigbee2mqtt_configuration.yaml /config/zigbee2mqtt/configuration.yaml
+
 # Recorder configuration for database optimization
 recorder:
   db_url: "sqlite:////config/home-assistant_v2.db"
