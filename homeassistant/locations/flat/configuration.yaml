@@ -1,0 +1,76 @@
+# Flat Configuration Template
+# This will be activated when flat deployment is ready
+
+homeassistant:
+  # Name of the location, will be overridden by deployment
+  name: Home Assistant Flat
+  latitude: !secret flat_latitude
+  longitude: !secret flat_longitude
+  elevation: !secret flat_elevation
+  unit_system: metric
+  country: CZ
+  time_zone: Europe/Prague
+  currency: CZK
+  
+  # Packages - shared core functionality
+  packages: !include_dir_named ../../core/packages
+  
+  # Location-specific extensions
+  customize: !include customize.yaml
+
+# Load location-specific configurations
+automation: !include automations.yaml
+script: !include scripts.yaml  
+scene: !include scenes.yaml
+
+# Enable configuration via UI (careful with secrets!)
+config:
+
+# Recorder with location-specific purge
+recorder:
+  db_url: !secret flat_db_url
+  purge_keep_days: 90
+
+# HTTP configuration
+http:
+  server_host: 0.0.0.0
+  use_x_forwarded_for: true
+  trusted_proxies:
+    - 127.0.0.1
+    - 172.30.32.2
+
+# History and logbook
+history:
+logbook:
+
+# Enable the frontend
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Lovelace mode
+lovelace:
+  mode: storage
+
+# System monitoring for flat NUC
+system_monitor:
+  resources:
+    - type: disk_use_percent
+      arg: /
+    - type: memory_use_percent
+    - type: processor_use
+    - type: processor_temperature
+
+# Default dashboard config
+default_config:
+
+# Energy tracking (when available)
+energy:
+
+# Mobile app integration  
+mobile_app:
+
+# Person tracking
+person:
+
+# Sun component
+sun:

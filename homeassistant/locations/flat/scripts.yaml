@@ -1,0 +1,17 @@
+# Flat Scripts (Template - Dormant)
+# This will be populated when flat devices are available
+
+# Example script structure for future use:
+# good_night_flat:
+#   alias: "Flat: Good Night"
+#   sequence:
+#     - service: light.turn_off
+#       target:
+#         area_id: flat_living_room
+#     - service: climate.set_temperature
+#       target:
+#         entity_id: climate.flat_bedroom
+#       data:
+#         temperature: 20
+
+{}

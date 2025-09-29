@@ -1,0 +1,23 @@
+# Base CO2 Automations
+# Template automations that locations can customize
+
+# This is a template - locations will create specific instances
+automation:
+  - alias: "CO2 Warning Alert Template"
+    description: "Template for CO2 warning alerts - customize per location"
+    trigger:
+      - platform: numeric_state
+        entity_id: "{{ co2_sensor_entity }}"  # Set by location
+        above: input_number.co2_warning_threshold
+        for: "00:05:00"
+    condition:
+      - condition: template
+        value_template: >
+          {{ states(co2_sensor_entity) | int(0) < states('input_number.co2_critical_threshold') | int(2000) }}
+    action:
+      - service: "{{ notification_service }}"  # Set by location
+        data:
+          title: "High CO2 Detected"
+          message: "{{ location_name }} CO2: {{ states(co2_sensor_entity) }}ppm - Consider ventilating"
+          data:
+            group: "co2-monitoring"

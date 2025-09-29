@@ -1,0 +1,47 @@
+# CO2 Monitoring Core Package
+# Shared across all locations - customize via location-specific config
+
+homeassistant:
+  customize_glob:
+    "sensor.*_co2":
+      device_class: carbon_dioxide
+      unit_of_measurement: "ppm"
+      icon: mdi:molecule-co2
+
+# Template sensors for CO2 status (location-agnostic)
+template:
+  - sensor:
+      - name: "CO2 Status Template"
+        state: >
+          {% set co2 = co2_value | int(0) %}
+          {% if co2 < 800 %}Good
+          {% elif co2 < 1000 %}Acceptable  
+          {% elif co2 < 1400 %}Poor
+          {% else %}Very Poor{% endif %}
+        attributes:
+          color: >
+            {% set co2 = co2_value | int(0) %}
+            {% if co2 < 800 %}green
+            {% elif co2 < 1000 %}yellow
+            {% elif co2 < 1400 %}orange
+            {% else %}red{% endif %}
+
+# Configurable thresholds (shared across locations)
+input_number:
+  co2_warning_threshold:
+    name: "CO2 Warning Threshold"
+    min: 800
+    max: 2000
+    step: 50
+    initial: 1000
+    unit_of_measurement: "ppm"
+    icon: mdi:molecule-co2
+    
+  co2_critical_threshold:
+    name: "CO2 Critical Threshold"  
+    min: 1000
+    max: 3000
+    step: 50
+    initial: 1500
+    unit_of_measurement: "ppm"
+    icon: mdi:molecule-co2

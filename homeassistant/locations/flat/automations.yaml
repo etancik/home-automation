@@ -1,0 +1,15 @@
+# Flat Automations (Template - Dormant)
+# This will be populated when flat sensors are available
+
+# Example automation structure for future use:
+# - alias: "Flat: CO2 Alert"
+#   trigger:
+#     - platform: state
+#       entity_id: sensor.flat_bedroom_co2_sensor_co2
+#       above: 1000
+#   action:
+#     - service: notify.mobile_app
+#       data:
+#         message: "CO2 levels high in flat bedroom: {{ states('sensor.flat_bedroom_co2_sensor_co2') }} ppm"
+
+[]

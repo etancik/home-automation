@@ -1,0 +1,19 @@
+# Areas and Device Organization Core
+# Base definitions shared across locations
+
+homeassistant:
+  customize:
+    # Base CO2 sensor customizations
+    sensor.bedroom_co2_sensor_co2:
+      device_class: carbon_dioxide
+      icon: mdi:molecule-co2
+    sensor.bedroom_co2_sensor_temperature:
+      device_class: temperature
+      icon: mdi:thermometer
+    sensor.bedroom_co2_sensor_humidity:
+      device_class: humidity
+      icon: mdi:water-percent
+
+# Base areas that exist in all locations
+# Common areas: bedroom, living_room, kitchen
+# Locations can extend this with their own specific areas

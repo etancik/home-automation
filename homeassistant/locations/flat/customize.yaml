@@ -1,0 +1,14 @@
+# Flat Device Customizations (Template - Dormant)
+# This will be populated when flat devices are available
+
+homeassistant:
+  customize:
+    # Future CO2 sensors
+    # sensor.flat_bedroom_co2_sensor_co2:
+    #   friendly_name: "Flat Bedroom CO2"
+    #   area: flat_bedroom
+    
+    # Future food storage sensors
+    # sensor.flat_food_storage_sensor_temperature:
+    #   friendly_name: "Flat Food Storage Temperature"
+    #   area: flat_kitchen

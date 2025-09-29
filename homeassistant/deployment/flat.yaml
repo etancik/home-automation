@@ -1,0 +1,43 @@
+# Flat Deployment Configuration (Template)
+# This will be activated when flat is ready
+
+location: flat
+branch: ha-config-flat
+secrets_file: secrets_flat.yaml
+
+# Git Pull add-on configuration for flat
+git_pull_config:
+  repository: "https://github.com/[your-username]/[your-repo].git"
+  branch: "ha-config-flat"
+  auto_restart: true
+  restart_ignore:
+    - ".git/"
+    - "deployment/"
+    - "README.md"
+
+# HomeKit configuration (single bridge for flat)
+homekit:
+  - name: "Flat Main"
+    filter:
+      include_domains:
+        - light
+        - switch
+        - sensor  
+        - climate
+        - cover
+      exclude_entities:
+        - sensor.flat_bedroom_co2_sensor_co2  # Keep out of HomeKit
+
+# Zone definition
+zone:
+  - name: Flat
+    latitude: !secret flat_latitude
+    longitude: !secret flat_longitude
+    radius: 50
+    icon: mdi:home-variant
+
+# Device tracker for presence  
+device_tracker:
+  - platform: nmap_tracker
+    hosts: 192.168.2.1/24  # Different network range
+    home_interval: 10

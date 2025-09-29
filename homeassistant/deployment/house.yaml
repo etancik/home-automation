@@ -1,0 +1,46 @@
+# House Deployment Configuration
+# These scripts will be used to deploy configuration via Git subtree
+
+location: house
+branch: ha-config-house
+secrets_file: secrets_house.yaml
+
+# Git Pull add-on configuration for house
+git_pull_config:
+  repository: "https://github.com/[your-username]/[your-repo].git"
+  branch: "ha-config-house"
+  auto_restart: true
+  restart_ignore:
+    - ".git/"
+    - "deployment/"
+    - "README.md"
+
+# HomeKit configuration (reduced bridges!)
+homekit:
+  - name: "House Main"
+    filter:
+      include_domains:
+        - light
+        - switch  
+        - sensor
+        - climate
+        - cover
+      exclude_entities:
+        - sensor.bedroom_co2_sensor_co2  # Keep out of HomeKit
+    entity_config:
+      light.living_room_light_1:
+        name: "Living Room Light"
+
+# Zone definition
+zone:
+  - name: House
+    latitude: !secret house_latitude
+    longitude: !secret house_longitude  
+    radius: 100
+    icon: mdi:home
+
+# Device tracker for presence
+device_tracker:
+  - platform: nmap_tracker
+    hosts: 192.168.1.1/24
+    home_interval: 10

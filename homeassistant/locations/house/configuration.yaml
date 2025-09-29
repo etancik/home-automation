@@ -1,0 +1,54 @@
+# Home Assistant Configuration - House Location
+# GitOps managed via Git Pull add-on
+
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder  
+frontend:
+  themes: !include_dir_merge_named themes
+
+# Package-based organization
+homeassistant:
+  # Core shared packages
+  packages: !include_dir_named ../../core/packages
+  # Location-specific packages  
+  location_packages: !include_dir_named packages
+  # Location customizations
+  customize: !include customize.yaml
+
+# Core configuration files
+automation: !include automations.yaml
+script: !include scripts.yaml  
+scene: !include scenes.yaml
+
+# Recorder configuration for database optimization
+recorder:
+  db_url: "sqlite:////config/home-assistant_v2.db"
+  purge_keep_days: 30
+  include:
+    domains:
+      - sensor
+      - light
+      - switch
+      - binary_sensor
+      - automation
+      - person
+      - device_tracker
+      - input_number
+      - input_boolean
+  exclude:
+    entity_globs:
+      - sensor.*_linkquality
+      - sensor.*_voltage
+      - sensor.*_update_state
+      - sensor.home_assistant_*
+      - sensor.*_cpu_percent
+      - sensor.*_memory_percent
+
+# Logger configuration
+logger:
+  default: info
+  logs:
+    homeassistant.components.mqtt: debug
+    homeassistant.components.automation: info

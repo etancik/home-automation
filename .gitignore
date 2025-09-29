@@ -18,3 +18,19 @@
 .env
 config.local
 device_config.h
+
+# Home Assistant backup with secrets - DO NOT COMMIT!
+current-config/
+
+# Temporary documentation files (cleanup)
+CURRENT_STATE_ANALYSIS.md
+GITOPS_SETUP.md
+GIT_SUBTREE_REMOTE_APPROACH.md
+GIT_SUBTREE_STRATEGY.md
+MULTI_LOCATION_STRUCTURE.md
+SAFE_IMPLEMENTATION_PLAN.md
+SOURCETREE_SUBTREE_GUIDE.md
+git-pull-addon-config.yaml
+
+# Old single-location structure (replaced by multi-location)
+homeassistant-config/

@@ -1,0 +1,14 @@
+# Flat Scenes (Template - Dormant)  
+# This will be populated when flat devices are available
+
+# Example scene structure for future use:
+# - name: "Flat Movie Night"
+#   entities:
+#     light.flat_living_room_main:
+#       state: on
+#       brightness: 30
+#       color_temp: 400
+#     light.flat_living_room_accent:
+#       state: off
+
+[]
