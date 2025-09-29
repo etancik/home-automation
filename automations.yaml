@@ -1,6 +1,23 @@
 # House-specific automations
 # Migrated and cleaned up from current HA setup
 
+# GitOps Deployment Automation
+- id: 'zigbee2mqtt_gitops_deploy'
+  alias: "Deploy Zigbee2MQTT Configuration from Git"
+  description: "Automatically deploy Git-managed Z2M config when changed"
+  triggers:
+    - platform: homeassistant
+      event: start
+  conditions: []
+  actions:
+    - service: shell_command.deploy_zigbee2mqtt_config
+      data: {}
+    - delay: 5
+    - service: hassio.addon_restart
+      data:
+        addon: 45df7312_zigbee2mqtt
+  mode: single
+
 - id: '1759062623464'
   alias: "House: CO2 Ventilation Alert" 
   description: "Alert when bedroom CO2 levels are high in house"
