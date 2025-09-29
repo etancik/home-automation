@@ -22,6 +22,10 @@ device_config.h
 # Home Assistant backup with secrets - DO NOT COMMIT!
 current-config/
 
+# Home Assistant secrets - DO NOT COMMIT!
+secrets.yaml
+secrets_*.yaml
+
 # Temporary documentation files (cleanup)
 CURRENT_STATE_ANALYSIS.md
 GITOPS_SETUP.md
