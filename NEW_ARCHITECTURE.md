@@ -1,9 +1,28 @@
 # Home Automation Architecture Document v2.1 - Master
 
+> **⚠️ CRITICAL: Hardware Specifications Protection**  
+> The hardware components, links, and specific device models listed in this document are based on actual procurement and testing. **DO NOT MODIFY** these specifications, part numbers, or supplier links without explicit approval. Any changes to hardware specifications must be explicitly requested and approved.
+
 ## System Overview
 **Primary Platform**: Home Assistant OS on Intel NUC 7  
 **Configuration Approach**: YAML-based with package structure  
-**UI Strategy**: Mobile-first responsive design with role-based access  
+**UI Strategy**: Mobile-first responsive design### Next Actions - Implementation Ready
+
+### Immediate Actions (Today)
+1. **Set up GitOps workflow**:
+   - Create dedicated HA config repository
+   - Configure Git Pull add-on
+   - Test local edit → Git push → HA pull workflow
+
+2. **Deploy existing CO2 sensors**:
+   - Flash current PlatformIO code to devices
+   - Configure MQTT integration
+   - Add to Home Assistant dashboard
+
+3. **Plan network infrastructure**:
+   - Configure IoT VLAN for devices
+   - Set up static IP assignments
+   - Test connectivity and MQTT communicationccess  
 **Network**: Ubiquiti-based with VLAN segmentation for security  
 **CO2 Monitoring**: LaskaKit ESP32 + SCD41 sensors with PoE networking
 
@@ -36,13 +55,14 @@ Home Assistant OS
 ├── Home Assistant Core (primary orchestration)
 ├── Zigbee2MQTT Add-on (Zigbee device management)
 ├── Mosquitto MQTT Broker (message bus)
-├── ESPHome (custom CO2 sensor management)
-├── File Editor Add-on (configuration management)
-└── Studio Code Server Add-on (advanced editing)
+├── Git Pull Add-on (configuration as code)
+└── Custom CO2 Sensors (PlatformIO/Arduino via MQTT)
 ```
 
 ### Configuration Structure
-Package-based YAML organization with modular files for devices, dashboards, and automations.
+- **GitOps Workflow**: Edit locally, push to Git, auto-pull to HA
+- **Package-based YAML**: Modular organization for devices, dashboards, automations
+- **No Editor Add-ons needed**: Edit from your PC, Git handles deployment
 
 ## User Interface Strategy
 Mobile-first responsive design with role-based dashboards: Admin (full access), Spouse (control only), Kids (limited/future).
@@ -50,10 +70,10 @@ Mobile-first responsive design with role-based dashboards: Admin (full access), 
 ## Device Integration Plan
 
 ### Phase 1 Priority (Immediate)
-| Device | Integration Method | Network Segment | Dashboard Priority |
-|--------|-------------------|-----------------|-------------------|
-| Shelly Plus 1 PM (Garage) | Native HA Integration | IoT Network | High - Quick Control Tile |
-| Custom CO2 Sensors | ESPHome on ESP32 | IoT Network | High - Status Indicator |
+| Device | Integration Method | Network Segment | Status |
+|--------|-------------------|-----------------|--------|
+| Shelly Plus 1 PM (Garage) | Native HA Integration | IoT Network | Planned |
+| Custom CO2 Sensors | PlatformIO + MQTT | IoT Network | In Development |
 
 ### Phase 2 (Next 30 days)
 | Device | Integration Method | Features |
@@ -65,7 +85,7 @@ Mobile-first responsive design with role-based dashboards: Admin (full access), 
 ### Phase 3 (60+ days)
 | Device | Integration Method | Features |
 |--------|-------------------|----------|
-| Brink Air 70 (×2) | Custom MQTT/ESPHome | Climate integration |
+| Brink Air 70 (×2) | RS485/Modbus RTU via ESPlan | Climate integration, CO2-triggered ventilation |
 | Expanded Zigbee devices | Zigbee2MQTT | Advanced automation |
 
 ### Future Consideration Devices
@@ -86,161 +106,28 @@ Mobile-first responsive design with role-based dashboards: Admin (full access), 
 ### Dashboard Energy Cards
 Mobile: EV charging status, energy costs, garage power usage. Desktop: trends and optimization.
 
-## CO2 Monitoring System - Complete Implementation
+## CO2 Monitoring System - LaskaKit Hardware
 
-### Hardware Components (Final Selection)
-| Component | Model | Quantity | Est. Cost |
-|-----------|-------|----------|-----------|
-| ESP32 Board | LaskaKit ESPlan (PoE + LAN8720A) | 2-3 units | ~€25 each |
-| CO2 Sensor | LaskaKit SCD41 | 2-3 units | ~€35 each |
-| Display | LaskaKit OLED SSD1306 | 2-3 units | ~€8 each |
-| **Total per sensor** | | | **~€68** |
+### Hardware Components (Replication Order)
+| Component | Code | Price | Link |
+|-----------|------|-------|------|
+| LaskaKit ESPlan ESP32 LAN8720A RS485 PoE | LA100133I | 648 Kč | [Link](https://www.laskakit.cz/laskakit-esplan-esp32-lan8720a-max485-poe/) |
+| LaskaKit SCD41 CO2 Sensor | LA131062 | 768 Kč | [Link](https://www.laskakit.cz/laskakit-scd41-senzor-co2--teploty-a-vlhkosti-vzduchu/) |
+| LaskaKit OLED Display 128x64 | LA141102B | 98 Kč | [Link](https://www.laskakit.cz/laskakit-oled-displej-128x64-0-96-i2c/) |
+| LaskaKit Enclosure for ESPlan | LA270021W | 148 Kč | [Link](https://www.laskakit.cz/laskakit-krabicka-pro-laskakit-esplan/) |
+| DIN Rail Mount | LA220006 | 28 Kč | [Link](https://www.laskakit.cz/drzak-pcb-na-35mm-din-listu/) |
+| WiFi Antenna 2.4G U.FL | LA162036 | 18 Kč | [Link](https://www.laskakit.cz/mini-antena-3db-2-4g-u-fl--ipex--konektor/) |
+| I²C Cable JST-SH 4-pin 10cm | LA150124B | 12 Kč | [Link](https://www.laskakit.cz/--sup--stemma-qt--qwiic-jst-sh-4-pin-kabel-10cm/) |
+| **Total per sensor** | | **1,720 Kč** | |
 
-### Hardware Advantages
-✅ **PoE Support**: Single cable for power + data  
-✅ **Wired Network**: More stable than WiFi, fits network infrastructure  
-✅ **SCD41 Sensor**: Latest Sensirion sensor, very accurate  
-✅ **Industrial Design**: Suitable for permanent installation  
-✅ **Local Supplier**: Easy procurement and support
+> **Note**: ESPlan model chosen for RS485 capability to enable future Brink Air 70 ventilation integration via Modbus RTU protocol. Standard ESP32 boards cost ~300 Kč less but lack RS485 interface needed for HVAC communication.
 
-### Network Integration
-```
-Sensor Placement Strategy:
-ESP32 ESPlan → Ethernet → UniFi Switch → IoT VLAN (10.0.2.x)
+### Implementation
+- **Software**: PlatformIO + Arduino framework (existing code in `/co2-senzor/`)
+- **Integration**: MQTT with Home Assistant auto-discovery
+- **Network**: PoE via LAN8720A chipset on IoT VLAN
 
-Installation Locations:
-├── Living Room (Priority 1 - Development)
-├── Master Bedroom (Priority 2 - Testing)  
-└── Office/Secondary room (Priority 3)
-```
-
-### Complete ESPHome Configuration
-```yaml
-esphome:
-  name: co2-sensor-${room}
-  friendly_name: "${room} CO2 Sensor"
-  platform: ESP32
-  board: esp32dev
-  project:
-    name: "homelab.co2-sensor"
-    version: "1.0.0"
-
-# Ethernet configuration for LAN8720A
-ethernet:
-  type: LAN8720
-  mdc_pin: GPIO23
-  mdio_pin: GPIO18
-  clk_mode: GPIO17_OUT
-  phy_addr: 0
-  power_pin: GPIO12
-  # Static IP assignment
-  manual_ip:
-    static_ip: 10.0.2.10${room_id}
-    gateway: 10.0.2.1
-    subnet: 255.255.255.0
-    dns1: 10.0.2.1
-
-api:
-  encryption:
-    key: !secret api_key
-
-ota:
-  password: !secret ota_password
-
-logger:
-  level: INFO
-
-web_server:
-  port: 80
-  auth:
-    username: admin
-    password: !secret web_server_password
-
-# I2C configuration
-i2c:
-  sda: GPIO21
-  scl: GPIO22
-
-# SCD41 sensor configuration
-sensor:
-  - platform: scd4x
-    model: scd41
-    co2:
-      name: "${room} CO2"
-      id: co2_sensor
-      filters:
-        - median:
-            window_size: 3
-    temperature:
-      name: "${room} Temperature"
-      id: temp_sensor
-    humidity:
-      name: "${room} Humidity" 
-      id: humidity_sensor
-    automatic_self_calibration: true
-    update_interval: 60s
-
-  - platform: uptime
-    name: "${room} CO2 Uptime"
-
-# Display configuration
-font:
-  - file: "gfonts://Roboto"
-    id: font_small
-    size: 10
-  - file: "gfonts://Roboto"
-    id: font_medium
-    size: 14
-  - file: "gfonts://Roboto"
-    id: font_huge
-    size: 28
-
-display:
-  - platform: ssd1306_i2c
-    model: "SSD1306_128X64"
-    address: 0x3C
-    id: oled_display
-    update_interval: 5s
-    pages:
-      - id: page_main
-        lambda: |-
-          // Header with room name
-          it.print(0, 0, id(font_small), "${room}");
-          
-          // Network status
-          if (id(ethernet_connected).state) {
-            it.print(128, 0, id(font_small), TextAlign::TOP_RIGHT, "ETH");
-          }
-          
-          it.line(0, 10, 128, 10);
-          
-          // Large CO2 reading
-          if (id(co2_sensor).has_state()) {
-            it.printf(64, 15, id(font_huge), TextAlign::TOP_CENTER, "%.0f", id(co2_sensor).state);
-            it.print(64, 43, id(font_medium), TextAlign::TOP_CENTER, "ppm CO₂");
-            
-            // Status indicator
-            float co2 = id(co2_sensor).state;
-            const char* status = "";
-            if (co2 < 800) status = "EXCELLENT";
-            else if (co2 < 1000) status = "GOOD";
-            else if (co2 < 1400) status = "OK";
-            else status = "VENTILATE!";
-            
-            it.print(64, 57, id(font_small), TextAlign::TOP_CENTER, status);
-          }
-
-binary_sensor:
-  - platform: status
-    name: "${room} CO2 Sensor Status"
-
-time:
-  - platform: sntp
-    id: sntp_time
-    timezone: Europe/Prague
-```
-
-### Physical Installation Plan
+## Physical Installation Plan
 
 #### Enclosure Modification
 ```yaml
@@ -281,58 +168,40 @@ VLAN isolation, local-first devices, role-based user accounts, 2FA for admin, au
 
 ## Implementation Roadmap - Master Plan
 
-### Phase 1: Foundation & Priority Devices (Weeks 1-2)
+### Phase 1: Foundation & Priority Devices
 1. **HA OS installation and basic configuration**
-2. **MQTT broker setup and testing**
-3. **Network VLAN configuration and PoE planning**
-4. **Shelly garage door integration and testing**
-5. **First CO2 sensor development (Living Room)**
-   - LaskaKit hardware assembly and wiring
-   - ESPHome configuration and initial flash
-   - Display layout testing and refinement
-   - Home Assistant integration
+2. **Git Pull add-on setup for configuration as code**
+3. **MQTT broker setup and testing**
+4. **Network VLAN configuration**
+5. **Shelly garage door integration**
+6. **CO2 sensor deployment** (using existing PlatformIO code)
+   - Deploy to first location (living room/bedroom)
+   - Configure MQTT integration with HA
+   - Set up mobile dashboard cards
 
-### Phase 1.5: CO2 System Expansion (Week 3)
-1. **Second CO2 sensor installation (Bedroom)**
+### Phase 1.5: CO2 System Expansion
+1. **Second CO2 sensor deployment**
 2. **Dashboard integration and mobile optimization**
 3. **Basic CO2 alerting automation**
 4. **Historical data collection setup**
-5. **Real-world testing and family feedback**
 
-### Phase 2: Energy & Core Automation (Weeks 4-5)
+### Phase 2: Energy & Core Automation
 1. **go-e Charger integration**
-2. **Basic energy monitoring dashboard (minimal hardware approach)**
+2. **Basic energy monitoring dashboard**
 3. **Spouse user account and simplified interface**
 4. **iOS app optimization and home screen widgets**
-5. **CO2 sensor enclosure modification and permanent mounting**
 
-### Phase 3: Advanced Features (Months 2-3)
+### Phase 3: Advanced Features
 1. **Third CO2 sensor deployment (if needed)**
 2. **Zigbee2MQTT setup and first light integrations**
 3. **Advanced automation rules (climate + lighting + CO2)**
-4. **Desktop detailed dashboards with CO2 trends**
-5. **Backup and monitoring systems**
+4. **Desktop detailed dashboards with trends**
 
-### Phase 4: Future Expansion (Month 4+)
+### Phase 4: Future Expansion
 1. **Brink Air 70 integration with CO2 automation**
 2. **Additional family member access**
 3. **Evaluate external system integrations**
 4. **Advanced energy optimization**
-5. **Voice control evaluation**
-
-### Immediate Procurement List
-```yaml
-Phase 1 Hardware Order:
-├── 2x LaskaKit ESPlan ESP32 boards (~€50)
-├── 2x LaskaKit SCD41 sensors (~€70)
-├── 2x LaskaKit OLED displays (~€16)
-├── DIN rail + mounting hardware (~€15)
-├── Ethernet cables + PoE injectors (~€30)
-├── Prototyping supplies (~€15)
-└── Enclosure modification tools (~€20)
-
-Total Phase 1: ~€216
-```
 
 ## Success Metrics
 <2s mobile response, 99%+ uptime, zero security breaches, family-friendly UI, full local control during outages.
@@ -388,25 +257,25 @@ Ethernet connection → I2C scan finds OLED (0x3C) + SCD41 (0x62) → sensor ini
    - Plan ethernet cable runs to sensor locations
    - Configure IoT VLAN static IP assignments
 
-### Week 1 Development Goals
-- [ ] Hardware assembly and wiring verification
-- [ ] First ESP32 flash and I2C device detection
-- [ ] Basic OLED display functionality
-- [ ] SCD41 sensor readings and calibration
-- [ ] Home Assistant integration and discovery
+### Development Goals
+- [ ] GitOps workflow setup and testing
+- [ ] CO2 sensor MQTT integration with Home Assistant
 - [ ] Mobile dashboard basic cards
+- [ ] Network VLAN configuration
+- [ ] Basic automation rules
 
-### Week 2-3 Deployment Goals  
-- [ ] Living room sensor development and testing
-- [ ] Bedroom sensor installation and validation
-- [ ] Enclosure modification and permanent mounting
+### Deployment Goals  
+- [ ] Multiple CO2 sensor deployment
+- [ ] Advanced dashboard configuration
 - [ ] Family member onboarding and feedback
-- [ ] Basic automation rules implementation
+- [ ] Automation rules implementation
+- [ ] Historical data collection setup
 
 ### Confirmed Specifications
 ✅ **Hardware**: LaskaKit ESPlan + SCD41 + OLED (PoE networking)  
-✅ **Network**: Wired Ethernet on IoT VLAN with static IPs  
-✅ **Enclosure**: Existing DIN rail enclosure with 3D printed modifications  
-✅ **Integration**: ESPHome → Home Assistant with mobile-first dashboard  
-✅ **Budget**: ~€216 for complete 2-sensor system
+✅ **Software**: PlatformIO with Arduino framework + MQTT  
+✅ **Integration**: MQTT with Home Assistant auto-discovery  
+✅ **Configuration**: GitOps workflow for infrastructure as code  
+✅ **Status**: Hardware procured (1,682 Kč), ready for deployment  
+✅ **Enclosure**: LaskaKit professional enclosure with DIN rail mounting
 
