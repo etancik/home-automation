@@ -18,21 +18,7 @@
         addon: 45df7312_zigbee2mqtt
   mode: single
 
-- id: '1759062623464'
-  alias: "House: CO2 Ventilation Alert" 
-  description: "Alert when bedroom CO2 levels are high in house"
-  triggers:
-    - platform: numeric_state
-      entity_id: sensor.bedroom_co2_sensor_co2
-      above: input_number.co2_critical_threshold
-      for: "00:05:00"
-  conditions: []
-  actions:
-    - service: notify.mobile_app_lukas_iphone
-      data:
-        title: "🏠 House CO2 Alert"
-        message: "Bedroom CO2: {{ states('sensor.bedroom_co2_sensor_co2') }}ppm - Ventilate!"
-        data:
-          group: "co2-monitoring"
-          critical: 1
-  mode: single
+# House Automations
+# Location-specific automations for the house
+
+[]
