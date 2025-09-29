@@ -17,6 +17,9 @@ After the Git Pull add-on successfully deploys the configuration, you need to ma
    house_latitude: YOUR_LATITUDE_HERE
    house_longitude: YOUR_LONGITUDE_HERE
    house_elevation: YOUR_ELEVATION_HERE
+   
+   # MQTT Configuration (for Zigbee2MQTT integration)
+   mqtt_password: "ru8ovae3aichaiwei5iuX7kahRe8xoh9luzemooquo3Gohtuhiey0ooShaeyeeka"
    ```
 
 4. **Save the file** (Ctrl+O, Ctrl+X in nano)
