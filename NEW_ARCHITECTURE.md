@@ -1,30 +1,31 @@
-# Home Automation Architecture Document v2.1 - Master
+# Multi-Location Home Automation Architecture v2.0
 
 > **⚠️ CRITICAL: Hardware Specifications Protection**  
 > The hardware components, links, and specific device models listed in this document are based on actual procurement and testing. **DO NOT MODIFY** these specifications, part numbers, or supplier links without explicit approval. Any changes to hardware specifications must be explicitly requested and approved.
 
 ## System Overview
-**Primary Platform**: Home Assistant OS on Intel NUC 7  
-**Configuration Approach**: YAML-based with package structure  
-**UI Strategy**: Mobile-first responsive design### Next Actions - Implementation Ready
+**Deployment Model**: Dual Independent HA Instances (House + Flat)  
+**Primary Platform**: Home Assistant OS on Intel NUC 7 (both locations)  
+**Configuration Approach**: Shared core patterns with location-specific deployment  
+**UI Strategy**: iOS Home as primary family interface + HA for power users  
+**Network**: VLAN segmentation at both locations  
+**Device Standardization**: Same CO2 sensors, reusable automation patterns
 
-### Immediate Actions (Today)
-1. **Set up GitOps workflow**:
-   - Create dedicated HA config repository
-   - Configure Git Pull add-on
-   - Test local edit → Git push → HA pull workflow
+## Multi-Location Design Principles
 
-2. **Deploy existing CO2 sensors**:
-   - Flash current PlatformIO code to devices
-   - Configure MQTT integration
-   - Add to Home Assistant dashboard
+### 1. **House = Full Complexity, Flat = Essential + Growth Ready**
+- House: Complete automation (EV charging, garage, garden, advanced scheduling)
+- Flat: Core features (lights, CO2) with dormant advanced features ready to activate
 
-3. **Plan network infrastructure**:
-   - Configure IoT VLAN for devices
-   - Set up static IP assignments
-   - Test connectivity and MQTT communicationccess  
-**Network**: Ubiquiti-based with VLAN segmentation for security  
-**CO2 Monitoring**: LaskaKit ESP32 + SCD41 sensors with PoE networking
+### 2. **iOS Home as Family Interface**
+- Primary control method for family members
+- HA backend for monitoring, troubleshooting, and power user features
+- Clean device organization (no random IDs or duplicates)
+
+### 3. **Shared Core Architecture**
+- Common automation patterns extracted into reusable templates
+- Location-specific parameters and device instances
+- Core development at house, stable deployment to flat
 
 ## Hardware Infrastructure
 
@@ -64,29 +65,260 @@ Home Assistant OS
 - **Package-based YAML**: Modular organization for devices, dashboards, automations
 - **No Editor Add-ons needed**: Edit from your PC, Git handles deployment
 
+## Multi-Location Configuration Organization
+
+### Repository Structure
+```
+home-automation/
+├── README.md
+├── core/                           # Shared core patterns
+│   ├── packages/
+│   │   ├── co2_monitoring.yaml     # CO2 sensor automation templates
+│   │   ├── energy_management.yaml  # EV charging, power monitoring patterns
+│   │   ├── lighting_automation.yaml # Zigbee light automation patterns
+│   │   ├── climate_control.yaml    # HVAC and ventilation patterns
+│   │   └── security_base.yaml      # Basic security automation patterns
+│   ├── templates/
+│   │   ├── device_discovery.yaml   # MQTT auto-discovery templates
+│   │   ├── dashboard_cards.yaml    # Reusable dashboard components
+│   │   └── notification_patterns.yaml # Alert and notification templates
+│   └── scripts/
+│       ├── homekit_sync.yaml       # iOS Home synchronization patterns
+│       └── backup_automation.yaml  # Automated backup scripts
+├── locations/
+│   ├── house/                      # Primary location (full complexity)
+│   │   ├── configuration.yaml      # Main HA config with core imports
+│   │   ├── secrets.yaml           # Location-specific credentials
+│   │   ├── customize.yaml         # Entity customizations
+│   │   ├── packages/
+│   │   │   ├── garage_control.yaml        # Shelly garage door + sensors
+│   │   │   ├── ev_charging.yaml          # go-e Charger + Controller
+│   │   │   ├── hvac_integration.yaml     # Brink Air 70 (×2) via RS485
+│   │   │   ├── garden_automation.yaml    # Future Gardena integration
+│   │   │   └── security_advanced.yaml    # Advanced security features
+│   │   ├── dashboards/
+│   │   │   ├── mobile_main.yaml          # Primary mobile dashboard
+│   │   │   ├── desktop_detailed.yaml     # Detailed desktop interface
+│   │   │   ├── energy_management.yaml    # EV + power monitoring
+│   │   │   └── climate_overview.yaml     # CO2 + HVAC dashboard
+│   │   └── automations/
+│   │       ├── co2_ventilation.yaml      # CO2 → Brink Air automation
+│   │       ├── ev_smart_charging.yaml    # Time-based EV charging
+│   │       ├── presence_lighting.yaml    # Advanced lighting automation
+│   │       └── energy_optimization.yaml  # Load management automation
+│   └── flat/                       # Secondary location (essential + dormant)
+│       ├── configuration.yaml      # Main HA config with core imports
+│       ├── secrets.yaml           # Location-specific credentials
+│       ├── customize.yaml         # Entity customizations
+│       ├── packages/
+│       │   ├── basic_lighting.yaml       # Essential Zigbee lights only
+│       │   ├── co2_monitoring.yaml       # CO2 sensors (same as house)
+│       │   └── dormant_features.yaml     # Advanced features (disabled)
+│       ├── dashboards/
+│       │   ├── mobile_simple.yaml        # Simplified mobile interface
+│       │   └── basic_overview.yaml       # Essential controls only
+│       └── automations/
+│           ├── co2_alerts.yaml           # Basic CO2 monitoring
+│           ├── simple_lighting.yaml      # Basic light automation
+│           └── presence_detection.yaml   # Simple presence-based control
+└── deployment/
+    ├── house_deploy.sh             # House-specific deployment script
+    ├── flat_deploy.sh              # Flat-specific deployment script
+    └── sync_core.sh                # Core pattern synchronization
+```
+
+### Configuration Pattern Examples
+
+#### Core Template Pattern (co2_monitoring.yaml)
+```yaml
+# /core/packages/co2_monitoring.yaml
+homeassistant:
+  customize_glob:
+    "sensor.*_co2":
+      device_class: carbon_dioxide
+      unit_of_measurement: "ppm"
+      icon: mdi:molecule-co2
+
+template:
+  - sensor:
+      - name: "{{ location }}_{{ room }}_co2_status"
+        state: >
+          {% set co2 = states('sensor.' + location + '_' + room + '_co2') | int(0) %}
+          {% if co2 < 800 %}Good
+          {% elif co2 < 1000 %}Acceptable  
+          {% elif co2 < 1400 %}Poor
+          {% else %}Very Poor{% endif %}
+        attributes:
+          color: >
+            {% set co2 = states('sensor.' + location + '_' + room + '_co2') | int(0) %}
+            {% if co2 < 800 %}green
+            {% elif co2 < 1000 %}yellow
+            {% elif co2 < 1400 %}orange
+            {% else %}red{% endif %}
+
+automation:
+  - alias: "CO2 High Alert - {{ location }} {{ room }}"
+    trigger:
+      - platform: numeric_state
+        entity_id: "sensor.{{ location }}_{{ room }}_co2"
+        above: "{{ high_threshold | default(1200) }}"
+        for: "{{ alert_delay | default('00:05:00') }}"
+    action:
+      - service: notify.family
+        data:
+          title: "High CO2 Detected"
+          message: "{{ room | title }} CO2: {{ trigger.to_state.state }}ppm"
+```
+
+#### Location-Specific Implementation (house/packages/garage_control.yaml)
+```yaml
+# /locations/house/packages/garage_control.yaml
+# Import core patterns
+<<: !include ../../core/packages/energy_management.yaml
+
+# Location-specific device configuration
+switch:
+  - platform: mqtt
+    name: "House Garage Door"
+    state_topic: "shelly/garage/relay/0"
+    command_topic: "shelly/garage/relay/0/command"
+    device:
+      identifiers: ["house_garage_shelly"]
+      manufacturer: "Allterco"
+      model: "Shelly Plus 1 PM"
+
+sensor:
+  - platform: mqtt
+    name: "House Garage Power"
+    state_topic: "shelly/garage/relay/0/power"
+    unit_of_measurement: "W"
+    device_class: power
+
+# Location-specific automation
+automation:
+  - alias: "House Garage Auto Close"
+    trigger:
+      - platform: state
+        entity_id: switch.house_garage_door
+        to: 'on'
+        for: '00:30:00'
+    condition:
+      - condition: time
+        after: '22:00:00'
+        before: '06:00:00'
+    action:
+      - service: switch.turn_off
+        entity_id: switch.house_garage_door
+```
+
+#### Flat Configuration (flat/packages/dormant_features.yaml)
+```yaml
+# /locations/flat/packages/dormant_features.yaml
+# Dormant advanced features - ready to activate when needed
+
+# EV Charging (dormant - no hardware yet)
+# <<: !include ../../core/packages/energy_management.yaml
+
+# HVAC Integration (dormant - no Brink Air units yet)  
+# <<: !include ../../core/packages/climate_control.yaml
+
+# Garage Control (dormant - no garage)
+# <<: !include ../../core/packages/garage_automation.yaml
+
+# Placeholder entities for future activation
+input_boolean:
+  flat_ev_charging_enabled:
+    name: "EV Charging Features"
+    initial: false
+    icon: mdi:car-electric
+    
+  flat_hvac_automation_enabled:
+    name: "HVAC Automation" 
+    initial: false
+    icon: mdi:air-conditioner
+
+# Simple automation to activate dormant features
+automation:
+  - alias: "Activate EV Features"
+    trigger:
+      - platform: state
+        entity_id: input_boolean.flat_ev_charging_enabled
+        to: 'on'
+    action:
+      - service: homeassistant.reload_config_entry
+        data:
+          entry_id: "{{ config_entry_id }}"
+      - service: persistent_notification.create
+        data:
+          title: "Feature Activated"
+          message: "EV charging features are now active. Please restart Home Assistant."
+```
+
+### Deployment Strategy
+
+#### Core Pattern Synchronization
+- **Development**: Primary development at house location
+- **Testing**: Validate patterns with full hardware suite
+- **Extraction**: Move proven automations to `/core/` templates
+- **Deployment**: Sync core changes to flat location
+- **Customization**: Apply location-specific parameters
+
+#### Git Workflow for Multi-Location
+```bash
+# Development workflow
+git checkout -b feature/co2-ventilation-automation
+# Develop and test at house location
+git add locations/house/automations/co2_ventilation.yaml
+git commit -m "Add CO2 ventilation automation for house"
+
+# Extract to core pattern
+git add core/packages/co2_monitoring.yaml
+git commit -m "Extract CO2 monitoring to core template"
+
+# Apply to flat location with modifications
+git add locations/flat/packages/co2_monitoring.yaml  
+git commit -m "Apply CO2 monitoring to flat (alerts only)"
+
+git push origin feature/co2-ventilation-automation
+# Deploy to both locations via Git Pull add-on
+```
+
+#### Location-Specific Secrets Management
+```yaml
+# /locations/house/secrets.yaml
+mqtt_username: "house_ha_user"
+mqtt_password: !secret house_mqtt_password
+homekit_pin: !secret house_homekit_pin
+notification_webhook: !secret house_webhook_url
+
+# /locations/flat/secrets.yaml  
+mqtt_username: "flat_ha_user"
+mqtt_password: !secret flat_mqtt_password
+homekit_pin: !secret flat_homekit_pin
+notification_webhook: !secret flat_webhook_url
+```
+
+This organization enables:
+- **Shared Development**: Core patterns developed once, deployed everywhere
+- **Location Flexibility**: Each location can customize without affecting others
+- **Growth Ready**: Dormant features ready to activate when hardware is added
+- **Maintainability**: Clear separation between shared and location-specific code
+- **Version Control**: Proper Git workflow for multi-location deployment
+
 ## User Interface Strategy
 Mobile-first responsive design with role-based dashboards: Admin (full access), Spouse (control only), Kids (limited/future).
 
-## Device Integration Plan
+## Device Integration Status
 
-### Phase 1 Priority (Immediate)
-| Device | Integration Method | Network Segment | Status |
-|--------|-------------------|-----------------|--------|
-| Shelly Plus 1 PM (Garage) | Native HA Integration | IoT Network | Planned |
-| Custom CO2 Sensors | PlatformIO + MQTT | IoT Network | In Development |
-
-### Phase 2 (Next 30 days)
-| Device | Integration Method | Features |
-|--------|-------------------|----------|
-| go-e Charger PRO CORE | Native HA Integration | Basic energy data (no additional hw) |
-| go-e Controller | Native HA Integration | Load management |
-| Initial Zigbee lighting | Zigbee2MQTT | Basic automation |
-
-### Phase 3 (60+ days)
-| Device | Integration Method | Features |
-|--------|-------------------|----------|
-| Brink Air 70 (×2) | RS485/Modbus RTU via ESPlan | Climate integration, CO2-triggered ventilation |
-| Expanded Zigbee devices | Zigbee2MQTT | Advanced automation |
+### Current Implementation Status
+| Device | Integration Method | Status | Next Steps |
+|--------|-------------------|--------|------------|
+| CO2 Sensors | PlatformIO + MQTT | ✅ Working | Dashboard optimization, alerts |
+| Zigbee Lights | Zigbee2MQTT | 🔄 Needs HomeKit cleanup | Entity naming, iOS Home reset |
+| Shelly Plus 1 PM (Garage) | Native HA Integration | 📋 Planned | After light integration |
+| go-e Charger PRO CORE | Native HA Integration | 📋 Future | Basic energy monitoring |
+| go-e Controller | Native HA Integration | 📋 Future | Load management |
+| Brink Air 70 (×2) | RS485/Modbus RTU via ESPlan | 📋 Future | Climate integration, CO2-triggered ventilation |
 
 ### Future Consideration Devices
 | Device | Current Status | Integration Potential |
@@ -157,8 +389,8 @@ Color-coded CO2 status chips (green <800ppm, yellow 800-1000, orange 1000-1400, 
 High CO2 alerts (>1200ppm) and future Brink Air 70 auto-ventilation triggers (>1000ppm when occupied).
 
 ### Development & Testing Strategy
-**Phase 1 (Living Room)**: Hardware assembly, ESPHome development, HA integration, enclosure modification.  
-**Phase 2 (Bedroom)**: Real-world testing, family feedback, automation development, reliability validation.
+**Current Status**: CO2 sensors deployed and working with PlatformIO + MQTT auto-discovery.  
+**Next Phase**: HomeKit integration cleanup, Zigbee light organization, garage door integration.
 
 ## Mobile App Strategy
 iOS quick control tiles for garage (Shelly Plus 1 PM), CO2 levels, EV charging (go-e Charger PRO CORE). Role-based family access with simplified interfaces.
@@ -224,9 +456,6 @@ Hardware Connections:
     └── Power: PoE (802.3af standard)
 ```
 
-### ESPHome Development Environment
-Home Assistant Add-on (recommended), compile/upload via `esphome` commands.
-
 ### Dashboard Breakpoints
 Mobile (0-768px), Tablet (769-1024px), Desktop (1025px+).
 
@@ -238,44 +467,57 @@ Ethernet connection → I2C scan finds OLED (0x3C) + SCD41 (0x62) → sensor ini
 
 ---
 
-## Next Actions - Implementation Ready
+## Current Implementation Tasks
 
-### Immediate Actions (Today)
-1. **Order CO2 sensor components**:
-   - 2x LaskaKit ESPlan ESP32 boards
-   - 2x LaskaKit SCD41 sensors
-   - 2x LaskaKit OLED displays
-   - DIN rail and mounting hardware
+### Immediate Actions
+1. **HA Configuration Export & Cleanup**:
+   - Export current HA configuration via File Editor or backup
+   - Review current entity naming and HomeKit exposure
+   - Clean up duplicated or orphaned devices
 
-2. **Prepare development environment**:
-   - Install ESPHome (Home Assistant add-on recommended)
-   - Set up development workspace
-   - Prepare initial configuration files
+2. **HomeKit Integration Reset**:
+   - Remove current HomeKit integration 
+   - Standardize entity naming conventions
+   - Re-add devices to iOS Home with proper organization
 
-3. **Plan network infrastructure**:
-   - Verify PoE capability on UniFi switches
-   - Plan ethernet cable runs to sensor locations
-   - Configure IoT VLAN static IP assignments
+3. **Zigbee Light Integration**:
+   - Configure SONOFF ZBDongle-E USB Plus with Zigbee2MQTT
+   - Pair existing Zigbee lights with proper naming
+   - Expose to iOS Home with consistent naming pattern
 
-### Development Goals
-- [ ] GitOps workflow setup and testing
-- [ ] CO2 sensor MQTT integration with Home Assistant
-- [ ] Mobile dashboard basic cards
-- [ ] Network VLAN configuration
-- [ ] Basic automation rules
+### Near-term Goals
+- [ ] HA configuration export and review
+- [ ] HomeKit integration cleanup and reset
+- [ ] Zigbee2MQTT setup with SONOFF ZBDongle-E USB Plus
+- [ ] Zigbee light integration with proper naming
+- [ ] iOS Home organization and family access
 
-### Deployment Goals  
-- [ ] Multiple CO2 sensor deployment
-- [ ] Advanced dashboard configuration
-- [ ] Family member onboarding and feedback
-- [ ] Automation rules implementation
-- [ ] Historical data collection setup
+### Future Implementation Phases
 
-### Confirmed Specifications
-✅ **Hardware**: LaskaKit ESPlan + SCD41 + OLED (PoE networking)  
-✅ **Software**: PlatformIO with Arduino framework + MQTT  
-✅ **Integration**: MQTT with Home Assistant auto-discovery  
-✅ **Configuration**: GitOps workflow for infrastructure as code  
-✅ **Status**: Hardware procured (1,682 Kč), ready for deployment  
-✅ **Enclosure**: LaskaKit professional enclosure with DIN rail mounting
+#### Phase 1: Foundation Completion
+- Shelly Plus 1 PM garage door integration
+- CO2 sensor dashboard optimization and alerting
+- GitOps workflow setup for configuration management
+
+#### Phase 2: Energy & Advanced Automation  
+- go-e Charger PRO CORE and go-e Controller integration
+- Energy monitoring dashboard with Shelly Plus 1 PM power monitoring
+- Advanced lighting automation patterns
+
+#### Phase 3: HVAC Integration
+- Brink Air 70 (×2) integration via RS485/Modbus RTU via ESPlan
+- CO2-triggered ventilation automation
+- Climate optimization with combined sensor data
+
+#### Phase 4: Multi-Location Deployment
+- Extract core automation patterns into reusable templates
+- Deploy shared configuration to flat location
+- Implement location-specific customizations
+
+### Confirmed Current Status
+✅ **Hardware**: LaskaKit ESPlan + SCD41 + OLED (PoE networking) - procured (1,682 Kč)  
+✅ **Software**: PlatformIO + Arduino framework + MQTT auto-discovery - working  
+✅ **CO2 Integration**: MQTT with Home Assistant auto-discovery - deployed  
+🔄 **HomeKit**: Needs cleanup and proper organization  
+📋 **Configuration**: GitOps workflow planned for infrastructure as code
 
