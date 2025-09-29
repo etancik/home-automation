@@ -49,27 +49,60 @@ In SourceTree, add these as remotes for easy subtree management:
 
 ## Home Assistant Git Pull Add-on Setup
 
+## Home Assistant Git Pull Add-on Setup
+
+Based on official Home Assistant Git Pull add-on documentation.
+
 ### House NUC Configuration:
 ```yaml
-repository: "https://github.com/[your-username]/[your-repo].git"
-branch: "ha-config-house"
+repository: "https://github.com/etancik/home-automation.git"
+git_branch: "ha-config-house"
+git_remote: "origin"
 auto_restart: true
 restart_ignore:
   - ".git/"
   - "deployment/"
   - "README.md"
+  - ".gitignore"
+git_command: "pull"
+git_prune: false
+deployment_key: []
+deployment_user: ""
+deployment_password: ""
+deployment_key_protocol: "rsa"
+repeat:
+  active: true
+  interval: 300
 ```
 
-### Flat NUC Configuration:
+### Flat NUC Configuration (Future):
 ```yaml
-repository: "https://github.com/[your-username]/[your-repo].git"
-branch: "ha-config-flat"
+repository: "https://github.com/etancik/home-automation.git"
+git_branch: "ha-config-flat"
+git_remote: "origin"
 auto_restart: true
 restart_ignore:
   - ".git/"
   - "deployment/"
   - "README.md"
+  - ".gitignore"
+git_command: "pull"
+git_prune: false
+deployment_key: []
+deployment_user: ""
+deployment_password: ""
+deployment_key_protocol: "rsa"
+repeat:
+  active: true
+  interval: 300
 ```
+
+### Key Changes from Default:
+- `repository`: Your GitHub repository URL
+- `git_branch`: Location-specific branch (`ha-config-house` or `ha-config-flat`)
+- `auto_restart`: `true` (so HA restarts when config changes)
+- `repeat.active`: `true` (automatic polling every 5 minutes)
+- `restart_ignore`: Added deployment folder and git files
 
 ## Updating Locations
 
@@ -100,7 +133,7 @@ git subtree push --prefix=homeassistant/locations/flat origin ha-config-flat
 ## Device Renaming Required
 
 Before deploying to house, rename these devices in Zigbee2MQTT:
-- `0x54ef441000edf7c1` → `food_storage_sensor`
-- `0xb4e3f9fffea76436` → `living_room_light_1` ✅ (already correct!)
+- `0x54ef441000edf7c1` → `"Food Storage Sensor"` (will create entities: sensor.food_storage_sensor_*)
+- `0xb4e3f9fffea76436` → `"Living Room Light"` ✅ (already correct!)
 
 This ensures the friendly names in `customize.yaml` will work correctly.

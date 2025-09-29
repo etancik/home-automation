@@ -7,13 +7,20 @@ secrets_file: secrets_flat.yaml
 
 # Git Pull add-on configuration for flat
 git_pull_config:
-  repository: "https://github.com/[your-username]/[your-repo].git"
-  branch: "ha-config-flat"
+  repository: "https://github.com/etancik/home-automation.git"
+  git_branch: "ha-config-flat"
+  git_remote: "origin"
   auto_restart: true
   restart_ignore:
     - ".git/"
     - "deployment/"
     - "README.md"
+    - ".gitignore"
+  git_command: "pull"
+  git_prune: false
+  repeat:
+    active: true
+    interval: 300
 
 # HomeKit configuration (single bridge for flat)
 homekit:

@@ -7,13 +7,20 @@ secrets_file: secrets_house.yaml
 
 # Git Pull add-on configuration for house
 git_pull_config:
-  repository: "https://github.com/[your-username]/[your-repo].git"
-  branch: "ha-config-house"
+  repository: "https://github.com/etancik/home-automation.git"
+  git_branch: "ha-config-house"
+  git_remote: "origin"
   auto_restart: true
   restart_ignore:
     - ".git/"
     - "deployment/"
     - "README.md"
+    - ".gitignore"
+  git_command: "pull"
+  git_prune: false
+  repeat:
+    active: true
+    interval: 300
 
 # HomeKit configuration (reduced bridges!)
 homekit:
