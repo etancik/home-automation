@@ -1,0 +1,33 @@
+# House Device Customizations
+# Location-specific device naming and area assignments
+
+homeassistant:
+  customize:
+    # CO2 Sensors (working correctly!)
+    sensor.bedroom_co2_sensor_co2:
+      friendly_name: "House Bedroom CO2"
+      area: bedroom
+    sensor.bedroom_co2_sensor_temperature:
+      friendly_name: "House Bedroom Temperature (CO2 Sensor)"
+      area: bedroom  
+    sensor.bedroom_co2_sensor_humidity:
+      friendly_name: "House Bedroom Humidity (CO2 Sensor)"
+      area: bedroom
+      
+    # Food storage sensor - NEEDS RENAMING in Zigbee2MQTT first!
+    # Current: 0x54ef441000edf7c1 → Target: food_storage_sensor
+    sensor.food_storage_sensor_temperature:
+      friendly_name: "House Food Storage Temperature"
+      area: kitchen
+    sensor.food_storage_sensor_humidity:
+      friendly_name: "House Food Storage Humidity" 
+      area: kitchen
+    sensor.food_storage_sensor_pressure:
+      friendly_name: "House Food Storage Pressure"
+      area: kitchen
+      
+    # Lights - Already correctly named! ✅
+    # Current: 0xb4e3f9fffea76436 → Target: living_room_light_1  
+    light.living_room_light_1:
+      friendly_name: "House Living Room Light"
+      area: living_room
