@@ -18,6 +18,10 @@ homeassistant:
   packages: !include_dir_named ../../core/packages
   # Location customizations
   customize: !include customize.yaml
+  # Ignore auto-discovered integrations we don't want
+  # We use Zigbee2MQTT instead of ZHA for the SONOFF dongle
+  ignore:
+    - zha
 
 # Loads default set of integrations. Do not remove.
 default_config:
@@ -102,4 +106,5 @@ recorder:
 logger:
   default: info
   logs:
+    homeassistant.components.mqtt: debug
     homeassistant.components.automation: info
