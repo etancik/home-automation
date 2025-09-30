@@ -12,8 +12,7 @@ sensor.bedroom_co2_sensor_humidity:
   friendly_name: "House Bedroom Humidity (CO2 Sensor)"
   area: bedroom
   
-# Food storage sensor - NEEDS RENAMING in Zigbee2MQTT first!
-# Current: 0x54ef441000edf7c1 → Target: food_storage_sensor
+# Food storage sensor (renamed in Zigbee2MQTT)
 sensor.food_storage_sensor_temperature:
   friendly_name: "House Food Storage Temperature"
   area: kitchen
@@ -23,9 +22,14 @@ sensor.food_storage_sensor_humidity:
 sensor.food_storage_sensor_pressure:
   friendly_name: "House Food Storage Pressure"
   area: kitchen
+sensor.food_storage_sensor_battery:
+  friendly_name: "House Food Storage Battery"
+  area: kitchen
+sensor.food_storage_sensor_device_temperature:
+  friendly_name: "House Food Storage Device Temperature"
+  area: kitchen
   
-# Lights - Already correctly named! ✅
-# Current: 0xb4e3f9fffea76436 → Target: living_room_light_1  
-light.living_room_light_1:
+# Living Room Light (renamed in Zigbee2MQTT)
+light.living_room_light:
   friendly_name: "House Living Room Light"
   area: living_room

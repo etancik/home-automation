@@ -34,6 +34,41 @@ automation: !include automations.yaml
 script: !include scripts.yaml  
 scene: !include scenes.yaml
 
+# HomeKit Integration - Single Consolidated Bridge
+homekit:
+  - name: "House Main"
+    port: 21064
+    filter:
+      include_entities:
+        # CO2 Sensor (bedroom)
+        - sensor.bedroom_co2_sensor_co2
+        - sensor.bedroom_co2_sensor_temperature
+        - sensor.bedroom_co2_sensor_humidity
+        # Food Storage Sensor (kitchen)
+        - sensor.food_storage_sensor_temperature
+        - sensor.food_storage_sensor_humidity
+        - sensor.food_storage_sensor_pressure
+        - sensor.food_storage_sensor_battery
+        # Living Room Light
+        - light.living_room_light
+    entity_config:
+      sensor.bedroom_co2_sensor_co2:
+        name: "Bedroom CO2"
+      sensor.bedroom_co2_sensor_temperature:
+        name: "Bedroom Temperature (CO2)"
+      sensor.bedroom_co2_sensor_humidity:
+        name: "Bedroom Humidity (CO2)"
+      sensor.food_storage_sensor_temperature:
+        name: "Kitchen Food Storage Temperature"
+      sensor.food_storage_sensor_humidity:
+        name: "Kitchen Food Storage Humidity"
+      sensor.food_storage_sensor_pressure:
+        name: "Kitchen Food Storage Pressure"
+      sensor.food_storage_sensor_battery:
+        name: "Kitchen Sensor Battery"
+      light.living_room_light:
+        name: "Living Room Light"
+
 # Shell commands for GitOps deployment
 shell_command:
   deploy_zigbee2mqtt_config: >
