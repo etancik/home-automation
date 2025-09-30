@@ -102,5 +102,4 @@ recorder:
 logger:
   default: info
   logs:
-    homeassistant.components.mqtt: debug
     homeassistant.components.automation: info
