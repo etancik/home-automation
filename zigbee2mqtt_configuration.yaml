@@ -42,6 +42,10 @@ devices:
     friendly_name: 'Living Room Light'
     retain: false  
     description: 'Main living room light bulb'
+  '0x84fd27fffe92fa7c':
+    friendly_name: 'Bedroom LED Strip'
+    retain: false
+    description: 'Lidl LED strip behind bed for ambient lighting'
 
 # Groups (for Zigbee groups if needed)
 groups: {}
