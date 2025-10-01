@@ -33,3 +33,8 @@ sensor.food_storage_sensor_device_temperature:
 light.living_room_light:
   friendly_name: "House Living Room Light"
   area: living_room
+
+# LED Strip (Lidl - renamed in Zigbee2MQTT)  
+light.bedroom_led_strip:
+  friendly_name: "House Bedroom LED Strip"
+  area: bedroom

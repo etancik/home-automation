@@ -54,6 +54,8 @@ homekit:
         - sensor.food_storage_sensor_battery
         # Living Room Light
         - light.living_room_light
+        # LED Strip
+        - light.bedroom_led_strip
     entity_config:
       sensor.bedroom_co2_sensor_co2:
         name: "Bedroom CO2"
@@ -71,6 +73,8 @@ homekit:
         name: "Kitchen Sensor Battery"
       light.living_room_light:
         name: "Living Room Light"
+      light.bedroom_led_strip:
+        name: "Bedroom LED Strip"
 
 # Shell commands for GitOps deployment
 shell_command:
