@@ -41,6 +41,7 @@ scene: !include scenes.yaml
 homekit:
   - name: "House Main"
     port: 21064
+    safe_mode: true
     filter:
       include_entities:
         # CO2 Sensor (bedroom)
@@ -54,7 +55,7 @@ homekit:
         - sensor.food_storage_sensor_battery
         # Living Room Light
         - light.living_room_light
-        # LED Strip
+        # LED Strip (friendly name format)
         - light.bedroom_led_strip
     entity_config:
       sensor.bedroom_co2_sensor_co2:

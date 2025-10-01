@@ -15,17 +15,24 @@ mqtt:
 serial:
   port: /dev/ttyACM0
   adapter: ember
-  baudrate: 115200
+  
   rtscts: false
 
-# Network settings (network keys handled by add-on configuration)
+# Advanced settings
 advanced:
   log_level: info
   channel: 15
+  # Use friendly names for entity IDs
+  homeassistant_legacy_entity_attributes: false
+  homeassistant_legacy_triggers: false
 
 # Home Assistant integration
 homeassistant:
   enabled: true
+  discovery_topic: homeassistant
+  status_topic: homeassistant/status
+  legacy_entity_attributes: false
+  legacy_triggers: false
 
 # Frontend
 frontend:
