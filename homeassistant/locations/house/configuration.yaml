@@ -57,6 +57,15 @@ homekit:
         - light.living_room_light
         # LED Strip (friendly name format)
         - light.bedroom_led_strip
+        # Leak Sensors (water detection)
+        - binary_sensor.downstairs_bathroom_leak_sensor
+        - binary_sensor.upstairs_bathroom_leak_sensor
+        - binary_sensor.kitchen_sink_leak_sensor
+        - binary_sensor.laundry_room_leak_sensor
+        # Smart Plugs (power control)
+        - switch.workshop_smart_plug
+        - switch.living_room_pc_smart_plug
+        - switch.laundry_room_smart_plug
     entity_config:
       sensor.bedroom_co2_sensor_co2:
         name: "Bedroom CO2"
@@ -76,6 +85,22 @@ homekit:
         name: "Living Room Light"
       light.bedroom_led_strip:
         name: "Bedroom LED Strip"
+      # Leak Sensors
+      binary_sensor.downstairs_bathroom_leak_sensor:
+        name: "Downstairs Bathroom Leak"
+      binary_sensor.upstairs_bathroom_leak_sensor:
+        name: "Upstairs Bathroom Leak"
+      binary_sensor.kitchen_sink_leak_sensor:
+        name: "Kitchen Sink Leak"
+      binary_sensor.laundry_room_leak_sensor:
+        name: "Laundry Room Leak"
+      # Smart Plugs
+      switch.workshop_smart_plug:
+        name: "Workshop Plug"
+      switch.living_room_pc_smart_plug:
+        name: "Living Room PC Plug"
+      switch.laundry_room_smart_plug:
+        name: "Laundry Room Plug"
 
 # Shell commands for GitOps deployment
 shell_command:
