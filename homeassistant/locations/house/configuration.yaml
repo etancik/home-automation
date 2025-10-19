@@ -85,19 +85,15 @@ homekit:
         name: "Living Room Light"
       light.bedroom_led_strip:
         name: "Bedroom LED Strip"
-      # Leak Sensors (configured as contact sensors for HomeKit compatibility)
+      # Leak Sensors
       binary_sensor.downstairs_bathroom_leak_sensor:
         name: "Downstairs Bathroom Leak"
-        device_class: "opening"
       binary_sensor.upstairs_bathroom_leak_sensor:
         name: "Upstairs Bathroom Leak"
-        device_class: "opening"
       binary_sensor.kitchen_sink_leak_sensor:
         name: "Kitchen Sink Leak"
-        device_class: "opening"
       binary_sensor.laundry_room_leak_sensor:
         name: "Laundry Room Leak"
-        device_class: "opening"
       # Smart Plugs
       switch.workshop_smart_plug:
         name: "Workshop Plug"
