@@ -69,6 +69,8 @@ homekit:
     entity_config:
       sensor.bedroom_co2_sensor_co2:
         name: "Bedroom CO2"
+        # CO2 threshold: HomeKit will warn when > 1500 ppm (default is 1000)
+        co2_threshold: 1500
       sensor.bedroom_co2_sensor_temperature:
         name: "Bedroom Temperature (CO2)"
       sensor.bedroom_co2_sensor_humidity:
