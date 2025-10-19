@@ -55,14 +55,14 @@ homekit:
         - sensor.food_storage_sensor_battery
         # Living Room Light
         - light.living_room_light
-        # LED Strip (friendly name format)
+        # LED Strip
         - light.bedroom_led_strip
-        # Leak Sensors (water detection)
-        - binary_sensor.downstairs_bathroom_leak_sensor
-        - binary_sensor.upstairs_bathroom_leak_sensor
-        - binary_sensor.kitchen_sink_leak_sensor
-        - binary_sensor.laundry_room_leak_sensor
-        # Smart Plugs (power control)
+        # Leak Sensors
+        - binary_sensor.downstairs_bathroom_leak_sensor_water_leak
+        - binary_sensor.upstairs_bathroom_leak_sensor_water_leak
+        - binary_sensor.kitchen_sink_leak_sensor_water_leak
+        - binary_sensor.laundry_room_leak_sensor_water_leak
+        # Smart Plugs
         - switch.workshop_smart_plug
         - switch.living_room_pc_smart_plug
         - switch.laundry_room_smart_plug
@@ -86,13 +86,13 @@ homekit:
       light.bedroom_led_strip:
         name: "Bedroom LED Strip"
       # Leak Sensors
-      binary_sensor.downstairs_bathroom_leak_sensor:
+      binary_sensor.downstairs_bathroom_leak_sensor_water_leak:
         name: "Downstairs Bathroom Leak"
-      binary_sensor.upstairs_bathroom_leak_sensor:
+      binary_sensor.upstairs_bathroom_leak_sensor_water_leak:
         name: "Upstairs Bathroom Leak"
-      binary_sensor.kitchen_sink_leak_sensor:
+      binary_sensor.kitchen_sink_leak_sensor_water_leak:
         name: "Kitchen Sink Leak"
-      binary_sensor.laundry_room_leak_sensor:
+      binary_sensor.laundry_room_leak_sensor_water_leak:
         name: "Laundry Room Leak"
       # Smart Plugs
       switch.workshop_smart_plug:
