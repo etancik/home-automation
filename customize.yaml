@@ -39,19 +39,23 @@ light.bedroom_led_strip:
   friendly_name: "House Bedroom LED Strip"
   area: bedroom
 
-# Leak Sensors (IKEA E2202)
+# Leak Sensors (IKEA E2202) - configured for HomeKit compatibility
 binary_sensor.downstairs_bathroom_leak_sensor:
   friendly_name: "House Downstairs Bathroom Leak Sensor"
   area: downstairs_bathroom
+  device_class: opening
 binary_sensor.upstairs_bathroom_leak_sensor:
   friendly_name: "House Upstairs Bathroom Leak Sensor"
   area: upstairs_bathroom
+  device_class: opening
 binary_sensor.kitchen_sink_leak_sensor:
   friendly_name: "House Kitchen Sink Leak Sensor"
   area: kitchen
+  device_class: opening
 binary_sensor.laundry_room_leak_sensor:
   friendly_name: "House Laundry Room Leak Sensor"
   area: laundry_room
+  device_class: opening
 
 # Smart Plugs (IKEA E22x4)
 switch.workshop_smart_plug:
