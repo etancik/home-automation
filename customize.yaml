@@ -38,3 +38,28 @@ light.living_room_light:
 light.bedroom_led_strip:
   friendly_name: "House Bedroom LED Strip"
   area: bedroom
+
+# Leak Sensors (IKEA E2202)
+binary_sensor.downstairs_bathroom_leak_sensor:
+  friendly_name: "House Downstairs Bathroom Leak Sensor"
+  area: downstairs_bathroom
+binary_sensor.upstairs_bathroom_leak_sensor:
+  friendly_name: "House Upstairs Bathroom Leak Sensor"
+  area: upstairs_bathroom
+binary_sensor.kitchen_sink_leak_sensor:
+  friendly_name: "House Kitchen Sink Leak Sensor"
+  area: kitchen
+binary_sensor.laundry_room_leak_sensor:
+  friendly_name: "House Laundry Room Leak Sensor"
+  area: laundry_room
+
+# Smart Plugs (IKEA E22x4)
+switch.workshop_smart_plug:
+  friendly_name: "House Workshop Smart Plug"
+  area: workshop
+switch.living_room_pc_smart_plug:
+  friendly_name: "House Living Room PC Smart Plug"
+  area: living_room
+switch.laundry_room_smart_plug:
+  friendly_name: "House Laundry Room Smart Plug"
+  area: laundry_room

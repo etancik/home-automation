@@ -41,10 +41,29 @@ frontend:
 
 # Device configurations (Git-managed friendly names)
 devices:
+  # Sensors
   '0x54ef441000edf7c1':
     friendly_name: 'Food Storage Sensor'
     retain: false
     description: 'Kitchen food storage temperature and humidity sensor'
+  '0x94a081fffe2f88e6':
+    friendly_name: 'Downstairs Bathroom Leak Sensor'
+    retain: false
+    description: 'Water leak detection sensor for downstairs bathroom'
+  '0x94a081fffe2f957f':
+    friendly_name: 'Upstairs Bathroom Leak Sensor'
+    retain: false
+    description: 'Water leak detection sensor for upstairs bathroom'
+  '0x94a081fffe5696d3':
+    friendly_name: 'Kitchen Sink Leak Sensor'
+    retain: false
+    description: 'Water leak detection sensor for kitchen sink area'
+  '0x94a081fffe4ec1c0':
+    friendly_name: 'Laundry Room Leak Sensor'
+    retain: false
+    description: 'Water leak detection sensor for laundry room'
+  
+  # Lights
   '0xb4e3f9fffea76436':
     friendly_name: 'Living Room Light'
     retain: false  
@@ -53,6 +72,20 @@ devices:
     friendly_name: 'Bedroom LED Strip'
     retain: false
     description: 'Lidl LED strip behind bed for ambient lighting'
+  
+  # Smart Plugs
+  '0x348d13fffeeaf3ff':
+    friendly_name: 'Workshop Smart Plug'
+    retain: false
+    description: 'Smart plug for workshop power control'
+  '0x348d13fffe3d7bac':
+    friendly_name: 'Living Room PC Smart Plug'
+    retain: false
+    description: 'Smart plug for living room PC and electronics'
+  '0x348d13fffe07a842':
+    friendly_name: 'Laundry Room Smart Plug'
+    retain: false
+    description: 'Smart plug for laundry room appliances'
 
 # Groups (for Zigbee groups if needed)
 groups: {}
