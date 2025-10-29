@@ -71,7 +71,11 @@ devices:
   '0x84fd27fffe92fa7c':
     friendly_name: 'Bedroom LED Strip'
     retain: false
-    description: 'Lidl LED strip behind bed for ambient lighting'
+    description: 'LED strip behind bed'
+  '0xb4e3f9fffe1e56c8':
+    friendly_name: 'Kids Room Door LED Strip'
+    retain: false
+    description: 'LED strip around kids room door'
   
   # Smart Plugs
   '0x348d13fffeeaf3ff':

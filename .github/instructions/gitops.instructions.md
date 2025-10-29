@@ -4,6 +4,16 @@ applyTo: '**'
 
 # Home Automation GitOps
 
+## 🚨 CRITICAL SECURITY REQUIREMENTS 🚨
+
+**ALWAYS CHECK BEFORE COMMITTING THAT YOU ARE NOT INCLUDING SENSITIVE FILES!**
+
+❌ **NEVER COMMIT THESE FILES:**
+- `device_config*.h` files (contain WiFi credentials!)
+- `secrets.yaml` files (contain API keys, passwords)
+- Any file with passwords, API keys, or network credentials
+- Configuration files with IP addresses or sensitive data
+
 ## Deployment Branches
 - `ha-config-house` ← `homeassistant/locations/house/`
 - `ha-config-flat` ← `homeassistant/locations/flat/`

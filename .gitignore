@@ -17,7 +17,7 @@
 # Local configuration files
 .env
 config.local
-device_config.h
+device_config_*.h
 
 # Home Assistant secrets - DO NOT COMMIT!
 secrets.yaml

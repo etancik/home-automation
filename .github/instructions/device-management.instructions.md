@@ -15,7 +15,7 @@ applyTo: '**'
 3. Deploy via subtree push
 4. Restart Home Assistant
 
-## Current Device Inventory (9 total)
+## Current Device Inventory (11 total)
 
 ### Sensors (5 devices)
 - Food Storage Sensor ✅
@@ -24,9 +24,14 @@ applyTo: '**'
 - Kitchen Sink Leak Sensor
 - Laundry Room Leak Sensor
 
-### Lights (2 devices)
+### CO2 Sensors (2 devices)
+- Bedroom CO2 Sensor ✅
+- Living Room CO2 Sensor (pending setup)
+
+### Lights (3 devices)
 - Living Room Light ✅
 - Bedroom LED Strip ✅
+- Kids Room Door LED Strip (pending configuration)
 
 ### Smart Plugs (3 devices)
 - Workshop Smart Plug
