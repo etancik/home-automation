@@ -5,6 +5,9 @@ co2_led_red_pulse:
   alias: "CO2 Red Pulse Notification"
   description: "Gradually pulse LED red based on CO2 level intensity"
   fields:
+    entity_id:
+      description: "LED strip entity to control"
+      example: "light.bedroom_led_strip"
     co2_level:
       description: "Current CO2 level in ppm"
       example: 1350
@@ -12,9 +15,9 @@ co2_led_red_pulse:
     # Store current light state for restoration
     - service: scene.create
       data:
-        scene_id: "co2_led_restore_{{ this.entity_id.split('.')[1] }}"
+        scene_id: "co2_led_restore_{{ entity_id.split('.')[1] }}"
         snapshot_entities:
-          - "{{ this.entity_id }}"
+          - "{{ entity_id }}"
     
     # Calculate red intensity based on CO2 level (1200-2000+ ppm range)
     - variables:
@@ -32,7 +35,7 @@ co2_led_red_pulse:
     # Smooth transition to red with calculated intensity
     - service: light.turn_on
       target:
-        entity_id: "{{ this.entity_id }}"
+        entity_id: "{{ entity_id }}"
       data:
         rgb_color: [255, 0, 0]
         brightness: "{{ red_brightness }}"
@@ -45,14 +48,14 @@ co2_led_red_pulse:
           - delay: 2
           - service: light.turn_on
             target:
-              entity_id: "{{ this.entity_id }}"
+              entity_id: "{{ entity_id }}"
             data:
               brightness: "{{ (red_brightness * 0.7) | int }}"
               transition: 1
           - delay: 2
           - service: light.turn_on
             target:
-              entity_id: "{{ this.entity_id }}"
+              entity_id: "{{ entity_id }}"
             data:
               brightness: "{{ red_brightness }}"
               transition: 1
@@ -60,18 +63,22 @@ co2_led_red_pulse:
 co2_led_green_pulse:
   alias: "CO2 Green Pulse Notification"
   description: "Gentle green pulse for good air quality in winter"
+  fields:
+    entity_id:
+      description: "LED strip entity to control"
+      example: "light.bedroom_led_strip"
   sequence:
     # Store current light state for restoration
     - service: scene.create
       data:
-        scene_id: "co2_led_restore_{{ this.entity_id.split('.')[1] }}"
+        scene_id: "co2_led_restore_{{ entity_id.split('.')[1] }}"
         snapshot_entities:
-          - "{{ this.entity_id }}"
+          - "{{ entity_id }}"
     
     # Smooth transition to soft green
     - service: light.turn_on
       target:
-        entity_id: "{{ this.entity_id }}"
+        entity_id: "{{ entity_id }}"
       data:
         rgb_color: [0, 255, 100]  # Soft green with slight yellow tint
         brightness: 100  # Gentle brightness
@@ -84,14 +91,14 @@ co2_led_green_pulse:
           - delay: 3
           - service: light.turn_on
             target:
-              entity_id: "{{ this.entity_id }}"
+              entity_id: "{{ entity_id }}"
             data:
               brightness: 60
               transition: 2
           - delay: 3
           - service: light.turn_on
             target:
-              entity_id: "{{ this.entity_id }}"
+              entity_id: "{{ entity_id }}"
             data:
               brightness: 100
               transition: 2
@@ -99,16 +106,20 @@ co2_led_green_pulse:
 co2_led_restore_normal:
   alias: "Restore Normal LED State"
   description: "Restore LED to previous state before CO2 notification"
+  fields:
+    entity_id:
+      description: "LED strip entity to restore"
+      example: "light.bedroom_led_strip"
   sequence:
     # Restore the saved scene
     - service: scene.turn_on
       data:
-        entity_id: "scene.co2_led_restore_{{ this.entity_id.split('.')[1] }}"
+        entity_id: "scene.co2_led_restore_{{ entity_id.split('.')[1] }}"
         transition: 5
     
     # Clean up the temporary scene after restoration
     - delay: 6
     - service: scene.delete
       data:
-        entity_id: "scene.co2_led_restore_{{ this.entity_id.split('.')[1] }}"
+        entity_id: "scene.co2_led_restore_{{ entity_id.split('.')[1] }}"
       continue_on_error: true
