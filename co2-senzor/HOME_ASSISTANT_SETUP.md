@@ -1,58 +1,30 @@
-# ESPlan CO2 Sensor - Home Assistant Integration
+# CO2 Sensor Setup - PlatformIO + Home Assistant
 
-## Quick Setup
+## Quick Deploy
 
-### 1. Configure Credentials
-Copy the template and edit with your settings:
 ```bash
-cp wifi_config.template.h wifi_config.h
+# 1. Copy config for target location
+cd /Users/i343783/git/experiments/home-automation/co2-senzor
+cp src/device_config_living_room.h src/device_config.h
+
+# 2. Upload firmware (ESP32 via USB)
+~/.platformio/penv/bin/platformio run --target upload --upload-port /dev/cu.usbserial-XXXXXXXX
 ```
 
-Edit `wifi_config.h`:
-```cpp
-const char* wifi_ssid = "your_wifi_network";
-const char* wifi_password = "your_wifi_password";
-const char* mqtt_server = "homeassistant.local";  // Your HA IP
-```
+**Result**: Auto-connects to WiFi → MQTT → Home Assistant → HomeKit
 
-**Note**: `wifi_config.h` is gitignored for security.
+## Current Status
 
-### 2. Enable MQTT in Home Assistant
-Ensure MQTT discovery is enabled:
-```yaml
-# configuration.yaml
-mqtt:
-  broker: localhost
-  discovery: true
-```
+**Active Sensors:**
+- Bedroom: `A0:B7:65:4B:6A:CC` ✅
+- Living Room: `10:97:BD:CD:7E:C0` ✅ 
 
-### 3. Deploy
-```bash
-pio run --target upload
-pio device monitor  # Check connection status
-```
+**Tech Stack:**
+- PlatformIO + ESP32 Platform v6.4.0 (Python 3.9 compatible)
+- MQTT Discovery → HA → HomeKit bridge (port 21064)
 
-Sensors appear automatically in Home Assistant → Devices & Services → MQTT.
+## Issues & Fixes
 
-## What You Get
-
-**Device**: ESPlan CO2 Sensor (grouped in HA)
-**Sensors**: CO2 (ppm), Temperature (°C), Humidity (%)
-**Updates**: Every 30 seconds via MQTT
-
-## OLED Status
-- **"HA"** = Connected to Home Assistant
-- **"WiFi"** = WiFi only  
-- **"Local"** = Offline
-
-## Troubleshooting
-
-**No WiFi**: Check credentials in `wifi_config.h`
-**No MQTT**: Verify `mqtt_server` IP and HA MQTT broker running
-**No sensors in HA**: Check Settings → Devices & Services → MQTT
-
-## Critical Resources
-- **LaskaKit ESPlan**: https://github.com/LaskaKit/ESPlan/
-- **SCD41 Datasheet**: https://sensirion.com/products/catalog/SCD41/  
-- **HA MQTT Discovery**: https://www.home-assistant.io/integrations/mqtt/#mqtt-discovery
-- **PubSubClient**: https://github.com/knolleary/pubsubclient
+**Upload fails**: Use compatible ESP32 platform v6.4.0, not newer versions  
+**Not in iOS Home**: Restart HomeKit integration in HA  
+**Device not found**: Check USB cable (data, not power-only)
