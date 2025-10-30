@@ -39,7 +39,7 @@ co2_led_breathing_effect:
                   data:
                     brightness: "{{ current_brightness }}"
                     transition: 0.1
-                - delay: 0
+                - delay: 0.08
 
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
