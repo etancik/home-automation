@@ -15,54 +15,27 @@ co2_led_breathing_effect:
       description: "Number of breathing cycles"
       example: 3
   sequence:
-    # Create smooth breathing pulse effect with multiple gradual steps
+        # Create mathematically smooth breathing effect using sine wave
     - repeat:
-        count: "{{ pulse_count }}"
+        count: 3
         sequence:
-          # Smooth breathing down - multiple small steps for continuous fade
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: "{{ (target_brightness * 0.85) | int }}"
-              transition: 1.5
-          - delay: 1.5
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: "{{ (target_brightness * 0.7) | int }}"
-              transition: 1.5
-          - delay: 1.5
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: "{{ (target_brightness * 0.55) | int }}"
-              transition: 1.5
-          - delay: 1.5
-          # Smooth breathing up - multiple small steps for continuous fade
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: "{{ (target_brightness * 0.7) | int }}"
-              transition: 1.5
-          - delay: 1.5
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: "{{ (target_brightness * 0.85) | int }}"
-              transition: 1.5
-          - delay: 1.5
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: "{{ target_brightness }}"
-              transition: 1.5
-          - delay: 1.5
+          # Breathing cycle: 20 steps over 16 seconds for ultra-smooth sine wave
+          - repeat:
+              count: 20
+              sequence:
+                - variables:
+                    # Calculate sine wave position (0 to 2π over 20 steps)
+                    angle: "{{ (repeat.index - 1) * 6.28318 / 20 }}"
+                    # Sine wave from 0.6 to 1.0 (60% to 100% brightness)
+                    sine_value: "{{ (sin(angle) + 1) / 2 }}"
+                    current_brightness: "{{ (red_brightness * (0.6 + 0.4 * sine_value)) | int }}"
+                - service: light.turn_on
+                  target:
+                    entity_id: "{{ entity_id }}"
+                  data:
+                    brightness: "{{ current_brightness }}"
+                    transition: 0.8
+                - delay: 0.8
 
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
