@@ -22,13 +22,13 @@ co2_led_breathing_effect:
     - repeat:
         count: "{{ pulse_count }}"
         sequence:
-          # Breathing cycle: 60 steps over 6 seconds for ultra-smooth sine wave
+          # Breathing cycle: 120 steps over 6 seconds for ultra-smooth sine wave
           - repeat:
-              count: 60
+              count: 120
               sequence:
                 - variables:
-                    # Calculate sine wave position (0 to 2π over 60 steps)
-                    angle: "{{ ((repeat.index - 1) * 6.28318 / 60) | float }}"
+                    # Calculate sine wave position (0 to 2π over 120 steps)
+                    angle: "{{ ((repeat.index - 1) * 6.28318 / 120) | float }}"
                     # Sine wave from min_factor to 1.0
                     sine_value: "{{ ((sin(angle | float) + 1) / 2) | float }}"
                     range_size: "{{ (1.0 - (min_factor | float)) | float }}"
@@ -38,8 +38,8 @@ co2_led_breathing_effect:
                     entity_id: "{{ entity_id }}"
                   data:
                     brightness: "{{ current_brightness }}"
-                    transition: 0.1
-                - delay: 0.08
+                    transition: 0.05
+                - delay: 0.05
 
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
