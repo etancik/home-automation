@@ -3,7 +3,7 @@
 # Shared CO2 LED Breathing Effect Script
 co2_led_breathing_effect:
   alias: "CO2 LED Breathing Effect"
-  description: "Smooth breathing pulse effect for any LED color/brightness"
+  description: "Smooth sine wave breathing pulse effect for any LED color/brightness"
   fields:
     entity_id:
       description: "LED strip entity to control"
@@ -14,14 +14,32 @@ co2_led_breathing_effect:
     pulse_count:
       description: "Number of breathing cycles"
       example: 3
+    min_factor:
+      description: "Minimum brightness factor (0.0-1.0)"
+      example: 0.6
   sequence:
-        # Use shared breathing effect with calculated red brightness
-    - service: script.co2_led_breathing_effect
-      data:
-        entity_id: "{{ entity_id }}"
-        target_brightness: "{{ red_brightness }}"
-        pulse_count: 3
-        min_factor: 0.6
+    # Create mathematically smooth breathing effect using sine wave
+    - repeat:
+        count: "{{ pulse_count }}"
+        sequence:
+          # Breathing cycle: 20 steps over 16 seconds for ultra-smooth sine wave
+          - repeat:
+              count: 20
+              sequence:
+                - variables:
+                    # Calculate sine wave position (0 to 2π over 20 steps)
+                    angle: "{{ (repeat.index - 1) * 6.28318 / 20 }}"
+                    # Sine wave from min_factor to 1.0
+                    sine_value: "{{ (sin(angle) + 1) / 2 }}"
+                    range_size: "{{ 1.0 - min_factor }}"
+                    current_brightness: "{{ (target_brightness * (min_factor + range_size * sine_value)) | int }}"
+                - service: light.turn_on
+                  target:
+                    entity_id: "{{ entity_id }}"
+                  data:
+                    brightness: "{{ current_brightness }}"
+                    transition: 0.8
+                - delay: 0.8
 
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
@@ -70,6 +88,7 @@ co2_led_red_pulse:
         entity_id: "{{ entity_id }}"
         target_brightness: "{{ red_brightness }}"
         pulse_count: 3
+        min_factor: 0.6
 
 co2_led_green_pulse:
   alias: "CO2 Green Pulse Notification"
