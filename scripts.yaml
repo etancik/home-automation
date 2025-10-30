@@ -1,45 +1,36 @@
 # House-specific scripts
 
 # Shared CO2 LED Breathing Effect Script
-co2_led_breathing_effect:
-  alias: "CO2 LED Breathing Effect"
-  description: "Smooth sine wave breathing pulse effect for any LED color/brightness"
+breathing_effect:
+  alias: "LED Breathing Effect"
+  description: "Apply smooth breathing effect using native Zigbee effect"
   fields:
     entity_id:
       description: "LED strip entity to control"
-      example: "light.bedroom_led_strip"
+      required: true
     target_brightness:
-      description: "Target brightness for the effect"
-      example: 200
+      description: "Target brightness (0-255)"
+      required: true
     pulse_count:
       description: "Number of breathing cycles"
-      example: 3
-    min_factor:
-      description: "Minimum brightness factor (0.0-1.0)"
-      example: 0.6
+      required: true
   sequence:
-    # Create mathematically smooth breathing effect using sine wave
+    # Set target color and brightness first
+    - service: light.turn_on
+      target:
+        entity_id: "{{ entity_id }}"
+      data:
+        brightness: "{{ target_brightness }}"
+    # Apply native breathe effect for smooth breathing
     - repeat:
         count: "{{ pulse_count }}"
         sequence:
-          # Breathing cycle: 120 steps over 6 seconds for ultra-smooth sine wave
-          - repeat:
-              count: 120
-              sequence:
-                - variables:
-                    # Calculate sine wave position (0 to 2π over 120 steps)
-                    angle: "{{ ((repeat.index - 1) * 6.28318 / 120) | float }}"
-                    # Sine wave from min_factor to 1.0
-                    sine_value: "{{ ((sin(angle | float) + 1) / 2) | float }}"
-                    range_size: "{{ (1.0 - (min_factor | float)) | float }}"
-                    current_brightness: "{{ ((target_brightness | int) * ((min_factor | float) + (range_size | float) * (sine_value | float))) | int }}"
-                - service: light.turn_on
-                  target:
-                    entity_id: "{{ entity_id }}"
-                  data:
-                    brightness: "{{ current_brightness }}"
-                    transition: 0.05
-                - delay: 0.05
+          - service: mqtt.publish
+            data:
+              topic: "zigbee2mqtt/{{ state_attr(entity_id, 'friendly_name') }}/set"
+              payload: '{"effect": "breathe"}'
+          # Wait for breathing cycle to complete (effect duration varies by device)
+          - delay: 3
 
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
@@ -82,13 +73,12 @@ co2_led_red_pulse:
         brightness: "{{ red_brightness }}"
         transition: 3
     
-    # Use shared breathing effect
-    - service: script.co2_led_breathing_effect
+    # Use shared breathing effect for smooth red pulsing
+    - service: script.breathing_effect
       data:
         entity_id: "{{ entity_id }}"
-        target_brightness: "{{ red_brightness }}"
-        pulse_count: 3
-        min_factor: 0.6
+    target_brightness: 255
+    pulse_count: 3
 
 co2_led_green_pulse:
   alias: "CO2 Green Pulse Notification"
@@ -115,12 +105,11 @@ co2_led_green_pulse:
         transition: 4
     
     # Use shared breathing effect with gentle green brightness
-    - service: script.co2_led_breathing_effect
+    - service: script.breathing_effect
       data:
         entity_id: "{{ entity_id }}"
         target_brightness: 100
         pulse_count: 2
-        min_factor: 0.5
 
 co2_led_restore_normal:
   alias: "Restore Normal LED State"
