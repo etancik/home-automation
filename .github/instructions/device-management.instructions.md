@@ -15,28 +15,37 @@ applyTo: '**'
 3. Deploy via subtree push
 4. Restart Home Assistant
 
-## Current Device Inventory (11 total)
+## Current Device Inventory (16 total)
 
-### Sensors (5 devices)
-- Food Storage Sensor ✅
-- Downstairs Bathroom Leak Sensor
-- Upstairs Bathroom Leak Sensor  
-- Kitchen Sink Leak Sensor
-- Laundry Room Leak Sensor
+### Leak Sensors (4 devices)
+- Downstairs Bathroom Leak Sensor ✅
+- Upstairs Bathroom Leak Sensor ✅
+- Kitchen Sink Leak Sensor ✅
+- Laundry Room Leak Sensor ✅
 
 ### CO2 Sensors (2 devices)
 - Bedroom CO2 Sensor ✅
-- Living Room CO2 Sensor (pending setup)
+- Living Room CO2 Sensor ✅
+
+### Window/Door Sensors (5 devices)
+- Kitchen Window Sensor ✅
+- Living Room Door Sensor ✅
+- Kids Room Window Sensor ✅
+- Bedroom Window Sensor ✅
+- Workshop Window Sensor ✅
+
+### Other Sensors (1 device)
+- Food Storage Sensor ✅
 
 ### Lights (3 devices)
 - Living Room Light ✅
 - Bedroom LED Strip ✅
-- Kids Room Door LED Strip (pending configuration)
+- Kids Room Door LED Strip ✅
 
 ### Smart Plugs (3 devices)
-- Workshop Smart Plug
-- Living Room PC Smart Plug
-- Laundry Room Smart Plug
+- Workshop Smart Plug ✅
+- Living Room PC Smart Plug ✅
+- Laundry Room Smart Plug ✅
 
 ## HomeKit Integration
 All devices included in "House Main" bridge for iOS Home access.
