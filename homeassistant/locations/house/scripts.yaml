@@ -1,37 +1,5 @@
 # House-specific scripts
 
-# Shared CO2 LED Breathing Effect Script
-breathing_effect:
-  alias: "LED Breathing Effect"
-  description: "Apply smooth breathing effect using native Zigbee effect"
-  fields:
-    entity_id:
-      description: "LED strip entity to control"
-      required: true
-    target_brightness:
-      description: "Target brightness (0-255)"
-      required: true
-    pulse_count:
-      description: "Number of breathing cycles"
-      required: true
-  sequence:
-    # Set target color and brightness first
-    - service: light.turn_on
-      target:
-        entity_id: "{{ entity_id }}"
-      data:
-        brightness: "{{ target_brightness }}"
-    # Apply native breathe effect for smooth breathing
-    - repeat:
-        count: "{{ pulse_count }}"
-        sequence:
-          - service: mqtt.publish
-            data:
-              topic: "zigbee2mqtt/{{ state_attr(entity_id, 'friendly_name') }}/set"
-              payload: '{"effect": "breathe"}'
-          # Wait for breathing cycle to complete (effect duration varies by device)
-          - delay: 3
-
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
   alias: "CO2 Red Pulse Notification"
@@ -73,12 +41,15 @@ co2_led_red_pulse:
         brightness: "{{ red_brightness }}"
         transition: 3
     
-    # Use shared breathing effect for smooth red pulsing
-    - service: script.breathing_effect
-      data:
+    # Use native breathe effect for smooth red pulsing
+    - service: light.turn_on
+      target:
         entity_id: "{{ entity_id }}"
-    target_brightness: 255
-    pulse_count: 3
+      data:
+        effect: "breathe"
+        color_name: "red"
+        brightness: "{{ red_brightness }}"
+    - delay: 18  # 3 breathing cycles at ~6 seconds each
 
 co2_led_green_pulse:
   alias: "CO2 Green Pulse Notification"
@@ -104,12 +75,15 @@ co2_led_green_pulse:
         brightness: 100  # Gentle brightness
         transition: 4
     
-    # Use shared breathing effect with gentle green brightness
-    - service: script.breathing_effect
-      data:
+    # Use native breathe effect for gentle green pulsing
+    - service: light.turn_on
+      target:
         entity_id: "{{ entity_id }}"
-        target_brightness: 100
-        pulse_count: 2
+      data:
+        effect: "breathe"
+        color_name: "green"
+        brightness: 100
+    - delay: 12  # 2 breathing cycles at ~6 seconds each
 
 co2_led_restore_normal:
   alias: "Restore Normal LED State"
