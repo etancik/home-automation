@@ -66,6 +66,12 @@ homekit:
         - binary_sensor.upstairs_bathroom_leak_sensor_water_leak
         - binary_sensor.kitchen_sink_leak_sensor_water_leak
         - binary_sensor.laundry_room_leak_sensor_water_leak
+        # Window/Door Sensors
+        - binary_sensor.kitchen_window_sensor_contact
+        - binary_sensor.living_room_door_sensor_contact
+        - binary_sensor.kids_room_window_sensor_contact
+        - binary_sensor.bedroom_window_sensor_contact
+        - binary_sensor.workshop_window_sensor_contact
         # Smart Plugs
         - switch.workshop_smart_plug
         - switch.living_room_pc_smart_plug
@@ -110,6 +116,17 @@ homekit:
         name: "Kitchen Sink Leak"
       binary_sensor.laundry_room_leak_sensor_water_leak:
         name: "Laundry Room Leak"
+      # Window/Door Sensors
+      binary_sensor.kitchen_window_sensor_contact:
+        name: "Kitchen Window"
+      binary_sensor.living_room_door_sensor_contact:
+        name: "Living Room Door"
+      binary_sensor.kids_room_window_sensor_contact:
+        name: "Kids Room Window"
+      binary_sensor.bedroom_window_sensor_contact:
+        name: "Bedroom Window"
+      binary_sensor.workshop_window_sensor_contact:
+        name: "Workshop Window"
       # Smart Plugs
       switch.workshop_smart_plug:
         name: "Workshop Plug"
