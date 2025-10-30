@@ -1,5 +1,69 @@
 # House-specific scripts
 
+# Shared CO2 LED Breathing Effect Script
+co2_led_breathing_effect:
+  alias: "CO2 LED Breathing Effect"
+  description: "Smooth breathing pulse effect for any LED color/brightness"
+  fields:
+    entity_id:
+      description: "LED strip entity to control"
+      example: "light.bedroom_led_strip"
+    target_brightness:
+      description: "Target brightness for the effect"
+      example: 200
+    pulse_count:
+      description: "Number of breathing cycles"
+      example: 3
+  sequence:
+    # Create smooth breathing pulse effect with multiple gradual steps
+    - repeat:
+        count: "{{ pulse_count }}"
+        sequence:
+          # Smooth breathing down - multiple small steps for continuous fade
+          - service: light.turn_on
+            target:
+              entity_id: "{{ entity_id }}"
+            data:
+              brightness: "{{ (target_brightness * 0.85) | int }}"
+              transition: 1.5
+          - delay: 1.5
+          - service: light.turn_on
+            target:
+              entity_id: "{{ entity_id }}"
+            data:
+              brightness: "{{ (target_brightness * 0.7) | int }}"
+              transition: 1.5
+          - delay: 1.5
+          - service: light.turn_on
+            target:
+              entity_id: "{{ entity_id }}"
+            data:
+              brightness: "{{ (target_brightness * 0.55) | int }}"
+              transition: 1.5
+          - delay: 1.5
+          # Smooth breathing up - multiple small steps for continuous fade
+          - service: light.turn_on
+            target:
+              entity_id: "{{ entity_id }}"
+            data:
+              brightness: "{{ (target_brightness * 0.7) | int }}"
+              transition: 1.5
+          - delay: 1.5
+          - service: light.turn_on
+            target:
+              entity_id: "{{ entity_id }}"
+            data:
+              brightness: "{{ (target_brightness * 0.85) | int }}"
+              transition: 1.5
+          - delay: 1.5
+          - service: light.turn_on
+            target:
+              entity_id: "{{ entity_id }}"
+            data:
+              brightness: "{{ target_brightness }}"
+              transition: 1.5
+          - delay: 1.5
+
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
   alias: "CO2 Red Pulse Notification"
@@ -41,29 +105,12 @@ co2_led_red_pulse:
         brightness: "{{ red_brightness }}"
         transition: 3
     
-    # Create subtle pulse effect
-    - repeat:
-        count: 3
-        sequence:
-          # Slow fade down (3 seconds)
-          - delay: 1
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: "{{ (red_brightness * 0.6) | int }}"
-              transition: 3
-          # Hold dim for a moment
-          - delay: 1
-          # Slow fade back up (4 seconds)
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: "{{ red_brightness }}"
-              transition: 4
-          # Hold bright
-          - delay: 2
+    # Use shared breathing effect
+    - service: script.co2_led_breathing_effect
+      data:
+        entity_id: "{{ entity_id }}"
+        target_brightness: "{{ red_brightness }}"
+        pulse_count: 3
 
 co2_led_green_pulse:
   alias: "CO2 Green Pulse Notification"
@@ -89,29 +136,12 @@ co2_led_green_pulse:
         brightness: 100  # Gentle brightness
         transition: 4
     
-    # Create gentle pulse effect
-    - repeat:
-        count: 2
-        sequence:
-          # Gentle fade down (4 seconds)
-          - delay: 2
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: 50
-              transition: 4
-          # Hold dim
-          - delay: 2
-          # Gentle fade back up (5 seconds)
-          - service: light.turn_on
-            target:
-              entity_id: "{{ entity_id }}"
-            data:
-              brightness: 100
-              transition: 5
-          # Hold bright
-          - delay: 3
+    # Use shared breathing effect
+    - service: script.co2_led_breathing_effect
+      data:
+        entity_id: "{{ entity_id }}"
+        target_brightness: 100
+        pulse_count: 2
 
 co2_led_restore_normal:
   alias: "Restore Normal LED State"
