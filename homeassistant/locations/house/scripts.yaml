@@ -64,14 +64,11 @@ co2_led_breathing_notification:
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
   alias: "CO2 Red Pulse Notification"
-  description: "Gradually pulse LED red based on CO2 level intensity"
+  description: "Simple red breathing pulse for high CO2 notification"
   fields:
     entity_id:
       description: "LED strip entity to control"
       example: "light.bedroom_led_strip"
-    co2_level:
-      description: "Current CO2 level in ppm"
-      example: 1350
   sequence:
     # Use shared breathing effect (brightness maintained from original state)
     - service: script.co2_led_breathing_notification
