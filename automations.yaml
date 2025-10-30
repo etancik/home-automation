@@ -21,4 +21,190 @@
 # House Automations
 # Location-specific automations for the house
 
-# No automations defined yet - this will be populated as needed
+# CO2 Air Quality LED Notifications
+- id: 'co2_led_notification'
+  alias: "CO2 Air Quality LED Notifications"
+  description: "Adjust LED strip colors based on CO2 levels and window states for air quality awareness"
+  triggers:
+    # Monitor bedroom CO2 levels
+    - platform: numeric_state
+      entity_id: sensor.bedroom_co2_sensor_co2
+      above: 1200
+      id: bedroom_high_co2
+    - platform: numeric_state
+      entity_id: sensor.bedroom_co2_sensor_co2
+      below: 1200
+      above: 800
+      id: bedroom_normal_co2
+    - platform: numeric_state
+      entity_id: sensor.bedroom_co2_sensor_co2
+      below: 800
+      id: bedroom_low_co2
+    # Monitor window state changes (bedroom and kids room only)
+    - platform: state
+      entity_id: 
+        - binary_sensor.bedroom_window_sensor_contact
+        - binary_sensor.kids_room_window_sensor_contact
+      id: window_state_change
+  conditions: []
+  actions:
+    - choose:
+        # High CO2 - Red pulse (only if LED is on AND windows are closed)
+        - conditions:
+            - condition: trigger
+              id: bedroom_high_co2
+            - condition: state
+              entity_id: binary_sensor.bedroom_window_sensor_contact
+              state: 'off'  # Bedroom window closed
+            - condition: state
+              entity_id: binary_sensor.kids_room_window_sensor_contact
+              state: 'off'  # Kids room window closed
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: light.bedroom_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_red_pulse
+                  target:
+                    entity_id: light.bedroom_led_strip
+                  data:
+                    co2_level: "{{ states('sensor.bedroom_co2_sensor_co2') | int }}"
+            - if:
+                - condition: state
+                  entity_id: light.kids_room_door_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_red_pulse
+                  target:
+                    entity_id: light.kids_room_door_led_strip
+                  data:
+                    co2_level: "{{ states('sensor.bedroom_co2_sensor_co2') | int }}"
+        
+        # Window opened while CO2 high - immediately restore normal
+        - conditions:
+            - condition: trigger
+              id: window_state_change
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'on' }}"  # Window opened
+            - condition: or
+              conditions:
+                - condition: template
+                  value_template: "{{ trigger.entity_id == 'binary_sensor.bedroom_window_sensor_contact' }}"
+                - condition: template
+                  value_template: "{{ trigger.entity_id == 'binary_sensor.kids_room_window_sensor_contact' }}"
+          sequence:
+            - if:
+                - condition: numeric_state
+                  entity_id: sensor.bedroom_co2_sensor_co2
+                  above: 1200
+                - condition: state
+                  entity_id: light.bedroom_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_restore_normal
+                  target:
+                    entity_id: light.bedroom_led_strip
+            - if:
+                - condition: numeric_state
+                  entity_id: sensor.bedroom_co2_sensor_co2
+                  above: 1200
+                - condition: state
+                  entity_id: light.kids_room_door_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_restore_normal
+                  target:
+                    entity_id: light.kids_room_door_led_strip
+        
+        # Normal CO2 - Restore original color
+        - conditions:
+            - condition: trigger
+              id: bedroom_normal_co2
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: light.bedroom_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_restore_normal
+                  target:
+                    entity_id: light.bedroom_led_strip
+            - if:
+                - condition: state
+                  entity_id: light.kids_room_door_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_restore_normal
+                  target:
+                    entity_id: light.kids_room_door_led_strip
+        
+        # Low CO2 + windows open in winter - Green pulse (ventilation working!)
+        - conditions:
+            - condition: trigger
+              id: bedroom_low_co2
+            - condition: or
+              conditions:
+                - condition: state
+                  entity_id: binary_sensor.bedroom_window_sensor_contact
+                  state: 'on'  # Bedroom window open
+                - condition: state
+                  entity_id: binary_sensor.kids_room_window_sensor_contact
+                  state: 'on'  # Kids room window open
+            # Winter condition: October through March
+            - condition: template
+              value_template: >
+                {% set month = now().month %}
+                {{ month >= 10 or month <= 3 }}
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: light.bedroom_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_green_pulse
+                  target:
+                    entity_id: light.bedroom_led_strip
+            - if:
+                - condition: state
+                  entity_id: light.kids_room_door_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_green_pulse
+                  target:
+                    entity_id: light.kids_room_door_led_strip
+        
+        # Window closed after green pulse - restore normal
+        - conditions:
+            - condition: trigger
+              id: window_state_change
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'off' }}"  # Window closed
+            - condition: or
+              conditions:
+                - condition: template
+                  value_template: "{{ trigger.entity_id == 'binary_sensor.bedroom_window_sensor_contact' }}"
+                - condition: template
+                  value_template: "{{ trigger.entity_id == 'binary_sensor.kids_room_window_sensor_contact' }}"
+            - condition: numeric_state
+              entity_id: sensor.bedroom_co2_sensor_co2
+              below: 800
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: light.bedroom_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_restore_normal
+                  target:
+                    entity_id: light.bedroom_led_strip
+            - if:
+                - condition: state
+                  entity_id: light.kids_room_door_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_restore_normal
+                  target:
+                    entity_id: light.kids_room_door_led_strip
+  mode: queued
+  max: 10
