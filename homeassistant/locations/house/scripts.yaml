@@ -37,6 +37,7 @@ co2_led_breathing_notification:
               effect: "breathe"
               rgb_color: "{{ color }}"
               brightness: "{{ brightness }}"
+              transition: 1
           # Wait for breathe cycle to complete (estimated)
           - delay: 2
           # Restore original color briefly between cycles (except last)
@@ -47,14 +48,14 @@ co2_led_breathing_notification:
               - service: scene.turn_on
                 data:
                   entity_id: "scene.co2_led_restore_{{ entity_id.split('.')[1] }}"
-                  transition: 1
+                  transition: 2
               - delay: 2
     
     # Final restoration to original state
     - service: scene.turn_on
       data:
         entity_id: "scene.co2_led_restore_{{ entity_id.split('.')[1] }}"
-        transition: 3
+        transition: 5
 
 # CO2 LED Notification Scripts
 co2_led_red_pulse:
