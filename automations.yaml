@@ -208,10 +208,10 @@
   mode: queued
   max: 10
 
-# Heat Valve External Temperature Synchronization
-- id: 'bedroom_heat_valve_temperature_sync'
-  alias: "Bedroom Heat Valve Temperature Sync"
-  description: "Sync external temperature sensor reading to bedroom heat valve"
+# Heat Valve External Temperature Synchronization  
+- id: 'bedroom_radiator_heat_valve_temperature_sync'
+  alias: "Bedroom Radiator Heat Valve Temperature Sync"
+  description: "Sync external temperature sensor reading to bedroom radiator heat valve"
   triggers:
     - platform: state
       entity_id: sensor.bedroom_temperature_sensor_temperature
@@ -224,12 +224,12 @@
     # Set valve to use external temperature sensor
     - service: mqtt.publish
       data:
-        topic: "zigbee2mqtt/Bedroom Heat Valve/set"
+        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
         payload: '{"temperature_sensor_select": "external"}'
     # Sync the temperature value
     - service: mqtt.publish
       data:
-        topic: "zigbee2mqtt/Bedroom Heat Valve/set"
+        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
         payload: >
           {"external_temperature_input": {{ states('sensor.bedroom_temperature_sensor_temperature') | float }}}
   mode: single

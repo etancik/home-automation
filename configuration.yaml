@@ -77,7 +77,7 @@ homekit:
         - switch.living_room_pc_smart_plug
         - switch.laundry_room_smart_plug
         # Heat Valves
-        - climate.bedroom_heat_valve
+        - climate.bedroom_radiator_heat_valve
         # External Temperature Sensors
         - sensor.bedroom_temperature_sensor_temperature
         - sensor.bedroom_temperature_sensor_humidity
