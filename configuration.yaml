@@ -76,6 +76,12 @@ homekit:
         - switch.workshop_smart_plug
         - switch.living_room_pc_smart_plug
         - switch.laundry_room_smart_plug
+        # Heat Valves
+        - climate.bedroom_heat_valve
+        # External Temperature Sensors
+        - sensor.bedroom_temperature_sensor_temperature
+        - sensor.bedroom_temperature_sensor_humidity
+        - sensor.bedroom_temperature_sensor_battery
     entity_config:
       sensor.bedroom_co2_sensor_co2:
         name: "Bedroom CO2"

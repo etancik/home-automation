@@ -87,12 +87,11 @@ devices:
   '0xc4d8c8fffe48ba3e':
     friendly_name: 'Bedroom Heat Valve'
     retain: false
-    description: 'Thermostatic radiator valve for bedroom heating control'
-    external_temperature_input: 'Bedroom Temperature Sensor'
+    description: 'Zigbee thermostatic radiator valve for bedroom heating control'
   '0xf4b3b1fffe491f35':
     friendly_name: 'Bedroom Temperature Sensor'
     retain: false
-    description: 'External temperature sensor for bedroom heat valve control'
+    description: 'External temperature sensor for accurate bedroom temperature reading'
   
   # Lights
   '0xb4e3f9fffea76436':
