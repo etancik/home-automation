@@ -84,9 +84,8 @@ homekit:
         - sensor.bedroom_temperature_sensor_battery
     entity_config:
       climate.bedroom_radiator_heat_valve:
-        # Hide internal temperature to avoid confusion with external sensor
-        current_temperature_template: "{{ states('sensor.bedroom_temperature_sensor_temperature') }}"
         name: "Bedroom Heating"
+        linked_temperature_sensor: sensor.bedroom_temperature_sensor_temperature
       sensor.bedroom_temperature_sensor_temperature:
         name: "Bedroom Temperature"
       sensor.bedroom_co2_sensor_co2:
