@@ -233,3 +233,26 @@
         payload: >
           {"external_temperature_input": {{ states('sensor.bedroom_temperature_sensor_temperature') | float }}}
   mode: single
+
+# Heat Valve Window State Synchronization
+- id: 'bedroom_radiator_heat_valve_window_sync'
+  alias: "Bedroom Radiator Heat Valve Window Sync"
+  description: "Sync actual window sensor state to bedroom radiator heat valve for accurate open window detection"
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.bedroom_window_sensor_contact
+    - platform: homeassistant
+      event: start
+  conditions: []
+  actions:
+    # Sync window state to heat valve
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
+        payload: >
+          {% if is_state('binary_sensor.bedroom_window_sensor_contact', 'off') %}
+          {"window_open": true}
+          {% else %}
+          {"window_open": false}
+          {% endif %}
+  mode: single
