@@ -207,3 +207,29 @@
                     entity_id: light.kids_room_door_led_strip
   mode: queued
   max: 10
+
+# Heat Valve External Temperature Synchronization
+- id: 'bedroom_heat_valve_temperature_sync'
+  alias: "Bedroom Heat Valve Temperature Sync"
+  description: "Sync external temperature sensor reading to bedroom heat valve"
+  triggers:
+    - platform: state
+      entity_id: sensor.bedroom_temperature_sensor_temperature
+    - platform: homeassistant
+      event: start
+  conditions:
+    - condition: template
+      value_template: "{{ states('sensor.bedroom_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
+  actions:
+    # Set valve to use external temperature sensor
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/Bedroom Heat Valve/set"
+        payload: '{"temperature_sensor_select": "external"}'
+    # Sync the temperature value
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/Bedroom Heat Valve/set"
+        payload: >
+          {"external_temperature_input": {{ states('sensor.bedroom_temperature_sensor_temperature') | float }}}
+  mode: single
