@@ -121,6 +121,29 @@ Add automation to `homeassistant/locations/house/automations.yaml`:
         payload: >
           {"external_temperature_input": {{ states('sensor.{room_slug}_temperature_sensor_temperature') | float }}}
   mode: single
+
+# Heat Valve Window State Synchronization (if room has window sensor)
+- id: '{room_slug}_radiator_heat_valve_window_sync'
+  alias: "{Room} Radiator Heat Valve Window Sync"
+  description: "Sync actual window sensor state to {room} radiator heat valve for accurate open window detection"
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.{room_slug}_window_sensor_contact
+    - platform: homeassistant
+      event: start
+  conditions: []
+  actions:
+    # Sync window state to heat valve
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/{Room} Radiator Heat Valve/set"
+        payload: >
+          {% if is_state('binary_sensor.{room_slug}_window_sensor_contact', 'off') %}
+          {"window_open": true}
+          {% else %}
+          {"window_open": false}
+          {% endif %}
+  mode: single
 ```
 
 **Replace Placeholders:**
