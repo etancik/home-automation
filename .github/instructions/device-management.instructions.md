@@ -109,12 +109,17 @@ Add automation to `homeassistant/locations/house/automations.yaml`:
     - condition: template
       value_template: "{{ states('sensor.{room_slug}_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
   actions:
-    # Set valve to use external temperature sensor
+    # Set valve to use external temperature sensor only
     - service: mqtt.publish
       data:
         topic: "zigbee2mqtt/{Room} Radiator Heat Valve/set"
         payload: '{"temperature_sensor_select": "external"}'
-    # Sync the temperature value
+    # Disable internal temperature sensor completely
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/{Room} Radiator Heat Valve/set"
+        payload: '{"local_temperature_calibration": 0}'
+    # Sync the external temperature value
     - service: mqtt.publish
       data:
         topic: "zigbee2mqtt/{Room} Radiator Heat Valve/set"
