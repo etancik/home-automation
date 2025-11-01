@@ -168,6 +168,16 @@ Add to `homeassistant/locations/house/configuration.yaml` under `include_entitie
 - sensor.{room_slug}_temperature_sensor_battery
 ```
 
+Add to `homeassistant/locations/house/configuration.yaml` under `entity_config`:
+
+```yaml
+climate.{room_slug}_radiator_heat_valve:
+  name: "{Room} Heating"
+  linked_temperature_sensor: sensor.{room_slug}_temperature_sensor_temperature
+sensor.{room_slug}_temperature_sensor_temperature:
+  name: "{Room} Temperature"
+```
+
 ### Step 5: Deploy & Test
 ```bash
 git add homeassistant/locations/house/zigbee2mqtt_configuration.yaml
