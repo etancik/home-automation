@@ -168,15 +168,17 @@ Add to `homeassistant/locations/house/configuration.yaml` under `include_entitie
 - sensor.{room_slug}_temperature_sensor_battery
 ```
 
-Add to `homeassistant/locations/house/configuration.yaml` under `entity_config`:
+Add HomeKit entity naming under `entity_config` section:
 
 ```yaml
-climate.{room_slug}_radiator_heat_valve:
-  name: "{Room} Heating"
-  linked_temperature_sensor: sensor.{room_slug}_temperature_sensor_temperature
-sensor.{room_slug}_temperature_sensor_temperature:
-  name: "{Room} Temperature"
+entity_config:
+  climate.{room_slug}_radiator_heat_valve:
+    name: "{Room} Heating"
+  sensor.{room_slug}_temperature_sensor_temperature:
+    name: "{Room} Temperature"
 ```
+
+**Note**: This provides clear naming in HomeKit to distinguish between the heating control and temperature reading. The heat valve automation handles synchronization of external temperature readings via MQTT.
 
 ### Step 5: Deploy & Test
 ```bash
