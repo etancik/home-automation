@@ -83,6 +83,17 @@ devices:
     retain: false
     description: 'Window contact sensor for workshop window'
   
+  # Heat Control Devices
+  '0xc4d8c8fffe48ba3e':
+    friendly_name: 'Bedroom Heat Valve'
+    retain: false
+    description: 'Thermostatic radiator valve for bedroom heating control'
+    external_temperature_input: 'Bedroom Temperature Sensor'
+  '0xf4b3b1fffe491f35':
+    friendly_name: 'Bedroom Temperature Sensor'
+    retain: false
+    description: 'External temperature sensor for bedroom heat valve control'
+  
   # Lights
   '0xb4e3f9fffea76436':
     friendly_name: 'Living Room Light'
