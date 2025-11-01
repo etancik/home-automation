@@ -85,7 +85,7 @@ devices:
   
   # Heat Control Devices
   '0xc4d8c8fffe48ba3e':
-    friendly_name: 'Bedroom Heat Valve'
+    friendly_name: 'Bedroom Radiator Heat Valve'
     retain: false
     description: 'Zigbee thermostatic radiator valve for bedroom heating control'
   '0xf4b3b1fffe491f35':

@@ -15,7 +15,7 @@ applyTo: '**'
 3. Deploy via subtree push
 4. Restart Home Assistant
 
-## Current Device Inventory (16 total)
+## Current Device Inventory (19 total)
 
 ### Leak Sensors (4 devices)
 - Downstairs Bathroom Leak Sensor ✅
@@ -26,6 +26,10 @@ applyTo: '**'
 ### CO2 Sensors (2 devices)
 - Bedroom CO2 Sensor ✅
 - Living Room CO2 Sensor ✅
+
+### Heat Control (2 devices)
+- Bedroom Radiator Heat Valve ✅
+- Bedroom Temperature Sensor ✅
 
 ### Window/Door Sensors (5 devices)
 - Kitchen Window Sensor ✅
@@ -49,3 +53,133 @@ applyTo: '**'
 
 ## HomeKit Integration
 All devices included in "House Main" bridge for iOS Home access.
+
+---
+
+# Heat Valve Setup Manual
+
+## Adding New Heat Valve + External Temperature Sensor Pairs
+
+### Step 1: Device Pairing
+1. **Pair Heat Valve (SONOFF TRVZB)**:
+   - Mount valve on radiator
+   - Follow pairing instructions (hold button, set to "OF", pair mode)
+   - Note IEEE address from Zigbee2MQTT logs
+
+2. **Pair Temperature Sensor (SONOFF SNZB-02D)**:
+   - Standard Zigbee pairing (hold button 5 seconds)
+   - Note IEEE address from Zigbee2MQTT logs
+
+### Step 2: Device Naming & Configuration
+Add to `homeassistant/locations/house/zigbee2mqtt_configuration.yaml`:
+
+```yaml
+# Heat Control Devices
+'0xYOUR_VALVE_IEEE':
+  friendly_name: '{Room} Radiator Heat Valve'
+  retain: false
+  description: 'Zigbee thermostatic radiator valve for {room} heating control'
+'0xYOUR_SENSOR_IEEE':
+  friendly_name: '{Room} Temperature Sensor'
+  retain: false
+  description: 'External temperature sensor for accurate {room} temperature reading'
+```
+
+**Naming Convention Examples:**
+- `Bedroom Radiator Heat Valve` / `Bedroom Temperature Sensor`
+- `Upstairs Bathroom Radiator Heat Valve` / `Upstairs Bathroom Temperature Sensor`
+- `Downstairs Bathroom Radiator Heat Valve` / `Downstairs Bathroom Temperature Sensor`
+- `Downstairs Bathroom Floor Heat Valve` / `Downstairs Bathroom Temperature Sensor` (shared sensor)
+- `Living Room Floor Heat Valve 1` / `Living Room Temperature Sensor`
+
+### Step 3: External Temperature Synchronization
+Add automation to `homeassistant/locations/house/automations.yaml`:
+
+```yaml
+# Heat Valve External Temperature Synchronization  
+- id: '{room_slug}_radiator_heat_valve_temperature_sync'
+  alias: "{Room} Radiator Heat Valve Temperature Sync"
+  description: "Sync external temperature sensor reading to {room} radiator heat valve"
+  triggers:
+    - platform: state
+      entity_id: sensor.{room_slug}_temperature_sensor_temperature
+    - platform: homeassistant
+      event: start
+  conditions:
+    - condition: template
+      value_template: "{{ states('sensor.{room_slug}_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
+  actions:
+    # Set valve to use external temperature sensor
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/{Room} Radiator Heat Valve/set"
+        payload: '{"temperature_sensor_select": "external"}'
+    # Sync the temperature value
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/{Room} Radiator Heat Valve/set"
+        payload: >
+          {"external_temperature_input": {{ states('sensor.{room_slug}_temperature_sensor_temperature') | float }}}
+  mode: single
+```
+
+**Replace Placeholders:**
+- `{Room}` = Proper case room name (e.g., "Bedroom")
+- `{room}` = Lower case room name (e.g., "bedroom") 
+- `{room_slug}` = Underscore format (e.g., "bedroom", "upstairs_bathroom")
+
+### Step 4: HomeKit Integration
+Add to `homeassistant/locations/house/configuration.yaml` under `include_entities`:
+
+```yaml
+# Heat Valves
+- climate.{room_slug}_radiator_heat_valve
+# External Temperature Sensors  
+- sensor.{room_slug}_temperature_sensor_temperature
+- sensor.{room_slug}_temperature_sensor_humidity
+- sensor.{room_slug}_temperature_sensor_battery
+```
+
+### Step 5: Deploy & Test
+```bash
+git add homeassistant/locations/house/zigbee2mqtt_configuration.yaml
+git add homeassistant/locations/house/automations.yaml  
+git add homeassistant/locations/house/configuration.yaml
+git commit -m "Add {room} radiator heat valve and external temperature sensor"
+git subtree push --prefix=homeassistant/locations/house origin ha-config-house
+```
+
+### Step 6: Verification
+1. **Check Zigbee2MQTT UI** (port 8099):
+   - Devices should show proper friendly names
+   - Temperature sensor should be reporting values
+
+2. **Check Home Assistant**:
+   - Settings → Automations → Look for "{Room} Radiator Heat Valve Temperature Sync"
+   - Settings → Devices → Heat valve should show "Temperature sensor: external"
+   - Developer Tools → States → Verify entity names
+
+## Planned Heat Valve Locations
+
+### Radiator Heat Valves
+- [x] Bedroom (completed)
+- [ ] Upstairs Bathroom  
+- [ ] Downstairs Bathroom
+- [ ] Kids Room
+- [ ] Workshop
+- [ ] Entry Hall
+
+### Floor Heating Valves
+- [ ] Downstairs Bathroom
+- [ ] Living Room (4 valves for multiple circuits)
+
+### Temperature Sensors
+- [x] Bedroom (completed)
+- [ ] Upstairs Bathroom
+- [ ] Downstairs Bathroom (shared for both radiator and floor heating)
+- [ ] Kids Room
+- [ ] Workshop
+- [ ] Entry Hall
+- [ ] Living Room
+
+**Total Planned:** 11 heat valves (6 radiator + 5 floor heating) + 7 temperature sensors
