@@ -112,6 +112,14 @@ devices:
     friendly_name: 'Downstairs Bathroom Radiator Heat Valve'
     retain: false
     description: 'Zigbee thermostatic radiator valve for downstairs bathroom heating control'
+  '0x286847fffe398e24':
+    friendly_name: 'Upstairs Bathroom Radiator Heat Valve'
+    retain: false
+    description: 'Zigbee thermostatic radiator valve for upstairs bathroom heating control'
+  '0x286847fffe96b1da':
+    friendly_name: 'Entry Hall Radiator Heat Valve'
+    retain: false
+    description: 'Zigbee thermostatic radiator valve for entry hall heating control'
   
   # Lights
   '0xb4e3f9fffea76436':

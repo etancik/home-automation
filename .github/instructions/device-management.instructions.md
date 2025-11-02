@@ -15,7 +15,7 @@ applyTo: '**'
 3. Deploy via subtree push
 4. Restart Home Assistant
 
-## Current Device Inventory (24 total)
+## Current Device Inventory (26 total)
 
 ### Leak Sensors (4 devices)
 - Downstairs Bathroom Leak Sensor ✅
@@ -27,7 +27,7 @@ applyTo: '**'
 - Bedroom CO2 Sensor ✅
 - Living Room CO2 Sensor ✅
 
-### Heat Control (7 devices)
+### Heat Control (9 devices)
 - Bedroom Radiator Heat Valve ✅
 - Bedroom Temperature Sensor ✅
 - Kids Room Radiator Heat Valve ✅
@@ -35,6 +35,8 @@ applyTo: '**'
 - Workshop Radiator Heat Valve ✅
 - Workshop Temperature Sensor ✅
 - Downstairs Bathroom Radiator Heat Valve ✅
+- Upstairs Bathroom Radiator Heat Valve ✅
+- Entry Hall Radiator Heat Valve ✅
 
 ### Window/Door Sensors (5 devices)
 - Kitchen Window Sensor ✅
@@ -223,8 +225,8 @@ git subtree push --prefix=homeassistant/locations/house origin ha-config-house
 - [x] Kids Room (completed)
 - [x] Workshop (completed)
 - [x] Downstairs Bathroom (completed)
-- [ ] Upstairs Bathroom  
-- [ ] Entry Hall
+- [x] Upstairs Bathroom (completed)
+- [x] Entry Hall (completed)
 
 ### Floor Heating Valves
 - [ ] Downstairs Bathroom

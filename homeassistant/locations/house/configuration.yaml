@@ -79,6 +79,8 @@ homekit:
         - climate.bedroom_radiator_heat_valve
         - climate.kids_room_radiator_heat_valve
         - climate.downstairs_bathroom_radiator_heat_valve
+        - climate.upstairs_bathroom_radiator_heat_valve
+        - climate.entry_hall_radiator_heat_valve
         - climate.workshop_radiator_heat_valve
         # External Temperature Sensors  
         - sensor.bedroom_temperature_sensor_temperature
@@ -105,6 +107,10 @@ homekit:
         name: "Workshop Temperature"
       climate.downstairs_bathroom_radiator_heat_valve:
         name: "Downstairs Bathroom Heating"
+      climate.upstairs_bathroom_radiator_heat_valve:
+        name: "Upstairs Bathroom Heating"
+      climate.entry_hall_radiator_heat_valve:
+        name: "Entry Hall Heating"
       sensor.bedroom_co2_sensor_co2:
         name: "Bedroom CO2"
         # CO2 threshold: HomeKit will warn when > 1500 ppm (default is 1000)
