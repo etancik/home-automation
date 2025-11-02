@@ -242,7 +242,7 @@
 # Heat Valve Window State Synchronization
 - id: 'bedroom_radiator_heat_valve_window_sync'
   alias: "Bedroom Radiator Heat Valve Window Sync"
-  description: "Sync actual window sensor state to bedroom radiator heat valve for accurate open window detection"
+  description: "Turn off heating when window opens, resume when window closes"
   triggers:
     - platform: state
       entity_id: binary_sensor.bedroom_window_sensor_contact
@@ -250,14 +250,21 @@
       event: start
   conditions: []
   actions:
-    # Sync window state to heat valve
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-        payload: >
-          {% if is_state('binary_sensor.bedroom_window_sensor_contact', 'off') %}
-          {"open_window": "ON"}
-          {% else %}
-          {"open_window": "OFF"}
-          {% endif %}
+    # When window is OPEN - turn off heating
+    - if:
+        - condition: state
+          entity_id: binary_sensor.bedroom_window_sensor_contact
+          state: 'off'  # Contact sensor OFF = window OPEN
+      then:
+        # Turn off heating completely
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
+            payload: '{"system_mode": "off"}'
+      else:
+        # When window is CLOSED - resume normal heating
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
+            payload: '{"system_mode": "heat"}'
   mode: single
