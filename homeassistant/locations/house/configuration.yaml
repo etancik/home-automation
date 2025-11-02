@@ -78,6 +78,7 @@ homekit:
         # Heat Valves
         - climate.bedroom_radiator_heat_valve
         - climate.kids_room_radiator_heat_valve
+        - climate.workshop_radiator_heat_valve
         # External Temperature Sensors  
         - sensor.bedroom_temperature_sensor_temperature
         - sensor.bedroom_temperature_sensor_humidity
@@ -85,6 +86,9 @@ homekit:
         - sensor.kids_room_temperature_sensor_temperature
         - sensor.kids_room_temperature_sensor_humidity
         - sensor.kids_room_temperature_sensor_battery
+        - sensor.workshop_temperature_sensor_temperature
+        - sensor.workshop_temperature_sensor_humidity
+        - sensor.workshop_temperature_sensor_battery
     entity_config:
       climate.bedroom_radiator_heat_valve:
         name: "Bedroom Heating"
@@ -94,6 +98,10 @@ homekit:
         name: "Kids Room Heating"
       sensor.kids_room_temperature_sensor_temperature:
         name: "Kids Room Temperature"
+      climate.workshop_radiator_heat_valve:
+        name: "Workshop Heating"
+      sensor.workshop_temperature_sensor_temperature:
+        name: "Workshop Temperature"
       sensor.bedroom_co2_sensor_co2:
         name: "Bedroom CO2"
         # CO2 threshold: HomeKit will warn when > 1500 ppm (default is 1000)

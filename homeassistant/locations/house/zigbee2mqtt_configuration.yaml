@@ -100,6 +100,14 @@ devices:
     friendly_name: 'Kids Room Temperature Sensor'
     retain: false
     description: 'External temperature sensor for accurate kids room temperature reading'
+  '0xc4d8c8fffe5a2c03':
+    friendly_name: 'Workshop Radiator Heat Valve'
+    retain: false
+    description: 'Zigbee thermostatic radiator valve for workshop heating control'
+  '0xf4b3b1fffe48f796':
+    friendly_name: 'Workshop Temperature Sensor'
+    retain: false
+    description: 'External temperature sensor for accurate workshop temperature reading'
   
   # Lights
   '0xb4e3f9fffea76436':

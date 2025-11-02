@@ -328,3 +328,64 @@
             topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
             payload: '{"system_mode": "heat"}'
   mode: single
+
+# Workshop Heat Valve External Temperature Synchronization  
+- id: 'workshop_radiator_heat_valve_temperature_sync'
+  alias: "Workshop Radiator Heat Valve Temperature Sync"
+  description: "Sync external temperature sensor reading to workshop radiator heat valve"
+  triggers:
+    - platform: state
+      entity_id: sensor.workshop_temperature_sensor_temperature
+    - platform: homeassistant
+      event: start
+  conditions:
+    - condition: template
+      value_template: "{{ states('sensor.workshop_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
+  actions:
+    # Set valve to use external temperature sensor only
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
+        payload: '{"temperature_sensor_select": "external"}'
+    # Disable internal temperature sensor completely
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
+        payload: '{"local_temperature_calibration": 0}'
+    # Sync the external temperature value
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
+        payload: >
+          {"external_temperature_input": {{ states('sensor.workshop_temperature_sensor_temperature') | float }}}
+  mode: single
+
+# Workshop Heat Valve Window State Synchronization
+- id: 'workshop_radiator_heat_valve_window_sync'
+  alias: "Workshop Radiator Heat Valve Window Sync"
+  description: "Turn off heating when window opens, resume when window closes"
+  triggers:
+    - platform: state
+      entity_id: binary_sensor.workshop_window_sensor_contact
+    - platform: homeassistant
+      event: start
+  conditions: []
+  actions:
+    # When window is OPEN - turn off heating
+    - if:
+        - condition: state
+          entity_id: binary_sensor.workshop_window_sensor_contact
+          state: 'on'  # Contact sensor ON = window OPEN (inverted logic)
+      then:
+        # Turn off heating completely
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
+            payload: '{"system_mode": "off"}'
+      else:
+        # When window is CLOSED - resume normal heating
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
+            payload: '{"system_mode": "heat"}'
+  mode: single
