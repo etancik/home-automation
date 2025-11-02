@@ -77,7 +77,6 @@
                 - service: script.co2_led_red_pulse
                   data:
                     entity_id: light.kids_room_door_led_strip
-                  data:
                     co2_level: "{{ states('sensor.bedroom_co2_sensor_co2') | int }}"
         
         # Window opened while CO2 high - immediately restore normal
@@ -254,7 +253,7 @@
     - if:
         - condition: state
           entity_id: binary_sensor.bedroom_window_sensor_contact
-          state: 'off'  # Contact sensor OFF = window OPEN
+          state: 'on'  # Contact sensor ON = window OPEN (inverted logic)
       then:
         # Turn off heating completely
         - service: mqtt.publish
