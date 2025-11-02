@@ -142,7 +142,7 @@ Add automation to `homeassistant/locations/house/automations.yaml`:
     - if:
         - condition: state
           entity_id: binary_sensor.{room_slug}_window_sensor_contact
-          state: 'off'  # Contact sensor OFF = window OPEN
+          state: 'on'  # Contact sensor ON = window OPEN (check your sensor's behavior)
       then:
         # Turn off heating completely
         - service: mqtt.publish
