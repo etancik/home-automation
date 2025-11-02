@@ -36,7 +36,7 @@ applyTo: '**'
 - Workshop Temperature Sensor ✅
 - Downstairs Bathroom Radiator Heat Valve ✅
 - Upstairs Bathroom Radiator Heat Valve ✅
-- Entry Hall Radiator Heat Valve ✅
+- Entrance Radiator Heat Valve ✅
 
 ### Window/Door Sensors (5 devices)
 - Kitchen Window Sensor ✅
@@ -226,7 +226,7 @@ git subtree push --prefix=homeassistant/locations/house origin ha-config-house
 - [x] Workshop (completed)
 - [x] Downstairs Bathroom (completed)
 - [x] Upstairs Bathroom (completed)
-- [x] Entry Hall (completed)
+- [ ] Entrance (completed)
 
 ### Floor Heating Valves
 - [ ] Downstairs Bathroom
@@ -238,7 +238,7 @@ git subtree push --prefix=homeassistant/locations/house origin ha-config-house
 - [x] Workshop (completed)
 - [ ] Upstairs Bathroom
 - [ ] Downstairs Bathroom (shared for both radiator and floor heating)
-- [ ] Entry Hall
+- [ ] Entrance
 - [ ] Living Room
 
 **Total Planned:** 11 heat valves (6 radiator + 5 floor heating) + 7 temperature sensors
