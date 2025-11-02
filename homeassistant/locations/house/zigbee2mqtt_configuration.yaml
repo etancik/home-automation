@@ -108,6 +108,10 @@ devices:
     friendly_name: 'Workshop Temperature Sensor'
     retain: false
     description: 'External temperature sensor for accurate workshop temperature reading'
+  '0x286847fffe96f01b':
+    friendly_name: 'Downstairs Bathroom Radiator Heat Valve'
+    retain: false
+    description: 'Zigbee thermostatic radiator valve for downstairs bathroom heating control'
   
   # Lights
   '0xb4e3f9fffea76436':
