@@ -158,6 +158,11 @@ Add automation to `homeassistant/locations/house/automations.yaml`:
   mode: single
 ```
 
+**System Mode Values (per [SONOFF TRVZB Documentation](https://www.zigbee2mqtt.io/devices/TRVZB.html)):**
+- `off` - Turn off heating completely
+- `auto` - Automatic mode using preset schedule (recommended for normal operation)
+- `heat` - Manual heating mode
+
 **Replace Placeholders:**
 - `{Room}` = Proper case room name (e.g., "Bedroom")
 - `{room}` = Lower case room name (e.g., "bedroom") 
