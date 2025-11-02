@@ -19,11 +19,10 @@ homeassistant:
   # Location customizations
   customize: !include customize.yaml
 
-# Loads default set of integrations except USB discovery (prevents ZHA auto-discovery)
-# We use Zigbee2MQTT instead of ZHA for the SONOFF dongle
+# Loads default set of integrations
+# Note: default_config does not support exclude parameters in current HA version
+# USB discovery is now controlled via integration settings instead
 default_config:
-  exclude:
-    - usb
 
 # Load frontend themes from the themes folder  
 frontend:
@@ -178,5 +177,5 @@ recorder:
 logger:
   default: info
   logs:
-    homeassistant.components.mqtt: debug
+    homeassistant.components.mqtt: info
     homeassistant.components.automation: info
