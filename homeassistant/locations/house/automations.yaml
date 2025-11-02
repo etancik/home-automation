@@ -256,8 +256,8 @@
         topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
         payload: >
           {% if is_state('binary_sensor.bedroom_window_sensor_contact', 'off') %}
-          {"window_open": true}
+          {"open_window": "ON"}
           {% else %}
-          {"window_open": false}
+          {"open_window": "OFF"}
           {% endif %}
   mode: single

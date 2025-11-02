@@ -144,9 +144,9 @@ Add automation to `homeassistant/locations/house/automations.yaml`:
         topic: "zigbee2mqtt/{Room} Radiator Heat Valve/set"
         payload: >
           {% if is_state('binary_sensor.{room_slug}_window_sensor_contact', 'off') %}
-          {"window_open": true}
+          {"open_window": "ON"}
           {% else %}
-          {"window_open": false}
+          {"open_window": "OFF"}
           {% endif %}
   mode: single
 ```
