@@ -15,7 +15,7 @@ applyTo: '**'
 3. Deploy via subtree push
 4. Restart Home Assistant
 
-## Current Device Inventory (26 total)
+## Current Device Inventory (27 total)
 
 ### Leak Sensors (4 devices)
 - Downstairs Bathroom Leak Sensor ✅
@@ -57,6 +57,9 @@ applyTo: '**'
 - Workshop Smart Plug ✅
 - Living Room PC Smart Plug ✅
 - Laundry Room Smart Plug ✅
+
+### Garage Door (1 device)
+- Garage Door Shelly Plus1PM ✅
 
 ## HomeKit Integration
 All devices included in "House Main" bridge for iOS Home access.
