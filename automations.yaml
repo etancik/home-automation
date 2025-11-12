@@ -465,16 +465,12 @@
                 # Any radiator valve calling for heat (hvac_action = heating)
                 - condition: template
                   value_template: >
-                    {% set valves = [
-                      'climate.bedroom_radiator_heat_valve',
-                      'climate.kids_room_radiator_heat_valve', 
-                      'climate.workshop_radiator_heat_valve',
-                      'climate.downstairs_bathroom_radiator_heat_valve',
-                      'climate.upstairs_bathroom_radiator_heat_valve',
-                      'climate.entrance_radiator_heat_valve'
-                    ] %}
-                    {% set heating_valves = valves | selectattr('attributes.hvac_action', 'eq', 'heating') | list %}
-                    {{ heating_valves | length > 0 }}
+                    {{ is_state_attr('climate.bedroom_radiator_heat_valve', 'hvac_action', 'heating') or
+                       is_state_attr('climate.kids_room_radiator_heat_valve', 'hvac_action', 'heating') or 
+                       is_state_attr('climate.workshop_radiator_heat_valve', 'hvac_action', 'heating') or
+                       is_state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') or
+                       is_state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') or
+                       is_state_attr('climate.entrance_radiator_heat_valve', 'hvac_action', 'heating') }}
                 # OR living room needs heating
                 - condition: template
                   value_template: >
@@ -487,14 +483,23 @@
             - service: logbook.log
               data:
                 name: "Boiler Control"
-                message: "Boiler turned ON - heating demand detected (Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C)"
+                message: >
+                  Boiler turned ON - Heating demand: 
+                  Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C,
+                  Valves heating: 
+                  {% if is_state_attr('climate.bedroom_radiator_heat_valve', 'hvac_action', 'heating') %}Bedroom {% endif %}
+                  {% if is_state_attr('climate.kids_room_radiator_heat_valve', 'hvac_action', 'heating') %}KidsRoom {% endif %}
+                  {% if is_state_attr('climate.workshop_radiator_heat_valve', 'hvac_action', 'heating') %}Workshop {% endif %}
+                  {% if is_state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') %}Downstairs {% endif %}
+                  {% if is_state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') %}Upstairs {% endif %}
+                  {% if is_state_attr('climate.entrance_radiator_heat_valve', 'hvac_action', 'heating') %}Entrance {% endif %}
           else:
-            # Turn off boiler - no heating needed
+            # Turn off boiler - NO heating needed
             - service: switch.turn_off
               target:
                 entity_id: switch.laundry_room_boiler_controller_l2
             - service: logbook.log
               data:
                 name: "Boiler Control"
-                message: "Boiler turned OFF - no heating demand (Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C)"
+                message: "Boiler turned OFF - No heating demand (All valves satisfied, Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C ≥ 22°C)"
   mode: single
