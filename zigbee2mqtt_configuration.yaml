@@ -40,28 +40,27 @@ frontend:
   port: 8099
 
 # Device configurations (Git-managed friendly names)
+# Organized by device type and alphabetical by room
 devices:
-  # Sensors
+  # ========================================
+  # ENVIRONMENTAL SENSORS
+  # ========================================
   '0x54ef441000edf7c1':
     friendly_name: 'Food Storage Sensor'
     retain: false
     description: 'Kitchen food storage temperature and humidity sensor'
-  '0x94a081fffe2f88e6':
-    friendly_name: 'Downstairs Bathroom Leak Sensor'
+  
+  # ========================================
+  # WINDOW/DOOR CONTACT SENSORS
+  # ========================================
+  '0xc4d8c8fffe1189e7':
+    friendly_name: 'Bedroom Window Sensor'
     retain: false
-    description: 'Water leak detection sensor for downstairs bathroom'
-  '0x94a081fffe2f957f':
-    friendly_name: 'Upstairs Bathroom Leak Sensor'
+    description: 'Window contact sensor for bedroom window'
+  '0xc4d8c8fffe12cb42':
+    friendly_name: 'Kids Room Window Sensor'
     retain: false
-    description: 'Water leak detection sensor for upstairs bathroom'
-  '0x94a081fffe5696d3':
-    friendly_name: 'Kitchen Sink Leak Sensor'
-    retain: false
-    description: 'Water leak detection sensor for kitchen sink area'
-  '0x94a081fffe4ec1c0':
-    friendly_name: 'Laundry Room Leak Sensor'
-    retain: false
-    description: 'Water leak detection sensor for laundry room'
+    description: 'Window contact sensor for kids room window'
   '0xc4d8c8fffe12c413':
     friendly_name: 'Kitchen Window Sensor'
     retain: false
@@ -70,20 +69,37 @@ devices:
     friendly_name: 'Living Room Door Sensor'
     retain: false
     description: 'Door contact sensor for living room garden door'
-  '0xc4d8c8fffe12cb42':
-    friendly_name: 'Kids Room Window Sensor'
-    retain: false
-    description: 'Window contact sensor for kids room window'
-  '0xc4d8c8fffe1189e7':
-    friendly_name: 'Bedroom Window Sensor'
-    retain: false
-    description: 'Window contact sensor for bedroom window'
   '0xc4d8c8fffe11961c':
     friendly_name: 'Workshop Window Sensor'
     retain: false
     description: 'Window contact sensor for workshop window'
   
-  # Heat Control Devices
+  # ========================================
+  # LEAK SENSORS
+  # ========================================
+  '0x94a081fffe2f88e6':
+    friendly_name: 'Downstairs Bathroom Leak Sensor'
+    retain: false
+    description: 'Water leak detection sensor for downstairs bathroom'
+  '0x94a081fffe5696d3':
+    friendly_name: 'Kitchen Sink Leak Sensor'
+    retain: false
+    description: 'Water leak detection sensor for kitchen sink area'
+  '0x94a081fffe4ec1c0':
+    friendly_name: 'Laundry Room Leak Sensor'
+    retain: false
+    description: 'Water leak detection sensor for laundry room'
+  '0x94a081fffe2f957f':
+    friendly_name: 'Upstairs Bathroom Leak Sensor'
+    retain: false
+    description: 'Water leak detection sensor for upstairs bathroom'
+  
+  # ========================================
+  # HEAT CONTROL DEVICES
+  # Grouped by room: valve + sensor pairs
+  # ========================================
+  
+  # Bedroom (valve + sensor)
   '0xc4d8c8fffe48ba3e':
     friendly_name: 'Bedroom Radiator Heat Valve'
     retain: false
@@ -92,6 +108,24 @@ devices:
     friendly_name: 'Bedroom Temperature Sensor'
     retain: false
     description: 'External temperature sensor for accurate bedroom temperature reading'
+  
+  # Downstairs Bathroom (valve only - no external sensor yet)
+  '0x286847fffe96f01b':
+    friendly_name: 'Downstairs Bathroom Radiator Heat Valve'
+    retain: false
+    description: 'Zigbee thermostatic radiator valve for downstairs bathroom heating control'
+  
+  # Entrance (valve + sensor)
+  '0x286847fffe96b1da':
+    friendly_name: 'Entrance Radiator Heat Valve'
+    retain: false
+    description: 'Zigbee thermostatic radiator valve for entrance heating control'
+  '0xa49e69fffec80b30':
+    friendly_name: 'Entrance Temperature Sensor'
+    retain: false
+    description: 'External temperature sensor for accurate entrance temperature reading'
+  
+  # Kids Room (valve + sensor)
   '0x286847fffe88d155':
     friendly_name: 'Kids Room Radiator Heat Valve'
     retain: false
@@ -100,6 +134,20 @@ devices:
     friendly_name: 'Kids Room Temperature Sensor'
     retain: false
     description: 'External temperature sensor for accurate kids room temperature reading'
+  
+  # Living Room (sensor only - ready for future floor heating)
+  '0xf4b3b1fffe56beb4':
+    friendly_name: 'Living Room Temperature Sensor'
+    retain: false
+    description: 'External temperature sensor for accurate living room temperature reading'
+  
+  # Upstairs Bathroom (valve only - no external sensor yet)
+  '0x286847fffe398e24':
+    friendly_name: 'Upstairs Bathroom Radiator Heat Valve'
+    retain: false
+    description: 'Zigbee thermostatic radiator valve for upstairs bathroom heating control'
+  
+  # Workshop (valve + sensor)
   '0xc4d8c8fffe5a2c03':
     friendly_name: 'Workshop Radiator Heat Valve'
     retain: false
@@ -108,24 +156,10 @@ devices:
     friendly_name: 'Workshop Temperature Sensor'
     retain: false
     description: 'External temperature sensor for accurate workshop temperature reading'
-  '0x286847fffe96f01b':
-    friendly_name: 'Downstairs Bathroom Radiator Heat Valve'
-    retain: false
-    description: 'Zigbee thermostatic radiator valve for downstairs bathroom heating control'
-  '0x286847fffe398e24':
-    friendly_name: 'Upstairs Bathroom Radiator Heat Valve'
-    retain: false
-    description: 'Zigbee thermostatic radiator valve for upstairs bathroom heating control'
-  '0x286847fffe96b1da':
-    friendly_name: 'Entrance Radiator Heat Valve'
-    retain: false
-    description: 'Zigbee thermostatic radiator valve for entrance heating control'
   
-  # Lights
-  '0xb4e3f9fffea76436':
-    friendly_name: 'Living Room Light'
-    retain: false  
-    description: 'Main living room light bulb'
+  # ========================================
+  # LIGHTS
+  # ========================================
   '0x84fd27fffe92fa7c':
     friendly_name: 'Bedroom LED Strip'
     retain: false
@@ -134,20 +168,26 @@ devices:
     friendly_name: 'Kids Room Door LED Strip'
     retain: false
     description: 'LED strip around kids room door'
+  '0xb4e3f9fffea76436':
+    friendly_name: 'Living Room Light'
+    retain: false  
+    description: 'Main living room light bulb'
   
-  # Smart Plugs
-  '0x348d13fffeeaf3ff':
-    friendly_name: 'Workshop Smart Plug'
-    retain: false
-    description: 'Smart plug for workshop power control'
-  '0x348d13fffe3d7bac':
-    friendly_name: 'Living Room PC Smart Plug'
-    retain: false
-    description: 'Smart plug for living room PC and electronics'
+  # ========================================
+  # SMART PLUGS
+  # ========================================
   '0x348d13fffe07a842':
     friendly_name: 'Laundry Room Smart Plug'
     retain: false
     description: 'Smart plug for laundry room appliances'
+  '0x348d13fffe3d7bac':
+    friendly_name: 'Living Room PC Smart Plug'
+    retain: false
+    description: 'Smart plug for living room PC and electronics'
+  '0x348d13fffeeaf3ff':
+    friendly_name: 'Workshop Smart Plug'
+    retain: false
+    description: 'Smart plug for workshop power control'
 
 # Groups (for Zigbee groups if needed)
 groups: {}
