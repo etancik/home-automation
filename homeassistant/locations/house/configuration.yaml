@@ -164,6 +164,14 @@ homekit:
         - switch.workshop_smart_plug
         
         # ========================================
+        # BOILER CONTROL
+        # ========================================
+        
+        # Dual Relay Boiler Controller (L1+L2 wired as single dry contact)
+        # Only expose L1 to HomeKit - automation will control both relays together
+        - switch.laundry_room_boiler_controller_l1
+        
+        # ========================================
         # GARAGE DOOR
         # ========================================
         
@@ -286,6 +294,15 @@ homekit:
         name: "Living Room PC Plug"
       switch.workshop_smart_plug:
         name: "Workshop Plug"
+      
+      # ========================================
+      # BOILER CONTROL
+      # ========================================
+      
+      # Dual Relay Boiler Controller (L1+L2 wired as single dry contact)
+      # Only L1 exposed to HomeKit - automation controls both relays
+      switch.laundry_room_boiler_controller_l1:
+        name: "Boiler Control"
       
       # ========================================
       # GARAGE DOOR

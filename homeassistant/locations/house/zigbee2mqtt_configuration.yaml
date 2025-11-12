@@ -189,5 +189,13 @@ devices:
     retain: false
     description: 'Smart plug for workshop power control'
 
+  # ========================================
+  # BOILER CONTROL
+  # ========================================
+  '0x54ef44100142f392':
+    friendly_name: 'Laundry Room Boiler Controller'
+    retain: false
+    description: 'AQARA Dual Relay Controller T2 for Protherm Raja/Ray 12K boiler control'
+
 # Groups (for Zigbee groups if needed)
 groups: {}
