@@ -77,77 +77,105 @@ homekit:
     safe_mode: true
     filter:
       include_entities:
-        # CO2 Sensors
+        # ========================================
+        # ENVIRONMENTAL SENSORS (CO2 + Other)
+        # ========================================
+        
+        # CO2 Sensors (alphabetical by room)
         - sensor.bedroom_co2_sensor_co2
         - sensor.bedroom_co2_sensor_temperature
         - sensor.bedroom_co2_sensor_humidity
         - sensor.living_room_co2_sensor_co2
         - sensor.living_room_co2_sensor_temperature
         - sensor.living_room_co2_sensor_humidity
+        
         # Food Storage Sensor (kitchen)
         - sensor.food_storage_sensor_temperature
         - sensor.food_storage_sensor_humidity
         - sensor.food_storage_sensor_pressure
         - sensor.food_storage_sensor_battery
-        # Living Room Light
-        - light.living_room_light
-        # LED Strips
-        - light.bedroom_led_strip
-        - light.kids_room_door_led_strip
-        # Leak Sensors
-        - binary_sensor.downstairs_bathroom_leak_sensor_water_leak
-        - binary_sensor.upstairs_bathroom_leak_sensor_water_leak
-        - binary_sensor.kitchen_sink_leak_sensor_water_leak
-        - binary_sensor.laundry_room_leak_sensor_water_leak
-        # Window/Door Sensors
-        - binary_sensor.kitchen_window_sensor_contact
-        - binary_sensor.living_room_door_sensor_contact
-        - binary_sensor.kids_room_window_sensor_contact
-        - binary_sensor.bedroom_window_sensor_contact
-        - binary_sensor.workshop_window_sensor_contact
-        # Smart Plugs
-        - switch.workshop_smart_plug
-        - switch.living_room_pc_smart_plug
-        - switch.laundry_room_smart_plug
-        # Garage Door  
-        - cover.garage_door
-        - binary_sensor.door_lock
-        # Heat Valves
-        - climate.bedroom_radiator_heat_valve
-        - climate.kids_room_radiator_heat_valve
-        - climate.downstairs_bathroom_radiator_heat_valve
-        - climate.upstairs_bathroom_radiator_heat_valve
-        - climate.entrance_radiator_heat_valve
-        - climate.workshop_radiator_heat_valve
-        # External Temperature Sensors  
+        
+        # External Temperature Sensors (alphabetical by room)
         - sensor.bedroom_temperature_sensor_temperature
         - sensor.bedroom_temperature_sensor_humidity
         - sensor.bedroom_temperature_sensor_battery
+        - sensor.entrance_temperature_sensor_temperature
+        - sensor.entrance_temperature_sensor_humidity
+        - sensor.entrance_temperature_sensor_battery
         - sensor.kids_room_temperature_sensor_temperature
         - sensor.kids_room_temperature_sensor_humidity
         - sensor.kids_room_temperature_sensor_battery
+        - sensor.living_room_temperature_sensor_temperature
+        - sensor.living_room_temperature_sensor_humidity
+        - sensor.living_room_temperature_sensor_battery
         - sensor.workshop_temperature_sensor_temperature
         - sensor.workshop_temperature_sensor_humidity
         - sensor.workshop_temperature_sensor_battery
+        
+        # ========================================
+        # CONTACT SENSORS (Windows/Doors)
+        # ========================================
+        
+        # Window/Door Sensors (alphabetical by room)
+        - binary_sensor.bedroom_window_sensor_contact
+        - binary_sensor.kids_room_window_sensor_contact
+        - binary_sensor.kitchen_window_sensor_contact
+        - binary_sensor.living_room_door_sensor_contact
+        - binary_sensor.workshop_window_sensor_contact
+        
+        # ========================================
+        # LEAK SENSORS
+        # ========================================
+        
+        # Leak Sensors (alphabetical by room)
+        - binary_sensor.downstairs_bathroom_leak_sensor_water_leak
+        - binary_sensor.kitchen_sink_leak_sensor_water_leak
+        - binary_sensor.laundry_room_leak_sensor_water_leak
+        - binary_sensor.upstairs_bathroom_leak_sensor_water_leak
+        
+        # ========================================
+        # HEAT CONTROL (Climate Controls)
+        # ========================================
+        
+        # Heat Valves (alphabetical by room)
+        - climate.bedroom_radiator_heat_valve
+        - climate.downstairs_bathroom_radiator_heat_valve
+        - climate.entrance_radiator_heat_valve
+        - climate.kids_room_radiator_heat_valve
+        - climate.upstairs_bathroom_radiator_heat_valve
+        - climate.workshop_radiator_heat_valve
+        
+        # ========================================
+        # LIGHTING
+        # ========================================
+        
+        # Lights (alphabetical by room)
+        - light.bedroom_led_strip
+        - light.kids_room_door_led_strip
+        - light.living_room_light
+        
+        # ========================================
+        # SMART PLUGS
+        # ========================================
+        
+        # Smart Plugs (alphabetical by room)
+        - switch.laundry_room_smart_plug
+        - switch.living_room_pc_smart_plug
+        - switch.workshop_smart_plug
+        
+        # ========================================
+        # GARAGE DOOR
+        # ========================================
+        
+        # Garage Door (control + position feedback)
+        - cover.garage_door
+        - binary_sensor.door_lock
     entity_config:
-      climate.bedroom_radiator_heat_valve:
-        name: "Bedroom Heating"
-      sensor.bedroom_temperature_sensor_temperature:
-        name: "Bedroom Temperature"
-      climate.kids_room_radiator_heat_valve:
-        name: "Kids Room Heating"
-      sensor.kids_room_temperature_sensor_temperature:
-        name: "Kids Room Temperature"
-      climate.workshop_radiator_heat_valve:
-        name: "Workshop Heating"
-      sensor.workshop_temperature_sensor_temperature:
-        name: "Workshop Temperature"
-      climate.downstairs_bathroom_radiator_heat_valve:
-        name: "Downstairs Bathroom Heating"
-      climate.upstairs_bathroom_radiator_heat_valve:
-        name: "Upstairs Bathroom Heating"
-      climate.entrance_radiator_heat_valve:
-        name: "Entrance Heating"
+      # ========================================
+      # ENVIRONMENTAL SENSORS
+      # ========================================
+      
+      # CO2 Sensors
       sensor.bedroom_co2_sensor_co2:
         name: "Bedroom CO2"
         # CO2 threshold: HomeKit will warn when > 1500 ppm (default is 1000)
@@ -164,6 +192,8 @@ homekit:
         name: "Living Room Temperature (CO2)"
       sensor.living_room_co2_sensor_humidity:
         name: "Living Room Humidity (CO2)"
+      
+      # Food Storage Sensor
       sensor.food_storage_sensor_temperature:
         name: "Kitchen Food Storage Temperature"
       sensor.food_storage_sensor_humidity:
@@ -172,40 +202,96 @@ homekit:
         name: "Kitchen Food Storage Pressure"
       sensor.food_storage_sensor_battery:
         name: "Kitchen Sensor Battery"
-      light.living_room_light:
-        name: "Living Room Light"
-      light.bedroom_led_strip:
-        name: "Bedroom LED Strip"
-      light.kids_room_door_led_strip:
-        name: "Kids Room Door LED Strip"
-      # Leak Sensors
-      binary_sensor.downstairs_bathroom_leak_sensor_water_leak:
-        name: "Downstairs Bathroom Leak"
-      binary_sensor.upstairs_bathroom_leak_sensor_water_leak:
-        name: "Upstairs Bathroom Leak"
-      binary_sensor.kitchen_sink_leak_sensor_water_leak:
-        name: "Kitchen Sink Leak"
-      binary_sensor.laundry_room_leak_sensor_water_leak:
-        name: "Laundry Room Leak"
-      # Window/Door Sensors
+      
+      # External Temperature Sensors (alphabetical by room)
+      sensor.bedroom_temperature_sensor_temperature:
+        name: "Bedroom Temperature"
+      sensor.entrance_temperature_sensor_temperature:
+        name: "Entrance Temperature"
+      sensor.kids_room_temperature_sensor_temperature:
+        name: "Kids Room Temperature"
+      sensor.living_room_temperature_sensor_temperature:
+        name: "Living Room Temperature"
+      sensor.workshop_temperature_sensor_temperature:
+        name: "Workshop Temperature"
+      
+      # ========================================
+      # CONTACT SENSORS
+      # ========================================
+      
+      # Window/Door Sensors (alphabetical by room)
+      binary_sensor.bedroom_window_sensor_contact:
+        name: "Bedroom Window"
+      binary_sensor.kids_room_window_sensor_contact:
+        name: "Kids Room Window"
       binary_sensor.kitchen_window_sensor_contact:
         name: "Kitchen Window"
       binary_sensor.living_room_door_sensor_contact:
         name: "Living Room Door"
-      binary_sensor.kids_room_window_sensor_contact:
-        name: "Kids Room Window"
-      binary_sensor.bedroom_window_sensor_contact:
-        name: "Bedroom Window"
       binary_sensor.workshop_window_sensor_contact:
         name: "Workshop Window"
-      # Smart Plugs
-      switch.workshop_smart_plug:
-        name: "Workshop Plug"
-      switch.living_room_pc_smart_plug:
-        name: "Living Room PC Plug"
+      
+      # ========================================
+      # LEAK SENSORS
+      # ========================================
+      
+      # Leak Sensors (alphabetical by room)
+      binary_sensor.downstairs_bathroom_leak_sensor_water_leak:
+        name: "Downstairs Bathroom Leak"
+      binary_sensor.kitchen_sink_leak_sensor_water_leak:
+        name: "Kitchen Sink Leak"
+      binary_sensor.laundry_room_leak_sensor_water_leak:
+        name: "Laundry Room Leak"
+      binary_sensor.upstairs_bathroom_leak_sensor_water_leak:
+        name: "Upstairs Bathroom Leak"
+      
+      # ========================================
+      # HEAT CONTROL
+      # ========================================
+      
+      # Heat Valves (alphabetical by room)
+      climate.bedroom_radiator_heat_valve:
+        name: "Bedroom Heating"
+      climate.downstairs_bathroom_radiator_heat_valve:
+        name: "Downstairs Bathroom Heating"
+      climate.entrance_radiator_heat_valve:
+        name: "Entrance Heating"
+      climate.kids_room_radiator_heat_valve:
+        name: "Kids Room Heating"
+      climate.upstairs_bathroom_radiator_heat_valve:
+        name: "Upstairs Bathroom Heating"
+      climate.workshop_radiator_heat_valve:
+        name: "Workshop Heating"
+      
+      # ========================================
+      # LIGHTING
+      # ========================================
+      
+      # Lights (alphabetical by room)
+      light.bedroom_led_strip:
+        name: "Bedroom LED Strip"
+      light.kids_room_door_led_strip:
+        name: "Kids Room Door LED Strip"
+      light.living_room_light:
+        name: "Living Room Light"
+      
+      # ========================================
+      # SMART PLUGS
+      # ========================================
+      
+      # Smart Plugs (alphabetical by room)
       switch.laundry_room_smart_plug:
         name: "Laundry Room Plug"
-      # Garage Door
+      switch.living_room_pc_smart_plug:
+        name: "Living Room PC Plug"
+      switch.workshop_smart_plug:
+        name: "Workshop Plug"
+      
+      # ========================================
+      # GARAGE DOOR
+      # ========================================
+      
+      # Garage Door (control + position feedback)
       cover.garage_door:
         name: "Garage Door"
       binary_sensor.door_lock:
