@@ -478,7 +478,7 @@
                 # OR living room needs heating
                 - condition: template
                   value_template: >
-                    {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) < 21 }}
+                    {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) < 22 }}
           then:
             # Turn on boiler - heating needed
             - service: switch.turn_on
