@@ -155,15 +155,6 @@ homekit:
         - light.living_room_light
         
         # ========================================
-        # SMART PLUGS
-        # ========================================
-        
-        # Smart Plugs (alphabetical by room)
-        - switch.laundry_room_smart_plug
-        - switch.living_room_pc_smart_plug
-        - switch.workshop_smart_plug
-        
-        # ========================================
         # BOILER CONTROL
         # ========================================
         
@@ -282,18 +273,6 @@ homekit:
         name: "Kids Room Door LED Strip"
       light.living_room_light:
         name: "Living Room Light"
-      
-      # ========================================
-      # SMART PLUGS
-      # ========================================
-      
-      # Smart Plugs (alphabetical by room)
-      switch.laundry_room_smart_plug:
-        name: "Laundry Room Plug"
-      switch.living_room_pc_smart_plug:
-        name: "Living Room PC Plug"
-      switch.workshop_smart_plug:
-        name: "Workshop Plug"
       
       # ========================================
       # BOILER CONTROL
