@@ -513,24 +513,31 @@
       entity_id: sensor.kids_room_dimmer_switch_action
   conditions:
     - condition: template
-      value_template: "{{ trigger.to_state.state != 'None' and trigger.to_state.state != '' }}"
+      value_template: "{{ trigger.to_state.state not in ['None', '', 'unavailable', 'unknown'] }}"
   actions:
     - choose:
-        # Single press - toggle on/off
+        # ON button press - turn on LED strip
         - conditions:
-            - condition: state
-              entity_id: sensor.kids_room_dimmer_switch_action
-              state: 'on'
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'on' }}"
           sequence:
-            - service: light.toggle
+            - service: light.turn_on
               target:
                 entity_id: light.kids_room_door_led_strip
         
-        # Brightness up - increase brightness
+        # OFF button press - turn off LED strip  
         - conditions:
-            - condition: state
-              entity_id: sensor.kids_room_dimmer_switch_action
-              state: 'brightness_up'
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'off' }}"
+          sequence:
+            - service: light.turn_off
+              target:
+                entity_id: light.kids_room_door_led_strip
+        
+        # Brightness move up - increase brightness
+        - conditions:
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'brightness_move_up' }}"
           sequence:
             - service: light.turn_on
               target:
@@ -538,11 +545,10 @@
               data:
                 brightness_step_pct: 20
         
-        # Brightness down - decrease brightness
+        # Brightness move down - decrease brightness
         - conditions:
-            - condition: state
-              entity_id: sensor.kids_room_dimmer_switch_action
-              state: 'brightness_down'
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'brightness_move_down' }}"
           sequence:
             - service: light.turn_on
               target:
@@ -550,16 +556,6 @@
               data:
                 brightness_step_pct: -20
         
-        # Long press - set to red night light
-        - conditions:
-            - condition: state
-              entity_id: sensor.kids_room_dimmer_switch_action
-              state: 'on_hold'
-          sequence:
-            - service: light.turn_on
-              target:
-                entity_id: light.kids_room_door_led_strip
-              data:
-                brightness_pct: 30
-                rgb_color: [255, 0, 0]  # Pure red
+        # Brightness stop - do nothing (just stops dimming)
+        # This happens when user releases button after dimming
   mode: restart
