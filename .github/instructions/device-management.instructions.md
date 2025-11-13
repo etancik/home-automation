@@ -15,7 +15,7 @@ applyTo: '**'
 3. Deploy via subtree push
 4. Restart Home Assistant
 
-## Current Device Inventory (29 total)
+## Current Device Inventory (30 total)
 
 ### Leak Sensors (4 devices)
 - Downstairs Bathroom Leak Sensor ✅
@@ -54,6 +54,9 @@ applyTo: '**'
 - Living Room Light ✅
 - Bedroom LED Strip ✅
 - Kids Room Door LED Strip ✅
+
+### Wireless Controls (1 device)
+- Kids Room Dimmer Switch ✅ (IKEA RODRET)
 
 ### Smart Plugs (2 devices)
 - Workshop Smart Plug ✅

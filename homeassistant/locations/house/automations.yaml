@@ -503,3 +503,63 @@
                 name: "Boiler Control"
                 message: "Boiler turned OFF - No heating demand (All valves satisfied, Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C ≥ 22°C)"
   mode: single
+
+# Kids Room Dimmer Switch Control
+- id: 'kids_room_dimmer_switch_control'
+  alias: "Kids Room Dimmer Switch Control"
+  description: "Control kids room LED strip with IKEA RODRET wireless dimmer"
+  triggers:
+    - platform: state
+      entity_id: sensor.kids_room_dimmer_switch_action
+  conditions:
+    - condition: template
+      value_template: "{{ trigger.to_state.state != 'None' and trigger.to_state.state != '' }}"
+  actions:
+    - choose:
+        # Single press - toggle on/off
+        - conditions:
+            - condition: state
+              entity_id: sensor.kids_room_dimmer_switch_action
+              state: 'on'
+          sequence:
+            - service: light.toggle
+              target:
+                entity_id: light.kids_room_door_led_strip
+        
+        # Brightness up - increase brightness
+        - conditions:
+            - condition: state
+              entity_id: sensor.kids_room_dimmer_switch_action
+              state: 'brightness_up'
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id: light.kids_room_door_led_strip
+              data:
+                brightness_step_pct: 20
+        
+        # Brightness down - decrease brightness
+        - conditions:
+            - condition: state
+              entity_id: sensor.kids_room_dimmer_switch_action
+              state: 'brightness_down'
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id: light.kids_room_door_led_strip
+              data:
+                brightness_step_pct: -20
+        
+        # Long press - set to red night light
+        - conditions:
+            - condition: state
+              entity_id: sensor.kids_room_dimmer_switch_action
+              state: 'on_hold'
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id: light.kids_room_door_led_strip
+              data:
+                brightness_pct: 30
+                rgb_color: [255, 0, 0]  # Pure red
+  mode: restart
