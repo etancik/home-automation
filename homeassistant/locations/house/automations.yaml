@@ -509,17 +509,19 @@
   alias: "Kids Room Dimmer Switch Control"
   description: "Control kids room LED strip with IKEA RODRET wireless dimmer"
   triggers:
-    - platform: state
-      entity_id: sensor.kids_room_dimmer_switch_action
+    # IKEA RODRET uses device automation - listen to MQTT events
+    - platform: mqtt
+      topic: zigbee2mqtt/Kids Room Dimmer Switch
+      value_template: "{{ value_json.action }}"
   conditions:
     - condition: template
-      value_template: "{{ trigger.to_state.state not in ['None', '', 'unavailable', 'unknown'] }}"
+      value_template: "{{ trigger.payload_json.action is defined and trigger.payload_json.action != '' }}"
   actions:
     - choose:
         # ON button press - turn on LED strip
         - conditions:
             - condition: template
-              value_template: "{{ trigger.to_state.state == 'on' }}"
+              value_template: "{{ trigger.payload_json.action == 'on' }}"
           sequence:
             - service: light.turn_on
               target:
@@ -528,7 +530,7 @@
         # OFF button press - turn off LED strip  
         - conditions:
             - condition: template
-              value_template: "{{ trigger.to_state.state == 'off' }}"
+              value_template: "{{ trigger.payload_json.action == 'off' }}"
           sequence:
             - service: light.turn_off
               target:
@@ -537,7 +539,7 @@
         # Brightness move up - increase brightness
         - conditions:
             - condition: template
-              value_template: "{{ trigger.to_state.state == 'brightness_move_up' }}"
+              value_template: "{{ trigger.payload_json.action == 'brightness_move_up' }}"
           sequence:
             - service: light.turn_on
               target:
@@ -548,7 +550,7 @@
         # Brightness move down - decrease brightness
         - conditions:
             - condition: template
-              value_template: "{{ trigger.to_state.state == 'brightness_move_down' }}"
+              value_template: "{{ trigger.payload_json.action == 'brightness_move_down' }}"
           sequence:
             - service: light.turn_on
               target:
