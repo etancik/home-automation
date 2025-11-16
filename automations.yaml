@@ -438,6 +438,11 @@
     # Monitor living room temperature changes
     - platform: state
       entity_id: sensor.living_room_temperature_sensor_temperature
+    # Monitor living room window sensors for safety
+    - platform: state
+      entity_id: 
+        - binary_sensor.kitchen_window_sensor_contact
+        - binary_sensor.living_room_door_sensor_contact
     # Startup trigger
     - platform: homeassistant
       event: start
@@ -471,10 +476,21 @@
                        is_state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') or
                        is_state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') or
                        is_state_attr('climate.entrance_radiator_heat_valve', 'hvac_action', 'heating') }}
-                # OR living room needs heating
-                - condition: template
-                  value_template: >
-                    {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) < 21 }}
+                # OR living room needs heating (only if windows closed)
+                - condition: and
+                  conditions:
+                    # Living room temperature below threshold
+                    - condition: template
+                      value_template: >
+                        {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) < 21 }}
+                    # Kitchen window closed (affects living room area)
+                    - condition: state
+                      entity_id: binary_sensor.kitchen_window_sensor_contact
+                      state: 'off'  # Contact sensor OFF = window CLOSED
+                    # Living room door closed (garden door)
+                    - condition: state
+                      entity_id: binary_sensor.living_room_door_sensor_contact
+                      state: 'off'  # Contact sensor OFF = door CLOSED
           then:
             # Turn on boiler - heating needed
             - service: switch.turn_on
@@ -561,3 +577,39 @@
         # Brightness stop - do nothing (just stops dimming)
         # This happens when user releases button after dimming
   mode: restart
+
+# LED Strip Schedule Control
+- id: 'led_strips_evening_schedule'
+  alias: "LED Strips Evening Schedule"
+  description: "Turn on bedroom and kids room LED strips at 7 PM, turn off at 7 AM"
+  triggers:
+    # Turn on at 7 PM
+    - platform: time
+      at: "19:00:00"
+      id: "turn_on"
+    # Turn off at 7 AM  
+    - platform: time
+      at: "07:00:00"
+      id: "turn_off"
+  conditions: []
+  actions:
+    - if:
+        - condition: trigger
+          id: "turn_on"
+      then:
+        # Turn on both LED strips at 7 PM
+        - service: light.turn_on
+          target:
+            entity_id:
+              - light.bedroom_led_strip
+              - light.kids_room_door_led_strip
+          data:
+            brightness_pct: 30
+      else:
+        # Turn off both LED strips at 7 AM
+        - service: light.turn_off
+          target:
+            entity_id:
+              - light.bedroom_led_strip
+              - light.kids_room_door_led_strip
+  mode: single
