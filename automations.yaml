@@ -29,11 +29,11 @@
     # Monitor bedroom CO2 levels
     - platform: numeric_state
       entity_id: sensor.bedroom_co2_sensor_co2
-      above: 1200
+      above: 1500
       id: bedroom_high_co2
     - platform: numeric_state
       entity_id: sensor.bedroom_co2_sensor_co2
-      below: 1200
+      below: 1500
       above: 800
       id: bedroom_normal_co2
     - platform: numeric_state
@@ -49,7 +49,7 @@
   conditions: []
   actions:
     - choose:
-        # High CO2 - Red pulse (only if LED is on AND windows are closed)
+        # High CO2 + Windows closed -> Pulse (alert to open windows)
         - conditions:
             - condition: trigger
               id: bedroom_high_co2
@@ -65,79 +65,19 @@
                   entity_id: light.bedroom_led_strip
                   state: 'on'
               then:
-                - service: script.co2_led_red_pulse
+                - service: script.co2_led_pulse_current_color
                   data:
-                    entity_id: light.bedroom_led_strip
-                    co2_level: "{{ states('sensor.bedroom_co2_sensor_co2') | int }}"
-            - if:
-                - condition: state
-                  entity_id: light.kids_room_door_led_strip
-                  state: 'on'
-              then:
-                - service: script.co2_led_red_pulse
-                  data:
-                    entity_id: light.kids_room_door_led_strip
-                    co2_level: "{{ states('sensor.bedroom_co2_sensor_co2') | int }}"
-        
-        # Window opened while CO2 high - immediately restore normal
-        - conditions:
-            - condition: trigger
-              id: window_state_change
-            - condition: template
-              value_template: "{{ trigger.to_state.state == 'on' }}"  # Window opened
-            - condition: or
-              conditions:
-                - condition: template
-                  value_template: "{{ trigger.entity_id == 'binary_sensor.bedroom_window_sensor_contact' }}"
-                - condition: template
-                  value_template: "{{ trigger.entity_id == 'binary_sensor.kids_room_window_sensor_contact' }}"
-          sequence:
-            - if:
-                - condition: numeric_state
-                  entity_id: sensor.bedroom_co2_sensor_co2
-                  above: 1200
-                - condition: state
-                  entity_id: light.bedroom_led_strip
-                  state: 'on'
-              then:
-                - service: script.co2_led_restore_normal
-                  data:
-                    entity_id: light.bedroom_led_strip
-            - if:
-                - condition: numeric_state
-                  entity_id: sensor.bedroom_co2_sensor_co2
-                  above: 1200
-                - condition: state
-                  entity_id: light.kids_room_door_led_strip
-                  state: 'on'
-              then:
-                - service: script.co2_led_restore_normal
-                  data:
-                    entity_id: light.kids_room_door_led_strip
-        
-        # Normal CO2 - Restore original color
-        - conditions:
-            - condition: trigger
-              id: bedroom_normal_co2
-          sequence:
-            - if:
-                - condition: state
-                  entity_id: light.bedroom_led_strip
-                  state: 'on'
-              then:
-                - service: script.co2_led_restore_normal
-                  target:
                     entity_id: light.bedroom_led_strip
             - if:
                 - condition: state
                   entity_id: light.kids_room_door_led_strip
                   state: 'on'
               then:
-                - service: script.co2_led_restore_normal
-                  target:
+                - service: script.co2_led_pulse_current_color
+                  data:
                     entity_id: light.kids_room_door_led_strip
         
-        # Low CO2 + windows open in winter - Green pulse (ventilation working!)
+        # Low CO2 + Windows open in winter -> Pulse (alert to close windows)
         - conditions:
             - condition: trigger
               id: bedroom_low_co2
@@ -160,33 +100,35 @@
                   entity_id: light.bedroom_led_strip
                   state: 'on'
               then:
-                - service: script.co2_led_green_pulse
-                  target:
+                - service: script.co2_led_pulse_current_color
+                  data:
                     entity_id: light.bedroom_led_strip
             - if:
                 - condition: state
                   entity_id: light.kids_room_door_led_strip
                   state: 'on'
               then:
-                - service: script.co2_led_green_pulse
-                  target:
+                - service: script.co2_led_pulse_current_color
+                  data:
                     entity_id: light.kids_room_door_led_strip
         
-        # Window closed after green pulse - restore normal
+        # Normal/Low CO2 + Windows closed -> Stop pulsing, return to normal
         - conditions:
-            - condition: trigger
-              id: window_state_change
-            - condition: template
-              value_template: "{{ trigger.to_state.state == 'off' }}"  # Window closed
             - condition: or
               conditions:
-                - condition: template
-                  value_template: "{{ trigger.entity_id == 'binary_sensor.bedroom_window_sensor_contact' }}"
-                - condition: template
-                  value_template: "{{ trigger.entity_id == 'binary_sensor.kids_room_window_sensor_contact' }}"
-            - condition: numeric_state
-              entity_id: sensor.bedroom_co2_sensor_co2
-              below: 800
+                # Normal CO2 reached
+                - condition: trigger
+                  id: bedroom_normal_co2
+                # Window closed while low CO2
+                - condition: and
+                  conditions:
+                    - condition: trigger
+                      id: window_state_change
+                    - condition: template
+                      value_template: "{{ trigger.to_state.state == 'off' }}"  # Window closed
+                    - condition: numeric_state
+                      entity_id: sensor.bedroom_co2_sensor_co2
+                      below: 800
           sequence:
             - if:
                 - condition: state
@@ -194,7 +136,7 @@
                   state: 'on'
               then:
                 - service: script.co2_led_restore_normal
-                  target:
+                  data:
                     entity_id: light.bedroom_led_strip
             - if:
                 - condition: state
@@ -202,223 +144,127 @@
                   state: 'on'
               then:
                 - service: script.co2_led_restore_normal
-                  target:
+                  data:
+                    entity_id: light.kids_room_door_led_strip
+        
+        # High CO2 + Window opened -> Stop pulsing, return to normal
+        - conditions:
+            - condition: trigger
+              id: window_state_change
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'on' }}"  # Window opened
+            - condition: numeric_state
+              entity_id: sensor.bedroom_co2_sensor_co2
+              above: 1500
+          sequence:
+            - if:
+                - condition: state
+                  entity_id: light.bedroom_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_restore_normal
+                  data:
+                    entity_id: light.bedroom_led_strip
+            - if:
+                - condition: state
+                  entity_id: light.kids_room_door_led_strip
+                  state: 'on'
+              then:
+                - service: script.co2_led_restore_normal
+                  data:
                     entity_id: light.kids_room_door_led_strip
   mode: queued
   max: 10
 
-# Heat Valve External Temperature Synchronization  
-- id: 'bedroom_radiator_heat_valve_temperature_sync'
-  alias: "Bedroom Radiator Heat Valve Temperature Sync"
-  description: "Sync external temperature sensor reading to bedroom radiator heat valve"
+# Heat Valve Automations
+# Consolidated External Temperature Synchronization for All Heat Valves
+- id: 'heat_valves_temperature_sync_all'
+  alias: "Heat Valves External Temperature Sync (All Rooms)"
+  description: "Sync external temperature sensor readings to all heat valves with external sensors"
   triggers:
+    # Monitor all external temperature sensors
     - platform: state
-      entity_id: sensor.bedroom_temperature_sensor_temperature
-    - platform: homeassistant
-      event: start
-  conditions:
-    - condition: template
-      value_template: "{{ states('sensor.bedroom_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
-  actions:
-    # Set valve to use external temperature sensor only
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external"}'
-    # Disable internal temperature sensor completely
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-        payload: '{"local_temperature_calibration": 0}'
-    # Sync the external temperature value
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-        payload: >
-          {"external_temperature_input": {{ states('sensor.bedroom_temperature_sensor_temperature') | float }}}
-  mode: single
-
-# Heat Valve Window State Synchronization
-- id: 'bedroom_radiator_heat_valve_window_sync'
-  alias: "Bedroom Radiator Heat Valve Window Sync"
-  description: "Turn off heating when window opens, resume when window closes"
-  triggers:
-    - platform: state
-      entity_id: binary_sensor.bedroom_window_sensor_contact
+      entity_id: 
+        - sensor.bedroom_temperature_sensor_temperature
+        - sensor.kids_room_temperature_sensor_temperature
+        - sensor.workshop_temperature_sensor_temperature
+        - sensor.entrance_temperature_sensor_temperature
     - platform: homeassistant
       event: start
   conditions: []
   actions:
-    # When window is OPEN - turn off heating
-    - if:
-        - condition: state
-          entity_id: binary_sensor.bedroom_window_sensor_contact
-          state: 'on'  # Contact sensor ON = window OPEN (inverted logic)
-      then:
-        # Turn off heating completely
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-            payload: '{"system_mode": "off"}'
-      else:
-        # When window is CLOSED - resume normal heating
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-            payload: '{"system_mode": "heat"}'
+    # Use mapping table to sync all temperature sensors to their corresponding heat valves
+    - repeat:
+        for_each:
+          # Mapping table: Temperature Sensor -> Heat Valve
+          - sensor: "sensor.bedroom_temperature_sensor_temperature"
+            valve: "Bedroom Radiator Heat Valve"
+          - sensor: "sensor.kids_room_temperature_sensor_temperature" 
+            valve: "Kids Room Radiator Heat Valve"
+          - sensor: "sensor.workshop_temperature_sensor_temperature"
+            valve: "Workshop Radiator Heat Valve"
+          - sensor: "sensor.entrance_temperature_sensor_temperature"
+            valve: "Entrance Radiator Heat Valve"
+        sequence:
+          - if:
+              - condition: template
+                value_template: "{{ states(repeat.item.sensor) not in ['unknown', 'unavailable'] }}"
+            then:
+              # Configure valve to use external temperature sensor
+              - service: mqtt.publish
+                data:
+                  topic: "zigbee2mqtt/{{ repeat.item.valve }}/set"
+                  payload: '{"temperature_sensor_select": "external", "local_temperature_calibration": 0}'
+              # Sync the external temperature value
+              - service: mqtt.publish
+                data:
+                  topic: "zigbee2mqtt/{{ repeat.item.valve }}/set"
+                  payload: >
+                    {"external_temperature_input": {{ states(repeat.item.sensor) | float }}}
   mode: single
 
-# Kids Room Heat Valve External Temperature Synchronization  
-- id: 'kids_room_radiator_heat_valve_temperature_sync'
-  alias: "Kids Room Radiator Heat Valve Temperature Sync"
-  description: "Sync external temperature sensor reading to kids room radiator heat valve"
+# Consolidated Window State Synchronization for All Heat Valves
+- id: 'heat_valves_window_sync_all'
+  alias: "Heat Valves Window State Sync (All Rooms)"
+  description: "Turn off heating when windows open, resume when windows close for all heat valves with window sensors"
   triggers:
+    # Monitor all window sensors that have corresponding heat valves
     - platform: state
-      entity_id: sensor.kids_room_temperature_sensor_temperature
-    - platform: homeassistant
-      event: start
-  conditions:
-    - condition: template
-      value_template: "{{ states('sensor.kids_room_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
-  actions:
-    # Set valve to use external temperature sensor only
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external"}'
-    # Disable internal temperature sensor completely
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-        payload: '{"local_temperature_calibration": 0}'
-    # Sync the external temperature value
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-        payload: >
-          {"external_temperature_input": {{ states('sensor.kids_room_temperature_sensor_temperature') | float }}}
-  mode: single
-
-# Kids Room Heat Valve Window State Synchronization
-- id: 'kids_room_radiator_heat_valve_window_sync'
-  alias: "Kids Room Radiator Heat Valve Window Sync"
-  description: "Turn off heating when window opens, resume when window closes"
-  triggers:
-    - platform: state
-      entity_id: binary_sensor.kids_room_window_sensor_contact
+      entity_id: 
+        - binary_sensor.bedroom_window_sensor_contact
+        - binary_sensor.kids_room_window_sensor_contact
+        - binary_sensor.workshop_window_sensor_contact
     - platform: homeassistant
       event: start
   conditions: []
   actions:
-    # When window is OPEN - turn off heating
-    - if:
-        - condition: state
-          entity_id: binary_sensor.kids_room_window_sensor_contact
-          state: 'on'  # Contact sensor ON = window OPEN (inverted logic)
-      then:
-        # Turn off heating completely
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-            payload: '{"system_mode": "off"}'
-      else:
-        # When window is CLOSED - resume normal heating
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-            payload: '{"system_mode": "heat"}'
-  mode: single
-
-# Workshop Heat Valve External Temperature Synchronization  
-- id: 'workshop_radiator_heat_valve_temperature_sync'
-  alias: "Workshop Radiator Heat Valve Temperature Sync"
-  description: "Sync external temperature sensor reading to workshop radiator heat valve"
-  triggers:
-    - platform: state
-      entity_id: sensor.workshop_temperature_sensor_temperature
-    - platform: homeassistant
-      event: start
-  conditions:
-    - condition: template
-      value_template: "{{ states('sensor.workshop_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
-  actions:
-    # Set valve to use external temperature sensor only
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external"}'
-    # Disable internal temperature sensor completely
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-        payload: '{"local_temperature_calibration": 0}'
-    # Sync the external temperature value
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-        payload: >
-          {"external_temperature_input": {{ states('sensor.workshop_temperature_sensor_temperature') | float }}}
-  mode: single
-
-# Workshop Heat Valve Window State Synchronization
-- id: 'workshop_radiator_heat_valve_window_sync'
-  alias: "Workshop Radiator Heat Valve Window Sync"
-  description: "Turn off heating when window opens, resume when window closes"
-  triggers:
-    - platform: state
-      entity_id: binary_sensor.workshop_window_sensor_contact
-    - platform: homeassistant
-      event: start
-  conditions: []
-  actions:
-    # When window is OPEN - turn off heating
-    - if:
-        - condition: state
-          entity_id: binary_sensor.workshop_window_sensor_contact
-          state: 'on'  # Contact sensor ON = window OPEN (inverted logic)
-      then:
-        # Turn off heating completely
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-            payload: '{"system_mode": "off"}'
-      else:
-        # When window is CLOSED - resume normal heating
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-            payload: '{"system_mode": "heat"}'
-  mode: single
-
-# Entrance Heat Valve External Temperature Synchronization  
-- id: 'entrance_radiator_heat_valve_temperature_sync'
-  alias: "Entrance Radiator Heat Valve Temperature Sync"
-  description: "Sync external temperature sensor reading to entrance radiator heat valve"
-  triggers:
-    - platform: state
-      entity_id: sensor.entrance_temperature_sensor_temperature
-    - platform: homeassistant
-      event: start
-  conditions:
-    - condition: template
-      value_template: "{{ states('sensor.entrance_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
-  actions:
-    # Set valve to use external temperature sensor only
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external"}'
-    # Disable internal temperature sensor completely
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
-        payload: '{"local_temperature_calibration": 0}'
-    # Sync the external temperature value
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
-        payload: >
-          {"external_temperature_input": {{ states('sensor.entrance_temperature_sensor_temperature') | float }}}
+    # Use mapping table to sync all window sensors to their corresponding heat valves
+    - repeat:
+        for_each:
+          # Mapping table: Window Sensor -> Heat Valve
+          - window: "binary_sensor.bedroom_window_sensor_contact"
+            valve: "Bedroom Radiator Heat Valve"
+          - window: "binary_sensor.kids_room_window_sensor_contact"
+            valve: "Kids Room Radiator Heat Valve"
+          - window: "binary_sensor.workshop_window_sensor_contact"
+            valve: "Workshop Radiator Heat Valve"
+        sequence:
+          - if:
+              - condition: state
+                entity_id: "{{ repeat.item.window }}"
+                state: 'on'  # Window OPEN
+            then:
+              # Turn off heating when window is open
+              - service: mqtt.publish
+                data:
+                  topic: "zigbee2mqtt/{{ repeat.item.valve }}/set"
+                  payload: '{"system_mode": "off"}'
+            else:
+              # Resume heating when window is closed
+              - service: mqtt.publish
+                data:
+                  topic: "zigbee2mqtt/{{ repeat.item.valve }}/set"
+                  payload: '{"system_mode": "heat"}'
   mode: single
 
 # Boiler Control Automation
