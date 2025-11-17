@@ -1,127 +1,29 @@
 # House-specific scripts
 
-# Shared CO2 LED Breathing Effect Script
-co2_led_breathing_notification:
-  alias: "CO2 LED Breathing Notification"
-  description: "Breathe LED in specified color, then restore original state"
+# Simple CO2 LED pulse using current color - no color parameters needed
+co2_led_pulse_current_color:
+  alias: "CO2 LED Pulse Current Color"
+  description: "Simple breathing pulse using the LED's current color"
   fields:
     entity_id:
       description: "LED strip entity to control"
       required: true
-    color:
-      description: "RGB color for breathing [r, g, b]"
-      required: true
-    brightness:
-      description: "Brightness level (0-255) - optional, uses current brightness if not specified"
-      required: false
-    cycles:
-      description: "Number of breathing cycles"
-      default: 1
   sequence:
-    # Store current light state for restoration
-    - service: scene.create
-      data:
-        scene_id: "co2_led_restore_{{ (entity_id if entity_id is string else entity_id[0]).split('.')[1] }}"
-        snapshot_entities:
-          - "{{ entity_id if entity_id is string else entity_id[0] }}"
-    # Wait for scene to be created and available
-    - delay: 1
-    
-    # Get current brightness to maintain throughout notification
-    - variables:
-        current_entity: "{{ entity_id if entity_id is string else entity_id[0] }}"
-        original_brightness: "{{ state_attr(current_entity, 'brightness') | int }}"
-    
-    # Breathing cycles with color restoration between each
-    - repeat:
-        count: "{{ cycles }}"
-        sequence:
-          # Start breathing in specified color but keep original brightness
-          - service: light.turn_on
-            target:
-              entity_id: "{{ current_entity }}"
-            data:
-              effect: "breathe"
-              rgb_color: "{{ color }}"
-              brightness: "{{ original_brightness }}"
-              transition: 1
-          # Wait for breathe cycle to complete (estimated)
-          - delay: 2
-          # Restore original color briefly between cycles (except last)
-          - if:
-              - condition: template
-                value_template: "{{ repeat.index < cycles }}"
-            then:
-              - service: scene.turn_on
-                data:
-                  entity_id: "scene.co2_led_restore_{{ (entity_id if entity_id is string else entity_id[0]).split('.')[1] }}"
-                  transition: 2
-              - delay: 2
-    
-    # Final restoration to original state
-    - service: scene.turn_on
-      data:
-        entity_id: "scene.co2_led_restore_{{ (entity_id if entity_id is string else entity_id[0]).split('.')[1] }}"
-        transition: 5
-
-# CO2 LED Notification Scripts
-co2_led_red_pulse:
-  alias: "CO2 Red Pulse Notification"
-  description: "Simple red breathing pulse for high CO2 notification"
-  fields:
-    entity_id:
-      description: "LED strip entity to control"
-      example: "light.bedroom_led_strip"
-  sequence:
-    # Use shared breathing effect (brightness maintained from original state)
-    - service: script.co2_led_breathing_notification
-      data:
+    # Just pulse using breathe effect - keeps current color and brightness
+    - service: light.turn_on
+      target:
         entity_id: "{{ entity_id }}"
-        color: [255, 0, 0]
-        cycles: 1
-
-co2_led_green_pulse:
-  alias: "CO2 Green Pulse Notification"
-  description: "Gentle green pulse for good air quality in winter"
-  fields:
-    entity_id:
-      description: "LED strip entity to control"
-      example: "light.bedroom_led_strip"
-  sequence:
-    # Use shared breathing effect (brightness maintained from original state)
-    - service: script.co2_led_breathing_notification
       data:
-        entity_id: "{{ entity_id }}"
-        color: [0, 255, 100]  # Soft green with slight yellow tint
-        cycles: 1
-
-co2_led_restore_normal:
-  alias: "Restore Normal LED State"
-  description: "Restore LED to previous state before CO2 notification"
-  fields:
-    entity_id:
-      description: "LED strip entity to restore"
-      example: "light.bedroom_led_strip"
-  sequence:
-    # Check if the scene exists before trying to restore it
-    - variables:
-        scene_entity: "scene.co2_led_restore_{{ entity_id.split('.')[1] }}"
-    - if:
-        - condition: template
-          value_template: "{{ states[scene_entity] is defined }}"
-      then:
-        # Restore the saved scene
-        - service: scene.turn_on
-          data:
-            entity_id: "{{ scene_entity }}"
-            transition: 5
-    
-    # Clean up the temporary scene after restoration
+        effect: "breathe"
+        transition: 1
+    # Wait for breathe effect to complete, then restore to solid
     - delay: 3
-    - if:
-        - condition: template
-          value_template: "{{ states[scene_entity] is defined }}"
-      then:
-        - service: scene.delete
-          data:
-            entity_id: "{{ scene_entity }}"
+    - service: light.turn_on
+      target:
+        entity_id: "{{ entity_id }}"
+      data:
+        effect: "none"
+        transition: 2
+
+# Note: co2_led_restore_normal script removed - restoration now handled 
+# automatically within co2_led_breathing_notification script
