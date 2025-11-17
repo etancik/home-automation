@@ -177,12 +177,14 @@
   max: 10
 
 # Heat Valve Automations
-# Consolidated External Temperature Synchronization for All Heat Valves
-- id: 'heat_valves_temperature_sync_all'
+# External Temperature Synchronization for All Heat Valves
+# Purpose: Configure valves to use external sensors for actual heating control
+#          while template entities handle HomeKit display
+- id: 'heat_valves_external_temperature_sync_all'
   alias: "Heat Valves External Temperature Sync (All Rooms)"
-  description: "Sync external temperature sensor readings to all heat valves with external sensors"
+  description: "Configure all heat valves to use external temperature sensors and sync temperature readings"
   triggers:
-    # Monitor all external temperature sensors
+    # Sync temperature when external sensors change
     - platform: state
       entity_id: 
         - sensor.bedroom_temperature_sensor_temperature
@@ -193,7 +195,7 @@
       event: start
   conditions: []
   actions:
-    # Individual temperature sync for each heat valve
+    # Configure and sync Bedroom valve
     - if:
         - condition: template
           value_template: "{{ states('sensor.bedroom_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
@@ -201,12 +203,18 @@
         - service: mqtt.publish
           data:
             topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-            payload: '{"temperature_sensor_select": "external", "local_temperature_calibration": 0}'
+            payload: '{"temperature_sensor_select": "external"}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
+            payload: '{"local_temperature_calibration": 0}'
         - service: mqtt.publish
           data:
             topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
             payload: >
               {"external_temperature_input": {{ states('sensor.bedroom_temperature_sensor_temperature') | float }}}
+    
+    # Configure and sync Kids Room valve
     - if:
         - condition: template
           value_template: "{{ states('sensor.kids_room_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
@@ -214,12 +222,18 @@
         - service: mqtt.publish
           data:
             topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-            payload: '{"temperature_sensor_select": "external", "local_temperature_calibration": 0}'
+            payload: '{"temperature_sensor_select": "external"}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
+            payload: '{"local_temperature_calibration": 0}'
         - service: mqtt.publish
           data:
             topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
             payload: >
               {"external_temperature_input": {{ states('sensor.kids_room_temperature_sensor_temperature') | float }}}
+    
+    # Configure and sync Workshop valve
     - if:
         - condition: template
           value_template: "{{ states('sensor.workshop_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
@@ -227,12 +241,18 @@
         - service: mqtt.publish
           data:
             topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-            payload: '{"temperature_sensor_select": "external", "local_temperature_calibration": 0}'
+            payload: '{"temperature_sensor_select": "external"}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
+            payload: '{"local_temperature_calibration": 0}'
         - service: mqtt.publish
           data:
             topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
             payload: >
               {"external_temperature_input": {{ states('sensor.workshop_temperature_sensor_temperature') | float }}}
+    
+    # Configure and sync Entrance valve
     - if:
         - condition: template
           value_template: "{{ states('sensor.entrance_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}"
@@ -240,7 +260,11 @@
         - service: mqtt.publish
           data:
             topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
-            payload: '{"temperature_sensor_select": "external", "local_temperature_calibration": 0}'
+            payload: '{"temperature_sensor_select": "external"}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
+            payload: '{"local_temperature_calibration": 0}'
         - service: mqtt.publish
           data:
             topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
@@ -248,7 +272,7 @@
               {"external_temperature_input": {{ states('sensor.entrance_temperature_sensor_temperature') | float }}}
   mode: single
 
-# Consolidated Window State Synchronization for All Heat Valves
+# Window State Synchronization for All Heat Valves
 - id: 'heat_valves_window_sync_all'
   alias: "Heat Valves Window State Sync (All Rooms)"
   description: "Turn off heating when windows open, resume when windows close for all heat valves with window sensors"
@@ -316,12 +340,14 @@
     # Monitor all radiator valve states for heating demand
     - platform: state
       entity_id: 
-        - climate.bedroom_radiator_heat_valve
-        - climate.kids_room_radiator_heat_valve
-        - climate.workshop_radiator_heat_valve
+        # Template climate entities with external temperature sensors
+        - climate.bedroom_heating
+        - climate.kids_room_heating
+        - climate.workshop_heating
+        - climate.entrance_heating
+        # Direct valve entities (no external sensors)
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.upstairs_bathroom_radiator_heat_valve
-        - climate.entrance_radiator_heat_valve
     # Monitor living room temperature changes
     - platform: state
       entity_id: sensor.living_room_temperature_sensor_temperature
@@ -355,14 +381,15 @@
             - condition: or
               conditions:
                 # Any radiator valve calling for heat (hvac_action = heating)
+                # Check underlying valve entities since template entities don't expose hvac_action
                 - condition: template
                   value_template: >
                     {{ is_state_attr('climate.bedroom_radiator_heat_valve', 'hvac_action', 'heating') or
                        is_state_attr('climate.kids_room_radiator_heat_valve', 'hvac_action', 'heating') or 
                        is_state_attr('climate.workshop_radiator_heat_valve', 'hvac_action', 'heating') or
+                       is_state_attr('climate.entrance_radiator_heat_valve', 'hvac_action', 'heating') or
                        is_state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') or
-                       is_state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') or
-                       is_state_attr('climate.entrance_radiator_heat_valve', 'hvac_action', 'heating') }}
+                       is_state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') }}
                 # OR living room needs heating (only if windows closed)
                 - condition: and
                   conditions:
