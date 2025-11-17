@@ -103,16 +103,25 @@ co2_led_restore_normal:
       description: "LED strip entity to restore"
       example: "light.bedroom_led_strip"
   sequence:
-    # Restore the saved scene (if it exists)
-    - service: scene.turn_on
-      data:
-        entity_id: "scene.co2_led_restore_{{ entity_id.split('.')[1] }}"
-        transition: 5
-      continue_on_error: true
+    # Check if the scene exists before trying to restore it
+    - variables:
+        scene_entity: "scene.co2_led_restore_{{ entity_id.split('.')[1] }}"
+    - if:
+        - condition: template
+          value_template: "{{ states[scene_entity] is defined }}"
+      then:
+        # Restore the saved scene
+        - service: scene.turn_on
+          data:
+            entity_id: "{{ scene_entity }}"
+            transition: 5
     
     # Clean up the temporary scene after restoration
     - delay: 3
-    - service: scene.delete
-      data:
-        entity_id: "scene.co2_led_restore_{{ (entity_id if entity_id is string else entity_id[0]).split('.')[1] }}"
-      continue_on_error: true
+    - if:
+        - condition: template
+          value_template: "{{ states[scene_entity] is defined }}"
+      then:
+        - service: scene.delete
+          data:
+            entity_id: "{{ scene_entity }}"
