@@ -24,6 +24,8 @@ co2_led_breathing_notification:
         scene_id: "co2_led_restore_{{ (entity_id if entity_id is string else entity_id[0]).split('.')[1] }}"
         snapshot_entities:
           - "{{ entity_id if entity_id is string else entity_id[0] }}"
+    # Wait for scene to be created and available
+    - delay: 1
     
     # Get current brightness to maintain throughout notification
     - variables:
@@ -101,11 +103,12 @@ co2_led_restore_normal:
       description: "LED strip entity to restore"
       example: "light.bedroom_led_strip"
   sequence:
-    # Restore the saved scene
+    # Restore the saved scene (if it exists)
     - service: scene.turn_on
       data:
         entity_id: "scene.co2_led_restore_{{ entity_id.split('.')[1] }}"
         transition: 5
+      continue_on_error: true
     
     # Clean up the temporary scene after restoration
     - delay: 3
