@@ -403,63 +403,63 @@
           else:
             # Check if ALL active valves have reached their setpoints (complete heating cycle)
             - if:
-            - condition: and
-              conditions:
-                # All rooms with external sensors at or above setpoint OR valve disabled by window
-                - condition: or
+                - condition: and
                   conditions:
+                    # All rooms with external sensors at or above setpoint OR valve disabled by window
+                    - condition: or
+                      conditions:
+                        - condition: template
+                          value_template: >
+                            {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                        - condition: template
+                          value_template: >
+                            {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) >= 
+                               (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20)) }}
+                    - condition: or
+                      conditions:
+                        - condition: template
+                          value_template: >
+                            {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                        - condition: template
+                          value_template: >
+                            {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) >= 
+                               (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20)) }}
+                    - condition: or
+                      conditions:
+                        - condition: template
+                          value_template: >
+                            {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                        - condition: template
+                          value_template: >
+                            {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) >= 
+                               (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20)) }}
+                    - condition: or
+                      conditions:
+                        - condition: template
+                          value_template: >
+                            {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                        - condition: template
+                          value_template: >
+                            {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) >= 
+                               (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20)) }}
+                    # All bathrooms at or above setpoint (always active, no windows)
                     - condition: template
                       value_template: >
-                        {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                        {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
+                           (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
                     - condition: template
                       value_template: >
-                        {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) >= 
-                           (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20)) }}
-                - condition: or
-                  conditions:
-                    - condition: template
-                      value_template: >
-                        {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                    - condition: template
-                      value_template: >
-                        {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) >= 
-                           (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20)) }}
-                - condition: or
-                  conditions:
-                    - condition: template
-                      value_template: >
-                        {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                    - condition: template
-                      value_template: >
-                        {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) >= 
-                           (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20)) }}
-                - condition: or
-                  conditions:
-                    - condition: template
-                      value_template: >
-                        {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                    - condition: template
-                      value_template: >
-                        {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) >= 
-                           (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20)) }}
-                # All bathrooms at or above setpoint (always active, no windows)
-                - condition: template
-                  value_template: >
-                    {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
-                       (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
-                - condition: template
-                  value_template: >
-                    {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
-                       (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
-          then:
-            # Turn off boiler - ALL active valves saturated (reached setpoints)
-            - service: switch.turn_off
-              target:
-                entity_id: switch.laundry_room_boiler_controller_l2
-            - service: logbook.log
-              data:
-                name: "Boiler Control"
-                message: "Boiler turned OFF - All active valves saturated (reached setpoints). Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C"
+                        {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
+                           (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
+              then:
+                # Turn off boiler - ALL active valves saturated (reached setpoints)
+                - service: switch.turn_off
+                  target:
+                    entity_id: switch.laundry_room_boiler_controller_l2
+                - service: logbook.log
+                  data:
+                    name: "Boiler Control"
+                    message: "Boiler turned OFF - All active valves saturated (reached setpoints). Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C"
   mode: single
 
 # Kids Room Dimmer Switch Control
