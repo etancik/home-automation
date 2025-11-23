@@ -163,23 +163,32 @@
       event: start
   conditions: []
   actions:
-    # Configure each valve to use external sensor
+    # Configure each valve: external sensor + minimal 0.2°C hysteresis for centralized boiler control
     - service: mqtt.publish
       data:
         topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external"}'
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
     - service: mqtt.publish
       data:
         topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external"}'  
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
     - service: mqtt.publish
       data:
         topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external"}'
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
     - service: mqtt.publish
       data:
         topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external"}'
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
+    # Configure bathroom valves with minimal hysteresis
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/Downstairs Bathroom Radiator Heat Valve/set"
+        payload: '{"temperature_accuracy": -0.2}'
+    - service: mqtt.publish
+      data:
+        topic: "zigbee2mqtt/Upstairs Bathroom Radiator Heat Valve/set"
+        payload: '{"temperature_accuracy": -0.2}'
     # Sync current temperature readings
     - service: mqtt.publish
       data:
@@ -305,20 +314,56 @@
             name: "Boiler Control"
             message: "Boiler turned OFF - living room temperature above 25°C (current: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C)"
       else:
-        # NORMAL OPERATION: Check if heating is needed
+        # NORMAL OPERATION: Check if ANY active valve room dropped 1°C below setpoint (centralized trigger)
         - if:
             - condition: or
               conditions:
-                # Any radiator valve calling for heat (hvac_action = heating)
-                # Check underlying valve entities since template entities don't expose hvac_action
+                # Check if any room with external sensor is 1°C below setpoint AND valve is enabled (not disabled by window)
+                - condition: and
+                  conditions:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') != 'off' }}
+                    - condition: template
+                      value_template: >
+                        {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) < 
+                           (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
+                - condition: and
+                  conditions:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') != 'off' }}
+                    - condition: template
+                      value_template: >
+                        {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) < 
+                           (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
+                - condition: and
+                  conditions:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') != 'off' }}
+                    - condition: template
+                      value_template: >
+                        {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) < 
+                           (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
+                - condition: and
+                  conditions:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') != 'off' }}
+                    - condition: template
+                      value_template: >
+                        {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) < 
+                           (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
+                # Check bathrooms with internal sensors (no window sensors, always active)
                 - condition: template
                   value_template: >
-                    {{ is_state_attr('climate.bedroom_radiator_heat_valve', 'hvac_action', 'heating') or
-                       is_state_attr('climate.kids_room_radiator_heat_valve', 'hvac_action', 'heating') or 
-                       is_state_attr('climate.workshop_radiator_heat_valve', 'hvac_action', 'heating') or
-                       is_state_attr('climate.entrance_radiator_heat_valve', 'hvac_action', 'heating') or
-                       is_state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') or
-                       is_state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') }}
+                    {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
+                       (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
+                - condition: template
+                  value_template: >
+                    {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
+                       (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
                 # OR living room needs heating (only if windows closed)
                 - condition: and
                   conditions:
@@ -345,22 +390,71 @@
                 message: >
                   Boiler turned ON - Heating demand: 
                   Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C,
-                  Valves heating: 
-                  {% if is_state_attr('climate.bedroom_radiator_heat_valve', 'hvac_action', 'heating') %}Bedroom {% endif %}
-                  {% if is_state_attr('climate.kids_room_radiator_heat_valve', 'hvac_action', 'heating') %}KidsRoom {% endif %}
-                  {% if is_state_attr('climate.workshop_radiator_heat_valve', 'hvac_action', 'heating') %}Workshop {% endif %}
-                  {% if is_state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') %}Downstairs {% endif %}
-                  {% if is_state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action', 'heating') %}Upstairs {% endif %}
-                  {% if is_state_attr('climate.entrance_radiator_heat_valve', 'hvac_action', 'heating') %}Entrance {% endif %}
-          else:
-            # Turn off boiler - NO heating needed
+                  Active valves: 
+                  {% if state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') != 'off' %}Bedroom {% endif %}
+                  {% if state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') != 'off' %}KidsRoom {% endif %}
+                  {% if state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') != 'off' %}Workshop {% endif %}
+                  Downstairs Upstairs 
+                  {% if state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') != 'off' %}Entrance {% endif %}
+        # Check if ALL active valves have reached their setpoints (complete heating cycle)
+        - if:
+            - condition: and
+              conditions:
+                # All rooms with external sensors at or above setpoint OR valve disabled by window
+                - condition: or
+                  conditions:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                    - condition: template
+                      value_template: >
+                        {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) >= 
+                           (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20)) }}
+                - condition: or
+                  conditions:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                    - condition: template
+                      value_template: >
+                        {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) >= 
+                           (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20)) }}
+                - condition: or
+                  conditions:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                    - condition: template
+                      value_template: >
+                        {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) >= 
+                           (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20)) }}
+                - condition: or
+                  conditions:
+                    - condition: template
+                      value_template: >
+                        {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                    - condition: template
+                      value_template: >
+                        {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) >= 
+                           (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20)) }}
+                # All bathrooms at or above setpoint (always active, no windows)
+                - condition: template
+                  value_template: >
+                    {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
+                       (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
+                - condition: template
+                  value_template: >
+                    {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
+                       (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
+          then:
+            # Turn off boiler - ALL active valves saturated (reached setpoints)
             - service: switch.turn_off
               target:
                 entity_id: switch.laundry_room_boiler_controller_l2
             - service: logbook.log
               data:
                 name: "Boiler Control"
-                message: "Boiler turned OFF - No heating demand (All valves satisfied, Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C ≥ 22°C)"
+                message: "Boiler turned OFF - All active valves saturated (reached setpoints). Living room: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C"
   mode: single
 
 # Kids Room Dimmer Switch Control
