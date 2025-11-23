@@ -364,13 +364,17 @@
                   value_template: >
                     {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
                        (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-                # OR living room needs heating (only if windows closed)
+                # OR living room needs heating (only if windows closed AND sensor available)
                 - condition: and
                   conditions:
+                    # Living room temperature sensor available
+                    - condition: template
+                      value_template: >
+                        {{ states('sensor.living_room_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
                     # Living room temperature below threshold
                     - condition: template
                       value_template: >
-                        {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) < 21 }}
+                        {{ states('sensor.living_room_temperature_sensor_temperature') | float(25) < 21 }}
                     # Kitchen window closed (affects living room area)
                     - condition: state
                       entity_id: binary_sensor.kitchen_window_sensor_contact
@@ -396,8 +400,9 @@
                   {% if state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') != 'off' %}Workshop {% endif %}
                   Downstairs Upstairs 
                   {% if state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') != 'off' %}Entrance {% endif %}
-        # Check if ALL active valves have reached their setpoints (complete heating cycle)
-        - if:
+          else:
+            # Check if ALL active valves have reached their setpoints (complete heating cycle)
+            - if:
             - condition: and
               conditions:
                 # All rooms with external sensors at or above setpoint OR valve disabled by window
