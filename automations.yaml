@@ -523,15 +523,15 @@
 # LED Strip Schedule Control
 - id: 'led_strips_evening_schedule'
   alias: "LED Strips Evening Schedule"
-  description: "Turn on bedroom and kids room LED strips at 7 PM, turn off at 7 AM"
+  description: "Turn on bedroom and kids room LED strips at sunset, turn off at sunrise"
   triggers:
-    # Turn on at 7 PM
-    - platform: time
-      at: "19:00:00"
+    # Turn on at sunset
+    - trigger: sun
+      event: sunset
       id: "turn_on"
-    # Turn off at 7 AM  
-    - platform: time
-      at: "07:00:00"
+    # Turn off at sunrise
+    - trigger: sun
+      event: sunrise
       id: "turn_off"
   conditions: []
   actions:
@@ -539,7 +539,7 @@
         - condition: trigger
           id: "turn_on"
       then:
-        # Turn on both LED strips at 7 PM
+        # Turn on both LED strips at sunset
         - service: light.turn_on
           target:
             entity_id:
@@ -548,7 +548,7 @@
           data:
             brightness_pct: 30
       else:
-        # Turn off both LED strips at 7 AM
+        # Turn off both LED strips at sunrise
         - service: light.turn_off
           target:
             entity_id:
