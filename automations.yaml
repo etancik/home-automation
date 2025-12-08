@@ -302,7 +302,7 @@
     - if:
         - condition: template
           value_template: >
-            {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) > 25 }}
+            {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) > states('input_number.living_room_shutoff_temp') | float(25) }}
       then:
         # Turn off boiler - emergency shutoff
         - service: switch.turn_off
@@ -312,7 +312,7 @@
           data:
             name: "Boiler Control"
             message: >
-              Boiler turned OFF - Emergency: Living room overheating ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C > 25°C)
+              Boiler turned OFF - Emergency: Living room overheating ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C > {{ states('input_number.living_room_shutoff_temp') }}°C)
       else:
         # NORMAL OPERATION: Check if ANY active valve room dropped 1°C below setpoint (centralized trigger)
         - if:
@@ -364,17 +364,21 @@
                   value_template: >
                     {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
                        (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-                # OR living room needs heating (only if windows closed AND sensor available)
+                # OR living room needs heating (only if windows closed AND sensor available AND not overridden)
                 - condition: and
                   conditions:
+                    # Living room override NOT enabled (fireplace mode)
+                    - condition: state
+                      entity_id: input_boolean.living_room_override
+                      state: 'off'
                     # Living room temperature sensor available
                     - condition: template
                       value_template: >
                         {{ states('sensor.living_room_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
-                    # Living room temperature below threshold (turn on at <20°C)
+                    # Living room temperature below heat threshold
                     - condition: template
                       value_template: >
-                        {{ states('sensor.living_room_temperature_sensor_temperature') | float(25) < 20 }}
+                        {{ states('sensor.living_room_temperature_sensor_temperature') | float(25) < states('input_number.living_room_heat_threshold') | float(20) }}
                     # Kitchen window closed (affects living room area)
                     - condition: state
                       entity_id: binary_sensor.kitchen_window_sensor_contact
@@ -401,14 +405,21 @@
                   Downstairs Upstairs 
                   {% if state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') != 'off' %}Entrance {% endif %}
           else:
-            # Turn off if living room reached 21°C AND all active valves saturated
+            # Turn off if living room reached target temp AND all active valves saturated (unless overridden)
             - if:
                 - condition: and
                   conditions:
-                    # Living room reached target temperature
-                    - condition: template
-                      value_template: >
-                        {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) >= 21 }}
+                    # Living room override NOT enabled OR living room reached target temperature
+                    - condition: or
+                      conditions:
+                        # Living room override enabled (fireplace mode - skip living room temp check)
+                        - condition: state
+                          entity_id: input_boolean.living_room_override
+                          state: 'on'
+                        # OR living room reached target temperature
+                        - condition: template
+                          value_template: >
+                            {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) >= states('input_number.living_room_target_temp') | float(21) }}
                     # AND all active valves have reached their setpoints
                     - condition: and
                       conditions:
@@ -466,7 +477,13 @@
                 - service: logbook.log
                   data:
                     name: "Boiler Control"
-                    message: "Boiler turned OFF - Heating complete: All valves satisfied AND living room ≥21°C ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C)"
+                    message: >
+                      Boiler turned OFF - Heating complete: All valves satisfied
+                      {% if is_state('input_boolean.living_room_override', 'on') %}
+                      (Living room override enabled - fireplace mode)
+                      {% else %}
+                      AND living room ≥21°C ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C / target: {{ states('input_number.living_room_target_temp') }}°C)
+                      {% endif %}
   mode: single
 
 # Kids Room Dimmer Switch Control

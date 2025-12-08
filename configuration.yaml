@@ -38,28 +38,36 @@ scene: !include scenes.yaml
 
 # Heating Control Configuration
 input_number:
-  living_room_temp_min:
-    name: "Living Room Minimum Temperature"
+  living_room_heat_threshold:
+    name: "Living Room Heat Threshold"
     min: 15
+    max: 22
+    initial: 20
+    step: 0.5
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer-chevron-down
+  living_room_target_temp:
+    name: "Living Room Target Temperature"
+    min: 18
     max: 25
     initial: 21
     step: 0.5
     unit_of_measurement: "°C"
-    icon: mdi:thermometer-low
-  living_room_temp_max:
-    name: "Living Room Maximum Temperature"
-    min: 20
+    icon: mdi:thermometer-check
+  living_room_shutoff_temp:
+    name: "Living Room Emergency Shutoff"
+    min: 22
     max: 30
     initial: 25
     step: 0.5
     unit_of_measurement: "°C"
-    icon: mdi:thermometer-high
+    icon: mdi:thermometer-alert
 
 input_boolean:
-  boiler_control_enabled:
-    name: "Enable Automatic Boiler Control"
-    initial: true
-    icon: mdi:water-boiler
+  living_room_override:
+    name: "Ignore Living Room Temperature"
+    initial: false
+    icon: mdi:fire
 
 # Garage Door Cover Configuration
 # Uses Hörmann Promatic 3 status feedback via Shelly Plus1PM
