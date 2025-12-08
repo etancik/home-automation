@@ -70,13 +70,19 @@ input_boolean:
     icon: mdi:fire
 
 # Template switch for display-only living room heating status
-# This is a dummy switch that mirrors boiler state without controlling it
+# Shows heating when living room temperature is below target and boiler is on
 template:
   - switch:
       - name: "Living Room Heating Status"
         unique_id: living_room_heating_status
-        # Mirror the actual boiler state
-        state: "{{ is_state('switch.laundry_room_boiler_controller_l2', 'on') }}"
+        # Show heating when:
+        # 1. Living room temp is below target (heating requested)
+        # 2. Boiler is actually on
+        state: >
+          {% set current_temp = states('sensor.living_room_temperature_sensor_temperature') | float(25) %}
+          {% set target_temp = states('input_number.living_room_target_temp') | float(21) %}
+          {% set boiler_on = is_state('switch.laundry_room_boiler_controller_l2', 'on') %}
+          {{ current_temp < target_temp and boiler_on }}
         # Do nothing when turned on/off - automation controls the real boiler
         turn_on:
           - service: system_log.write
