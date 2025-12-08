@@ -109,8 +109,8 @@ climate:
     target_temp: 21
     cold_tolerance: 0.3
     hot_tolerance: 0.3
-    # Start in off mode - automation handles actual control
-    initial_hvac_mode: "off"
+    # Start in heat mode - keeps thermostat enabled after restart
+    initial_hvac_mode: "heat"
 
 # Garage Door Cover Configuration
 # Uses Hörmann Promatic 3 status feedback via Shelly Plus1PM
