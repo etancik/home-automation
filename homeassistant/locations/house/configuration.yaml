@@ -38,22 +38,6 @@ scene: !include scenes.yaml
 
 # Heating Control Configuration
 input_number:
-  living_room_heat_threshold:
-    name: "Living Room Heat Threshold"
-    min: 15
-    max: 30
-    initial: 20
-    step: 1
-    unit_of_measurement: "°C"
-    icon: mdi:thermometer-chevron-down
-  living_room_target_temp:
-    name: "Living Room Target Temperature"
-    min: 15
-    max: 30
-    initial: 21
-    step: 1
-    unit_of_measurement: "°C"
-    icon: mdi:thermometer-check
   living_room_shutoff_temp:
     name: "Living Room Emergency Shutoff"
     min: 15
@@ -80,7 +64,7 @@ template:
         # 2. Boiler is actually on
         state: >
           {% set current_temp = states('sensor.living_room_temperature_sensor_temperature') | float(25) %}
-          {% set target_temp = states('input_number.living_room_target_temp') | float(21) %}
+          {% set target_temp = state_attr('climate.living_room_virtual_heating', 'temperature') | float(21) %}
           {% set boiler_on = is_state('switch.laundry_room_boiler_controller_l2', 'on') %}
           {{ current_temp < target_temp and boiler_on }}
         # Do nothing when turned on/off - automation controls the real boiler

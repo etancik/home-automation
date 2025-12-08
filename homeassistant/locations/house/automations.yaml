@@ -375,10 +375,10 @@
                     - condition: template
                       value_template: >
                         {{ states('sensor.living_room_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
-                    # Living room temperature below heat threshold
+                    # Living room temperature below target temp - 1°C (heat threshold)
                     - condition: template
                       value_template: >
-                        {{ states('sensor.living_room_temperature_sensor_temperature') | float(25) < states('input_number.living_room_heat_threshold') | float(20) }}
+                        {{ states('sensor.living_room_temperature_sensor_temperature') | float(25) < (state_attr('climate.living_room_virtual_heating', 'temperature') | float(21) - 1.0) }}
                     # Kitchen window closed (affects living room area)
                     - condition: state
                       entity_id: binary_sensor.kitchen_window_sensor_contact
@@ -419,7 +419,7 @@
                         # OR living room reached target temperature
                         - condition: template
                           value_template: >
-                            {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) >= states('input_number.living_room_target_temp') | float(21) }}
+                            {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) >= state_attr('climate.living_room_virtual_heating', 'temperature') | float(21) }}
                     # AND all active valves have reached their setpoints
                     - condition: and
                       conditions:
