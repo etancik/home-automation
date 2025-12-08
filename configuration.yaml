@@ -69,6 +69,43 @@ input_boolean:
     initial: false
     icon: mdi:fire
 
+# Template switch for display-only living room heating status
+# This is a dummy switch that mirrors boiler state without controlling it
+template:
+  - switch:
+      - name: "Living Room Heating Status"
+        unique_id: living_room_heating_status
+        # Mirror the actual boiler state
+        state: "{{ is_state('switch.laundry_room_boiler_controller_l2', 'on') }}"
+        # Do nothing when turned on/off - automation controls the real boiler
+        turn_on:
+          - service: system_log.write
+            data:
+              message: "Living room heating status switch is display-only"
+              level: debug
+        turn_off:
+          - service: system_log.write
+            data:
+              message: "Living room heating status switch is display-only"
+              level: debug
+        icon: mdi:radiator
+
+# Virtual thermostat for living room using dummy switch
+# Provides HomeKit interface without directly controlling boiler
+climate:
+  - platform: generic_thermostat
+    name: "Living Room Virtual Heating"
+    unique_id: living_room_virtual_heating
+    heater: switch.living_room_heating_status
+    target_sensor: sensor.living_room_temperature_sensor_temperature
+    min_temp: 15
+    max_temp: 30
+    target_temp: 21
+    cold_tolerance: 0.3
+    hot_tolerance: 0.3
+    # Start in off mode - automation handles actual control
+    initial_hvac_mode: "off"
+
 # Garage Door Cover Configuration
 # Uses Hörmann Promatic 3 status feedback via Shelly Plus1PM
 # The garage door controller reports actual door position (closed/not closed)
@@ -175,6 +212,7 @@ homekit:
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.entrance_radiator_heat_valve
         - climate.kids_room_radiator_heat_valve
+        - climate.living_room_virtual_heating
         - climate.upstairs_bathroom_radiator_heat_valve
         - climate.workshop_radiator_heat_valve
         
@@ -290,6 +328,8 @@ homekit:
         name: "Entrance Heating"
       climate.kids_room_radiator_heat_valve:
         name: "Kids Room Heating"
+      climate.living_room_virtual_heating:
+        name: "Living Room Heating"
       climate.upstairs_bathroom_radiator_heat_valve:
         name: "Upstairs Bathroom Heating"
       climate.workshop_radiator_heat_valve:
