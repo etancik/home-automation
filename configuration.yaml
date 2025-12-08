@@ -88,8 +88,8 @@ climate:
     unique_id: living_room_virtual_heating
     heater: switch.living_room_heating_status
     target_sensor: sensor.living_room_temperature_sensor_temperature
-    min_temp: 15
-    max_temp: 30
+    min_temp: 4
+    max_temp: 35
     target_temp: 21
     cold_tolerance: 0.3
     hot_tolerance: 0.3
