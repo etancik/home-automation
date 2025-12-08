@@ -202,7 +202,7 @@ homekit:
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.entrance_radiator_heat_valve
         - climate.kids_room_radiator_heat_valve
-        - climate.living_room_virtual_heating
+        # - climate.living_room_virtual_heating  # Temporarily removed to clear HomeKit cache
         - climate.upstairs_bathroom_radiator_heat_valve
         - climate.workshop_radiator_heat_valve
         
