@@ -85,7 +85,7 @@ template:
 climate:
   - platform: generic_thermostat
     name: "Living Room Virtual Heating"
-    unique_id: living_room_virtual_heating
+    unique_id: living_room_heating
     heater: switch.living_room_heating_status
     target_sensor: sensor.living_room_temperature_sensor_temperature
     min_temp: 4
