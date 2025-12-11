@@ -289,6 +289,12 @@
     # Monitor living room temperature changes
     - platform: state
       entity_id: sensor.living_room_temperature_sensor_temperature
+    # Monitor boiler state changes
+    - platform: state
+      entity_id: switch.laundry_room_boiler_controller_l2
+    # Periodic check every 2 minutes to re-evaluate heating needs
+    - platform: time_pattern
+      minutes: "/2"
     # Startup trigger
     - platform: homeassistant
       event: start
