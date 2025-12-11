@@ -488,7 +488,7 @@
                       {% if is_state('input_boolean.living_room_override', 'on') %}
                       (Living room override enabled - fireplace mode)
                       {% else %}
-                      AND living room ≥21°C ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C / target: {{ states('input_number.living_room_target_temp') }}°C)
+                      AND living room ≥21°C ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C / target: {{ state_attr('climate.living_room_virtual_heating', 'temperature') }}°C)
                       {% endif %}
   mode: single
 
