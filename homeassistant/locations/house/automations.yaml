@@ -234,19 +234,17 @@
         - binary_sensor.bedroom_window_sensor_contact
         - binary_sensor.kids_room_window_sensor_contact
         - binary_sensor.workshop_window_sensor_contact
-    - platform: homeassistant
-      event: start
   conditions:
-    # Only run if window sensors are available
+    # Only run if window sensors and corresponding climate entities are available
     - condition: template
       value_template: >
         {{ states('binary_sensor.bedroom_window_sensor_contact') not in ['unknown', 'unavailable']
            and states('binary_sensor.kids_room_window_sensor_contact') not in ['unknown', 'unavailable']
-           and states('binary_sensor.workshop_window_sensor_contact') not in ['unknown', 'unavailable'] }}
+           and states('binary_sensor.workshop_window_sensor_contact') not in ['unknown', 'unavailable']
+           and states('climate.bedroom_radiator_heat_valve') not in ['unknown', 'unavailable']
+           and states('climate.kids_room_radiator_heat_valve') not in ['unknown', 'unavailable']
+           and states('climate.workshop_radiator_heat_valve') not in ['unknown', 'unavailable'] }}
   actions:
-    # Wait for Zigbee2MQTT to initialize after startup
-    - delay:
-        seconds: 30
     # Individual window control for each heat valve
     - if:
         - condition: state
