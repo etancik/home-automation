@@ -161,9 +161,6 @@
         - sensor.entrance_temperature_sensor_temperature
     - platform: homeassistant
       event: start
-      # Delay startup trigger to allow Zigbee2MQTT to initialize
-      for:
-        seconds: 30
   conditions:
     # Only run if all temperature sensors are available
     - condition: template
@@ -173,6 +170,9 @@
            and states('sensor.workshop_temperature_sensor_temperature') not in ['unknown', 'unavailable']
            and states('sensor.entrance_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
   actions:
+    # Wait for Zigbee2MQTT to initialize after startup
+    - delay:
+        seconds: 30
     # Configure each valve: external sensor + minimal 0.2°C hysteresis for centralized boiler control
     - service: mqtt.publish
       data:
@@ -236,9 +236,6 @@
         - binary_sensor.workshop_window_sensor_contact
     - platform: homeassistant
       event: start
-      # Delay startup trigger to allow Zigbee2MQTT to initialize
-      for:
-        seconds: 30
   conditions:
     # Only run if window sensors are available
     - condition: template
@@ -247,6 +244,9 @@
            and states('binary_sensor.kids_room_window_sensor_contact') not in ['unknown', 'unavailable']
            and states('binary_sensor.workshop_window_sensor_contact') not in ['unknown', 'unavailable'] }}
   actions:
+    # Wait for Zigbee2MQTT to initialize after startup
+    - delay:
+        seconds: 30
     # Individual window control for each heat valve
     - if:
         - condition: state
