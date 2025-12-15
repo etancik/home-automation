@@ -161,7 +161,17 @@
         - sensor.entrance_temperature_sensor_temperature
     - platform: homeassistant
       event: start
-  conditions: []
+      # Delay startup trigger to allow Zigbee2MQTT to initialize
+      for:
+        seconds: 30
+  conditions:
+    # Only run if all temperature sensors are available
+    - condition: template
+      value_template: >
+        {{ states('sensor.bedroom_temperature_sensor_temperature') not in ['unknown', 'unavailable']
+           and states('sensor.kids_room_temperature_sensor_temperature') not in ['unknown', 'unavailable']
+           and states('sensor.workshop_temperature_sensor_temperature') not in ['unknown', 'unavailable']
+           and states('sensor.entrance_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
   actions:
     # Configure each valve: external sensor + minimal 0.2°C hysteresis for centralized boiler control
     - service: mqtt.publish
@@ -210,7 +220,8 @@
         topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
         payload: >
           {"external_temperature_input": {{ states('sensor.entrance_temperature_sensor_temperature') | float(20) }}}
-  mode: single
+  mode: queued
+  max: 5
 
 # Window State Synchronization for All Heat Valves
 - id: 'heat_valves_window_sync_all'
@@ -225,7 +236,16 @@
         - binary_sensor.workshop_window_sensor_contact
     - platform: homeassistant
       event: start
-  conditions: []
+      # Delay startup trigger to allow Zigbee2MQTT to initialize
+      for:
+        seconds: 30
+  conditions:
+    # Only run if window sensors are available
+    - condition: template
+      value_template: >
+        {{ states('binary_sensor.bedroom_window_sensor_contact') not in ['unknown', 'unavailable']
+           and states('binary_sensor.kids_room_window_sensor_contact') not in ['unknown', 'unavailable']
+           and states('binary_sensor.workshop_window_sensor_contact') not in ['unknown', 'unavailable'] }}
   actions:
     # Individual window control for each heat valve
     - if:
@@ -270,7 +290,8 @@
           data:
             topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
             payload: '{"system_mode": "heat"}'
-  mode: single
+  mode: queued
+  max: 5
 
 # Boiler Control Automation
 - id: 'boiler_heating_control'
