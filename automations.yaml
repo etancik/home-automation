@@ -289,10 +289,54 @@
   mode: queued
   max: 5
 
+# Floor Heating Window/Door State Synchronization
+- id: 'floor_heating_window_sync'
+  alias: "Floor Heating Window/Door Sync"
+  description: "Turn off floor heating when windows/doors open, resume when closed"
+  triggers:
+    # Monitor kitchen window and living room door for Living Room floor heating zone
+    - platform: state
+      entity_id: 
+        - binary_sensor.kitchen_window_sensor_contact
+        - binary_sensor.living_room_door_sensor_contact
+  conditions: []
+  actions:
+    # Living Room floor heating zone affected by both kitchen window and living room door
+    - variables:
+        # Check if EITHER kitchen window OR living room door is open
+        any_opening_open: >
+          {{ is_state('binary_sensor.kitchen_window_sensor_contact', 'on') or 
+             is_state('binary_sensor.living_room_door_sensor_contact', 'on') }}
+    - if:
+        - condition: template
+          value_template: "{{ any_opening_open }}"
+      then:
+        # Turn OFF Living Room floor heating when any opening is open
+        - service: climate.turn_off
+          target:
+            entity_id: climate.living_room_floor_heating
+        - service: logbook.log
+          data:
+            name: "Floor Heating Window Sync"
+            message: >
+              Living Room floor heating turned OFF - 
+              Kitchen window: {{ states('binary_sensor.kitchen_window_sensor_contact') }}, 
+              Living room door: {{ states('binary_sensor.living_room_door_sensor_contact') }}
+      else:
+        # Turn ON Living Room floor heating when both openings are closed
+        - service: climate.turn_on
+          target:
+            entity_id: climate.living_room_floor_heating
+        - service: logbook.log
+          data:
+            name: "Floor Heating Window Sync"
+            message: "Living Room floor heating resumed - all openings closed"
+  mode: single
+
 # Boiler Control Automation
 - id: 'boiler_heating_control'
   alias: "Boiler Heating Control"
-  description: "Control boiler based on radiator valve demands and living room temperature limits"
+  description: "Control boiler based on radiator valve and floor heating zone demands"
   triggers:
     # Monitor all radiator valve states for heating demand
     - platform: state
@@ -303,7 +347,12 @@
         - climate.entrance_radiator_heat_valve
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.upstairs_bathroom_radiator_heat_valve
-    # Monitor living room temperature changes
+    # Monitor floor heating zone states
+    - platform: state
+      entity_id:
+        - climate.living_room_floor_heating
+        - climate.downstairs_bathroom_floor_heating
+    # Monitor living room temperature changes (for floor heating zone)
     - platform: state
       entity_id: sensor.living_room_temperature_sensor_temperature
     # Monitor boiler state changes
@@ -321,35 +370,19 @@
       value_template: >
         {{ states('switch.laundry_room_boiler_controller_l2') not in ['unknown', 'unavailable'] }}
   actions:
-    # SAFETY OVERRIDE: Turn off boiler if living room overheating
-    - if:
-        - condition: template
-          value_template: >
-            {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) > states('input_number.living_room_shutoff_temp') | float(25) }}
-      then:
-        # Turn off boiler - emergency shutoff
-        - service: switch.turn_off
-          target:
-            entity_id: switch.laundry_room_boiler_controller_l2
-        - service: logbook.log
-          data:
-            name: "Boiler Control"
-            message: >
-              Boiler turned OFF - Emergency: Living room overheating ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C > {{ states('input_number.living_room_shutoff_temp') }}°C)
-        - stop: ""
-    
     # DIAGNOSTIC: Log current state of all rooms
     - service: logbook.log
       data:
         name: "Boiler Control Debug"
         message: >
           Room States:
-          LR: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C / {{ state_attr('climate.living_room_virtual_heating', 'temperature') }}°C (override: {{ states('input_boolean.living_room_override') }})
+          LR Floor: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C / {{ state_attr('climate.living_room_floor_heating', 'temperature') }}°C ({{ state_attr('climate.living_room_floor_heating', 'hvac_action') }})
           | Bedroom: {{ states('sensor.bedroom_temperature_sensor_temperature') }}°C / {{ state_attr('climate.bedroom_radiator_heat_valve', 'temperature') }}°C ({{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') }})
           | Kids: {{ states('sensor.kids_room_temperature_sensor_temperature') }}°C / {{ state_attr('climate.kids_room_radiator_heat_valve', 'temperature') }}°C ({{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') }})
           | Workshop: {{ states('sensor.workshop_temperature_sensor_temperature') }}°C / {{ state_attr('climate.workshop_radiator_heat_valve', 'temperature') }}°C ({{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') }})
           | Entrance: {{ states('sensor.entrance_temperature_sensor_temperature') }}°C / {{ state_attr('climate.entrance_radiator_heat_valve', 'temperature') }}°C ({{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') }})
-          | Bath Down: {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') }}°C / {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') }}°C
+          | Bath Down Rad: {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') }}°C / {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') }}°C
+          | Bath Down Floor: {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') }}°C / {{ state_attr('climate.downstairs_bathroom_floor_heating', 'temperature') }}°C ({{ state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_action') }})
           | Bath Up: {{ state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') }}°C / {{ state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') }}°C
           | Boiler: {{ states('switch.laundry_room_boiler_controller_l2') }}
     
@@ -357,66 +390,71 @@
     - if:
         - condition: and
           conditions:
-            # Living room override NOT enabled OR living room reached target temperature
+            # Radiator zones with windows: satisfied OR disabled by window
             - condition: or
               conditions:
-                # Living room override enabled (fireplace mode - skip living room temp check)
-                - condition: state
-                  entity_id: input_boolean.living_room_override
-                  state: 'on'
-                # OR living room reached target temperature
                 - condition: template
                   value_template: >
-                    {{ states('sensor.living_room_temperature_sensor_temperature') | float(0) >= state_attr('climate.living_room_virtual_heating', 'temperature') | float(21) }}
-            # AND all active valves have reached their setpoints
-            - condition: and
+                    {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                - condition: template
+                  value_template: >
+                    {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) >= 
+                       (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20)) }}
+            - condition: or
               conditions:
-                # All rooms with external sensors at or above setpoint OR valve disabled by window
-                - condition: or
-                  conditions:
-                    - condition: template
-                      value_template: >
-                        {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                    - condition: template
-                      value_template: >
-                        {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) >= 
-                           (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20)) }}
-                - condition: or
-                  conditions:
-                    - condition: template
-                      value_template: >
-                        {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                    - condition: template
-                      value_template: >
-                        {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) >= 
-                           (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20)) }}
-                - condition: or
-                  conditions:
-                    - condition: template
-                      value_template: >
-                        {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                    - condition: template
-                      value_template: >
-                        {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) >= 
-                           (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20)) }}
-                - condition: or
-                  conditions:
-                    - condition: template
-                      value_template: >
-                        {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                    - condition: template
-                      value_template: >
-                        {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) >= 
-                           (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20)) }}
-                # All bathrooms at or above setpoint (always active, no windows)
+                - condition: template
+                  value_template: >
+                    {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                - condition: template
+                  value_template: >
+                    {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) >= 
+                       (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20)) }}
+            - condition: or
+              conditions:
+                - condition: template
+                  value_template: >
+                    {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                - condition: template
+                  value_template: >
+                    {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) >= 
+                       (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20)) }}
+            - condition: or
+              conditions:
+                - condition: template
+                  value_template: >
+                    {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') == 'off' }}
+                - condition: template
+                  value_template: >
+                    {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) >= 
+                       (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20)) }}
+            # Bathroom radiators: satisfied (no windows, always active)
+            - condition: template
+              value_template: >
+                {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
+                   (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
+            - condition: template
+              value_template: >
+                {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
+                   (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
+            # Floor heating zones: satisfied OR disabled
+            - condition: or
+              conditions:
+                - condition: template
+                  value_template: >
+                    {{ state_attr('climate.living_room_floor_heating', 'hvac_mode') == 'off' }}
+                - condition: template
+                  value_template: >
+                    {{ (states('sensor.living_room_temperature_sensor_temperature') | float(25)) >= 
+                       (state_attr('climate.living_room_floor_heating', 'temperature') | float(21)) }}
+            - condition: or
+              conditions:
+                - condition: template
+                  value_template: >
+                    {{ state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_mode') == 'off' }}
                 - condition: template
                   value_template: >
                     {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
-                       (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
-                - condition: template
-                  value_template: >
-                    {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
-                       (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
+                       (state_attr('climate.downstairs_bathroom_floor_heating', 'temperature') | float(22)) }}
       then:
         # Turn off boiler - heating complete
         - service: switch.turn_off
@@ -425,20 +463,14 @@
         - service: logbook.log
           data:
             name: "Boiler Control"
-            message: >
-              Boiler turned OFF - Heating complete: All valves satisfied
-              {% if is_state('input_boolean.living_room_override', 'on') %}
-              (Living room override enabled - fireplace mode)
-              {% else %}
-              AND living room ≥21°C ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C / target: {{ state_attr('climate.living_room_virtual_heating', 'temperature') }}°C)
-              {% endif %}
+            message: "Boiler turned OFF - Heating complete: All zones satisfied (radiators + floor heating)"
         - stop: ""
     
     # EVALUATE TURN ON: Check if ANY room needs heating
     - if:
         - condition: or
           conditions:
-            # Check if any room with external sensor is 1°C below setpoint AND valve is enabled (not disabled by window)
+            # Check if any radiator room with external sensor is 1°C below setpoint AND valve is enabled (not disabled by window)
             - condition: and
               conditions:
                 - condition: template
@@ -484,29 +516,29 @@
               value_template: >
                 {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
                    (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-            # OR living room needs heating (only if windows closed AND sensor available AND not overridden)
+            # Check floor heating zones (only if enabled AND 1°C below target)
             - condition: and
               conditions:
-                # Living room override NOT enabled (fireplace mode)
-                - condition: state
-                  entity_id: input_boolean.living_room_override
-                  state: 'off'
-                # Living room temperature sensor available
+                # Living Room floor heating enabled
                 - condition: template
                   value_template: >
-                    {{ states('sensor.living_room_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
-                # Living room temperature below target temp - 1°C (heat threshold)
+                    {{ state_attr('climate.living_room_floor_heating', 'hvac_mode') == 'heat' }}
+                # Temperature below target - 1°C (heat threshold with hysteresis)
                 - condition: template
                   value_template: >
-                    {{ states('sensor.living_room_temperature_sensor_temperature') | float(25) < (state_attr('climate.living_room_virtual_heating', 'temperature') | float(21) - 1.0) }}
-                # Kitchen window closed (affects living room area)
-                - condition: state
-                  entity_id: binary_sensor.kitchen_window_sensor_contact
-                  state: 'off'  # Contact sensor OFF = window CLOSED
-                # Living room door closed (garden door)
-                - condition: state
-                  entity_id: binary_sensor.living_room_door_sensor_contact
-                  state: 'off'  # Contact sensor OFF = door CLOSED
+                    {{ (states('sensor.living_room_temperature_sensor_temperature') | float(25)) < 
+                       (state_attr('climate.living_room_floor_heating', 'temperature') | float(21) - 1.0) }}
+            - condition: and
+              conditions:
+                # Downstairs Bathroom floor heating enabled
+                - condition: template
+                  value_template: >
+                    {{ state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_mode') == 'heat' }}
+                # Temperature below target - 1°C (heat threshold with hysteresis)
+                - condition: template
+                  value_template: >
+                    {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
+                       (state_attr('climate.downstairs_bathroom_floor_heating', 'temperature') | float(22) - 1.0) }}
       then:
             # Turn on boiler - heating needed
             - service: switch.turn_on
