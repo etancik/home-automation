@@ -36,64 +36,34 @@ automation: !include automations.yaml
 script: !include scripts.yaml  
 scene: !include scenes.yaml
 
-# Heating Control Configuration
-input_number:
-  living_room_shutoff_temp:
-    name: "Living Room Emergency Shutoff"
-    min: 15
-    max: 30
-    initial: 25
-    step: 1
-    unit_of_measurement: "°C"
-    icon: mdi:thermometer-alert
-
-input_boolean:
-  living_room_override:
-    name: "Ignore Living Room Temperature"
-    initial: false
-    icon: mdi:fire
-
-# Template switch for display-only living room heating status
-# Shows heating when living room temperature is below target and boiler is on
-template:
-  - switch:
-      - name: "Living Room Heating Status"
-        unique_id: living_room_heating_status
-        # Show heating when:
-        # 1. Living room temp is below target (heating requested)
-        # 2. Boiler is actually on
-        state: >
-          {% set current_temp = states('sensor.living_room_temperature_sensor_temperature') | float(25) %}
-          {% set target_temp = state_attr('climate.living_room_virtual_heating', 'temperature') | float(21) %}
-          {% set boiler_on = is_state('switch.laundry_room_boiler_controller_l2', 'on') %}
-          {{ current_temp < target_temp and boiler_on }}
-        # Do nothing when turned on/off - automation controls the real boiler
-        turn_on:
-          - service: system_log.write
-            data:
-              message: "Living room heating status switch is display-only"
-              level: debug
-        turn_off:
-          - service: system_log.write
-            data:
-              message: "Living room heating status switch is display-only"
-              level: debug
-        icon: mdi:radiator
-
-# Virtual thermostat for living room using dummy switch
-# Provides HomeKit interface without directly controlling boiler
+# Floor Heating Control Configuration
+# Two zones controlled by Aqara Dual Relay T2 (0x54ef44100148cb6d) with Elektrobock SEH101-NC actuators
 climate:
+  # Zone 1: Kitchen + Living Room floor heating (Relay L1)
   - platform: generic_thermostat
-    name: "Living Room Virtual Heating"
-    unique_id: living_room_heating
-    heater: switch.living_room_heating_status
+    name: "Living Room Floor Heating"
+    unique_id: living_room_floor_heating
+    heater: switch.floor_heating_controller_l1
     target_sensor: sensor.living_room_temperature_sensor_temperature
     min_temp: 4
     max_temp: 35
     target_temp: 21
     cold_tolerance: 0.3
-    hot_tolerance: 0.3
-    # Start in heat mode - keeps thermostat enabled after restart
+    hot_tolerance: 0
+    initial_hvac_mode: "heat"
+  
+  # Zone 2: Downstairs Bathroom floor heating (Relay L2)
+  - platform: generic_thermostat
+    name: "Downstairs Bathroom Floor Heating"
+    unique_id: downstairs_bathroom_floor_heating
+    heater: switch.floor_heating_controller_l2
+    target_sensor: climate.downstairs_bathroom_radiator_heat_valve
+    attribute: current_temperature
+    min_temp: 4
+    max_temp: 35
+    target_temp: 22
+    cold_tolerance: 0.3
+    hot_tolerance: 0
     initial_hvac_mode: "heat"
 
 # Garage Door Cover Configuration
@@ -203,9 +173,12 @@ homekit:
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.entrance_radiator_heat_valve
         - climate.kids_room_radiator_heat_valve
-        - climate.living_room_virtual_heating
         - climate.upstairs_bathroom_radiator_heat_valve
         - climate.workshop_radiator_heat_valve
+        
+        # Floor Heating Zones (thermostats only, relays hidden)
+        - climate.living_room_floor_heating
+        - climate.downstairs_bathroom_floor_heating
         
         # ========================================
         # LIGHTING
@@ -314,17 +287,21 @@ homekit:
       climate.bedroom_radiator_heat_valve:
         name: "Bedroom Heating"
       climate.downstairs_bathroom_radiator_heat_valve:
-        name: "Downstairs Bathroom Heating"
+        name: "Downstairs Bathroom Radiator"
       climate.entrance_radiator_heat_valve:
         name: "Entrance Heating"
       climate.kids_room_radiator_heat_valve:
         name: "Kids Room Heating"
-      climate.living_room_virtual_heating:
-        name: "Living Room Heating"
       climate.upstairs_bathroom_radiator_heat_valve:
         name: "Upstairs Bathroom Heating"
       climate.workshop_radiator_heat_valve:
         name: "Workshop Heating"
+      
+      # Floor Heating Zones
+      climate.living_room_floor_heating:
+        name: "Living Room Floor"
+      climate.downstairs_bathroom_floor_heating:
+        name: "Downstairs Bathroom Floor"
       
       # ========================================
       # LIGHTING
