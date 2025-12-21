@@ -338,6 +338,21 @@
               Boiler turned OFF - Emergency: Living room overheating ({{ states('sensor.living_room_temperature_sensor_temperature') }}°C > {{ states('input_number.living_room_shutoff_temp') }}°C)
         - stop: ""
     
+    # DIAGNOSTIC: Log current state of all rooms
+    - service: logbook.log
+      data:
+        name: "Boiler Control Debug"
+        message: >
+          Room States:
+          LR: {{ states('sensor.living_room_temperature_sensor_temperature') }}°C / {{ state_attr('climate.living_room_virtual_heating', 'temperature') }}°C (override: {{ states('input_boolean.living_room_override') }})
+          | Bedroom: {{ states('sensor.bedroom_temperature_sensor_temperature') }}°C / {{ state_attr('climate.bedroom_radiator_heat_valve', 'temperature') }}°C ({{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') }})
+          | Kids: {{ states('sensor.kids_room_temperature_sensor_temperature') }}°C / {{ state_attr('climate.kids_room_radiator_heat_valve', 'temperature') }}°C ({{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') }})
+          | Workshop: {{ states('sensor.workshop_temperature_sensor_temperature') }}°C / {{ state_attr('climate.workshop_radiator_heat_valve', 'temperature') }}°C ({{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') }})
+          | Entrance: {{ states('sensor.entrance_temperature_sensor_temperature') }}°C / {{ state_attr('climate.entrance_radiator_heat_valve', 'temperature') }}°C ({{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') }})
+          | Bath Down: {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') }}°C / {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') }}°C
+          | Bath Up: {{ state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') }}°C / {{ state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') }}°C
+          | Boiler: {{ states('switch.laundry_room_boiler_controller_l2') }}
+    
     # EVALUATE TURN OFF FIRST: Check if all rooms satisfied
     - if:
         - condition: and
@@ -509,6 +524,8 @@
                   {% if state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') != 'off' %}Workshop {% endif %}
                   Downstairs Upstairs 
                   {% if state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') != 'off' %}Entrance {% endif %}
+    # If neither turn-off nor turn-on conditions met, maintain current boiler state (hysteresis dead zone)
+    # No else block - intentionally do nothing to prevent oscillation
   mode: single
 
 # Kids Room Dimmer Switch Control
