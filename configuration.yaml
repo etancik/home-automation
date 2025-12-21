@@ -37,6 +37,17 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 
 # Floor Heating Control Configuration
+# Template sensors for floor heating
+template:
+  - sensor:
+      # Extract current temperature from downstairs bathroom radiator valve for floor heating control
+      - name: "Downstairs Bathroom Temperature"
+        unique_id: downstairs_bathroom_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state: >
+          {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20) }}
+
 # Two zones controlled by Aqara Dual Relay T2 (0x54ef44100148cb6d) with Elektrobock SEH101-NC actuators
 climate:
   # Zone 1: Kitchen + Living Room floor heating (Relay L1)
@@ -53,12 +64,12 @@ climate:
     initial_hvac_mode: "heat"
   
   # Zone 2: Downstairs Bathroom floor heating (Relay L2)
+  # Uses template sensor extracting temperature from radiator valve
   - platform: generic_thermostat
     name: "Downstairs Bathroom Floor Heating"
     unique_id: downstairs_bathroom_floor_heating
     heater: switch.floor_heating_controller_l2
-    target_sensor: climate.downstairs_bathroom_radiator_heat_valve
-    attribute: current_temperature
+    target_sensor: sensor.downstairs_bathroom_temperature
     min_temp: 4
     max_temp: 35
     target_temp: 22
