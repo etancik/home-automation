@@ -232,62 +232,60 @@
     - platform: state
       entity_id: 
         - binary_sensor.bedroom_window_sensor_contact
+        - binary_sensor.entrance_door_sensor_contact
         - binary_sensor.kids_room_window_sensor_contact
         - binary_sensor.workshop_window_sensor_contact
-  conditions:
-    # Only run if window sensors and corresponding climate entities are available
-    - condition: template
-      value_template: >
-        {{ states('binary_sensor.bedroom_window_sensor_contact') not in ['unknown', 'unavailable']
-           and states('binary_sensor.kids_room_window_sensor_contact') not in ['unknown', 'unavailable']
-           and states('binary_sensor.workshop_window_sensor_contact') not in ['unknown', 'unavailable']
-           and states('climate.bedroom_radiator_heat_valve') not in ['unknown', 'unavailable']
-           and states('climate.kids_room_radiator_heat_valve') not in ['unknown', 'unavailable']
-           and states('climate.workshop_radiator_heat_valve') not in ['unknown', 'unavailable'] }}
+  conditions: []
   actions:
-    # Individual window control for each heat valve
+    # Only process the room that triggered this automation
+    - variables:
+        room_map:
+          binary_sensor.bedroom_window_sensor_contact:
+            name: "Bedroom"
+            valve: "Bedroom Radiator Heat Valve"
+          binary_sensor.entrance_door_sensor_contact:
+            name: "Entrance"
+            valve: "Entrance Radiator Heat Valve"
+          binary_sensor.kids_room_window_sensor_contact:
+            name: "Kids Room"
+            valve: "Kids Room Radiator Heat Valve"
+          binary_sensor.workshop_window_sensor_contact:
+            name: "Workshop"
+            valve: "Workshop Radiator Heat Valve"
+    - variables:
+        room_config: "{{ room_map[trigger.entity_id] }}"
+    # Check if sensor is available
     - if:
-        - condition: state
-          entity_id: binary_sensor.bedroom_window_sensor_contact
-          state: 'on'  # Window OPEN
+        - condition: template
+          value_template: "{{ trigger.to_state.state in ['unknown', 'unavailable'] }}"
       then:
-        - service: mqtt.publish
+        - service: logbook.log
           data:
-            topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-            payload: '{"system_mode": "off"}'
+            name: "Heat Valve Window Sync"
+            message: "{{ room_config.name }} sensor offline - skipping heating control"
       else:
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-            payload: '{"system_mode": "heat"}'
-    - if:
-        - condition: state
-          entity_id: binary_sensor.kids_room_window_sensor_contact
-          state: 'on'  # Window OPEN
-      then:
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-            payload: '{"system_mode": "off"}'
-      else:
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-            payload: '{"system_mode": "heat"}'
-    - if:
-        - condition: state
-          entity_id: binary_sensor.workshop_window_sensor_contact
-          state: 'on'  # Window OPEN
-      then:
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-            payload: '{"system_mode": "off"}'
-      else:
-        - service: mqtt.publish
-          data:
-            topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-            payload: '{"system_mode": "heat"}'
+        # Sensor available - control heating based on state
+        - if:
+            - condition: template
+              value_template: "{{ trigger.to_state.state == 'on' }}"  # Window/Door OPEN
+          then:
+            - service: mqtt.publish
+              data:
+                topic: "zigbee2mqtt/{{ room_config.valve }}/set"
+                payload: '{"system_mode": "off"}'
+            - service: logbook.log
+              data:
+                name: "Heat Valve Window Sync"
+                message: "{{ room_config.name }} window/door opened - heating turned OFF"
+          else:
+            - service: mqtt.publish
+              data:
+                topic: "zigbee2mqtt/{{ room_config.valve }}/set"
+                payload: '{"system_mode": "heat"}'
+            - service: logbook.log
+              data:
+                name: "Heat Valve Window Sync"
+                message: "{{ room_config.name }} window/door closed - heating resumed"
   mode: queued
   max: 5
 
