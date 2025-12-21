@@ -57,6 +57,10 @@ devices:
     friendly_name: 'Bedroom Window Sensor'
     retain: false
     description: 'Window contact sensor for bedroom window'
+  '0xc09b9efffe70e70b':
+    friendly_name: 'Entrance Door Sensor'
+    retain: false
+    description: 'Door contact sensor for entrance door'
   '0xc4d8c8fffe12cb42':
     friendly_name: 'Kids Room Window Sensor'
     retain: false

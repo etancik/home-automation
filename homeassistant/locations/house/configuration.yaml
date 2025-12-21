@@ -178,6 +178,7 @@ homekit:
         
         # Window/Door Sensors (alphabetical by room)
         - binary_sensor.bedroom_window_sensor_contact
+        - binary_sensor.entrance_door_sensor_contact
         - binary_sensor.kids_room_window_sensor_contact
         - binary_sensor.kitchen_window_sensor_contact
         - binary_sensor.living_room_door_sensor_contact
