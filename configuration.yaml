@@ -37,7 +37,7 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 
 # Floor Heating Control Configuration
-# Template sensors for floor heating
+# Template sensors and covers
 template:
   - sensor:
       # Extract current temperature from downstairs bathroom radiator valve for floor heating control
@@ -47,6 +47,33 @@ template:
         device_class: temperature
         state: >
           {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20) }}
+  
+  # Garage Door Cover (modern template syntax)
+  # Uses Hörmann Promatic 3 status feedback via Shelly Plus1PM
+  - cover:
+      - name: "Garage Door"
+        unique_id: garage_door
+        device_class: garage
+        value_template: >
+          {% if is_state('binary_sensor.door_lock', 'off') %}
+            closed
+          {% elif is_state('binary_sensor.door_lock', 'on') %}
+            open
+          {% else %}
+            unknown
+          {% endif %}
+        open_cover:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
+        close_cover:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
+        stop_cover:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
 
 # Two zones controlled by Aqara Dual Relay T2 (0x54ef44100148cb6d) with Elektrobock SEH101-NC actuators
 climate:
@@ -76,40 +103,6 @@ climate:
     cold_tolerance: 0.3
     hot_tolerance: 0
     initial_hvac_mode: "heat"
-
-# Garage Door Cover Configuration
-# Uses Hörmann Promatic 3 status feedback via Shelly Plus1PM
-# The garage door controller reports actual door position (closed/not closed)
-cover:
-  - platform: template
-    covers:
-      garage_door:
-        friendly_name: "Garage Door"
-        device_class: garage
-        # Use actual door position from Hörmann via Shelly binary sensor
-        # binary_sensor.door_lock reports actual door state from garage door controller
-        value_template: >-
-          {% if is_state('binary_sensor.door_lock', 'off') %}
-            closed
-          {% elif is_state('binary_sensor.door_lock', 'on') %}
-            open
-          {% else %}
-            unknown
-          {% endif %}
-        # Trigger the garage door (same action for open/close with Hörmann)
-        open_cover:
-          service: switch.turn_on
-          target:
-            entity_id: switch.garage_door
-        close_cover:
-          service: switch.turn_on
-          target:
-            entity_id: switch.garage_door
-        # Optional: Stop not typically needed for garage doors
-        stop_cover:
-          service: switch.turn_on
-          target:
-            entity_id: switch.garage_door
 
 # HomeKit Integration - Single Consolidated Bridge
 homekit:
