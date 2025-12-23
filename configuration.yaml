@@ -54,7 +54,7 @@ template:
       - name: "Garage Door"
         unique_id: garage_door
         device_class: garage
-        value_template: >
+        state: >
           {% if is_state('binary_sensor.door_lock', 'off') %}
             closed
           {% elif is_state('binary_sensor.door_lock', 'on') %}
