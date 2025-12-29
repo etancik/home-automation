@@ -398,7 +398,7 @@
                     {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') == 'off' }}
                 - condition: template
                   value_template: >
-                    {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) >= 
+                    {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) > 
                        (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20)) }}
             - condition: or
               conditions:
@@ -407,7 +407,7 @@
                     {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') == 'off' }}
                 - condition: template
                   value_template: >
-                    {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) >= 
+                    {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) > 
                        (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20)) }}
             - condition: or
               conditions:
@@ -416,7 +416,7 @@
                     {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') == 'off' }}
                 - condition: template
                   value_template: >
-                    {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) >= 
+                    {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) > 
                        (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20)) }}
             - condition: or
               conditions:
@@ -425,36 +425,26 @@
                     {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') == 'off' }}
                 - condition: template
                   value_template: >
-                    {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) >= 
+                    {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) > 
                        (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20)) }}
             # Bathroom radiators: satisfied (no windows, always active)
             - condition: template
               value_template: >
-                {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
+                {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) > 
                    (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
             - condition: template
               value_template: >
-                {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
+                {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) > 
                    (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
-            # Floor heating zones: satisfied OR disabled
-            - condition: or
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.living_room_floor_heating', 'hvac_mode') == 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ (states('sensor.living_room_temperature_sensor_temperature') | float(25)) >= 
-                       (state_attr('climate.living_room_floor_heating', 'temperature') | float(21)) }}
-            - condition: or
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_mode') == 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
-                       (state_attr('climate.downstairs_bathroom_floor_heating', 'temperature') | float(22)) }}
+            # Floor heating zones: not actively heating (idle or off, excluding unknown states)
+            - condition: template
+              value_template: >
+                {% set action = state_attr('climate.living_room_floor_heating', 'hvac_action') %}
+                {{ action in ['idle', 'off'] and action not in ['unknown', 'unavailable', None] }}
+            - condition: template
+              value_template: >
+                {% set action = state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_action') %}
+                {{ action in ['idle', 'off'] and action not in ['unknown', 'unavailable', None] }}
       then:
         # Turn off boiler - heating complete
         - service: switch.turn_off
@@ -516,29 +506,15 @@
               value_template: >
                 {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
                    (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-            # Check floor heating zones (only if enabled AND 1°C below target)
-            - condition: and
-              conditions:
-                # Living Room floor heating enabled
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.living_room_floor_heating', 'hvac_mode') == 'heat' }}
-                # Temperature below target - 1°C (heat threshold with hysteresis)
-                - condition: template
-                  value_template: >
-                    {{ (states('sensor.living_room_temperature_sensor_temperature') | float(25)) < 
-                       (state_attr('climate.living_room_floor_heating', 'temperature') | float(21) - 1.0) }}
-            - condition: and
-              conditions:
-                # Downstairs Bathroom floor heating enabled
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_mode') == 'heat' }}
-                # Temperature below target - 1°C (heat threshold with hysteresis)
-                - condition: template
-                  value_template: >
-                    {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
-                       (state_attr('climate.downstairs_bathroom_floor_heating', 'temperature') | float(22) - 1.0) }}
+            # Check floor heating zones (actively calling for heat)
+            - condition: template
+              value_template: >
+                {% set action = state_attr('climate.living_room_floor_heating', 'hvac_action') %}
+                {{ action == 'heating' and action not in ['unknown', 'unavailable', None] }}
+            - condition: template
+              value_template: >
+                {% set action = state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_action') %}
+                {{ action == 'heating' and action not in ['unknown', 'unavailable', None] }}
       then:
             # Turn on boiler - heating needed
             - service: switch.turn_on
