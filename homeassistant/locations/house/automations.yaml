@@ -370,14 +370,6 @@
     - condition: template
       value_template: >
         {{ states('switch.laundry_room_boiler_controller_l2') not in ['unknown', 'unavailable'] }}
-    # Minimum run time protection: Don't turn OFF if boiler was just turned ON < 10 minutes ago
-    # This prevents rapid cycling and allows zones time to heat up
-    - condition: template
-      value_template: >
-        {% set boiler_state = states('switch.laundry_room_boiler_controller_l2') %}
-        {% set last_changed = states.switch.laundry_room_boiler_controller_l2.last_changed %}
-        {% set minutes_since_change = (now() - last_changed).total_seconds() / 60 %}
-        {{ boiler_state == 'off' or minutes_since_change >= 10 }}
   actions:
     # DIAGNOSTIC: Log current state - CRITICAL: Compare hvac_action vs actual switch state
     - service: system_log.write
