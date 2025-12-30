@@ -169,6 +169,14 @@ homekit:
         - binary_sensor.upstairs_bathroom_leak_sensor_water_leak
         
         # ========================================
+        # SMOKE DETECTORS
+        # ========================================
+        
+        # Smoke Detectors (Shelly Smoke Plus)
+        - binary_sensor.living_room_smoke_detector_smoke
+        - sensor.living_room_smoke_detector_battery
+        
+        # ========================================
         # HEAT CONTROL (Climate Controls)
         # ========================================
         
@@ -282,6 +290,16 @@ homekit:
         name: "Laundry Room Leak"
       binary_sensor.upstairs_bathroom_leak_sensor_water_leak:
         name: "Upstairs Bathroom Leak"
+      
+      # ========================================
+      # SMOKE DETECTORS
+      # ========================================
+      
+      # Smoke Detectors (Shelly Smoke Plus)
+      binary_sensor.living_room_smoke_detector_smoke:
+        name: "Living Room Smoke"
+      sensor.living_room_smoke_detector_battery:
+        name: "Living Room Smoke Detector Battery"
       
       # ========================================
       # HEAT CONTROL
