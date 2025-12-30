@@ -37,3 +37,19 @@ git branch -D temp
 2. Commit to master
 3. Deploy with `git subtree push`
 4. Home Assistant auto-syncs via Git Pull add-on
+
+## ⚠️ COMMIT MESSAGE VERIFICATION
+
+**ALWAYS verify commit message accurately describes actual code changes before committing!**
+
+Common issues:
+- Describing planned changes instead of actual changes
+- Copy-pasting old commit messages
+- Mentioning removed code as if it's still there
+- Not reflecting last-minute modifications
+
+**Process:**
+1. Review actual diff: `git diff`
+2. Write commit message matching the diff
+3. Double-check: Does message match what changed?
+4. Then commit and deploy
