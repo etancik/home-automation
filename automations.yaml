@@ -400,7 +400,7 @@
                     {{ states('sensor.bedroom_temperature_sensor_temperature') in ['unknown', 'unavailable'] }}
                 - condition: template
                   value_template: >
-                    {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) > 
+                    {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) >= 
                        (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20)) }}
             - condition: or
               conditions:
@@ -412,7 +412,7 @@
                     {{ states('sensor.kids_room_temperature_sensor_temperature') in ['unknown', 'unavailable'] }}
                 - condition: template
                   value_template: >
-                    {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) > 
+                    {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) >= 
                        (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20)) }}
             - condition: or
               conditions:
@@ -424,7 +424,7 @@
                     {{ states('sensor.workshop_temperature_sensor_temperature') in ['unknown', 'unavailable'] }}
                 - condition: template
                   value_template: >
-                    {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) > 
+                    {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) >= 
                        (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20)) }}
             - condition: or
               conditions:
@@ -436,16 +436,16 @@
                     {{ states('sensor.entrance_temperature_sensor_temperature') in ['unknown', 'unavailable'] }}
                 - condition: template
                   value_template: >
-                    {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) > 
+                    {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) >= 
                        (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20)) }}
             # Bathroom radiators: satisfied (no windows, always active)
             - condition: template
               value_template: >
-                {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) > 
+                {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
                    (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
             - condition: template
               value_template: >
-                {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) > 
+                {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) >= 
                    (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20)) }}
             # Floor heating zones: GROUND TRUTH - Check actual switch states, not hvac_action
             # If switch is unavailable, treat as OFF (satisfied) to avoid blocking other zones
