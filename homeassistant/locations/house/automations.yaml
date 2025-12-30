@@ -347,20 +347,14 @@
         - climate.entrance_radiator_heat_valve
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.upstairs_bathroom_radiator_heat_valve
-    # Monitor floor heating zone states
-    - platform: state
-      entity_id:
-        - climate.living_room_floor_heating
-        - climate.downstairs_bathroom_floor_heating
-    # Monitor living room temperature changes (for floor heating zone)
-    - platform: state
-      entity_id: sensor.living_room_temperature_sensor_temperature
     # Monitor boiler state changes
     - platform: state
       entity_id: switch.laundry_room_boiler_controller_l2
-    # Periodic check every 2 minutes to re-evaluate heating needs
-    - platform: time_pattern
-      minutes: "/2"
+    # Monitor floor heating actuator switches (ground truth)
+    - platform: state
+      entity_id:
+        - switch.floor_heating_controller_l1
+        - switch.floor_heating_controller_l2
     # Startup trigger
     - platform: homeassistant
       event: start
@@ -385,58 +379,40 @@
           | Bath Down Floor [action={{ state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_action') }} L2={{ states('switch.floor_heating_controller_l2') }}]
           | Boiler={{ states('switch.laundry_room_boiler_controller_l2') }}
     
-    # EVALUATE TURN OFF FIRST: Check if all rooms satisfied
+    # Define entity lists for reusable logic
+    - variables:
+        radiator_valves:
+          - climate.bedroom_radiator_heat_valve
+          - climate.kids_room_radiator_heat_valve
+          - climate.workshop_radiator_heat_valve
+          - climate.entrance_radiator_heat_valve
+          - climate.downstairs_bathroom_radiator_heat_valve
+          - climate.upstairs_bathroom_radiator_heat_valve
+        floor_switches:
+          - switch.floor_heating_controller_l1
+          - switch.floor_heating_controller_l2
+        radiator_sensors:
+          bedroom: sensor.bedroom_temperature_sensor_temperature
+          kids_room: sensor.kids_room_temperature_sensor_temperature
+          workshop: sensor.workshop_temperature_sensor_temperature
+          entrance: sensor.entrance_temperature_sensor_temperature
+    
+    # EVALUATE TURN OFF FIRST: Check if all zones satisfied
     - if:
-        - condition: and
-          conditions:
-            # Radiator zones with windows: satisfied OR disabled by window OR sensor offline (treat as satisfied - don't block other zones)
-            - condition: or
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_action') != 'heating' }}
-            - condition: or
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_action') != 'heating' }}
-            - condition: or
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_action') != 'heating' }}
-            - condition: or
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') == 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_action') != 'heating' }}
-            # Bathroom radiators: satisfied (no windows, always active)
-            - condition: template
-              value_template: >
-                {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_action') != 'heating' }}
-            - condition: template
-              value_template: >
-                {{ state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action') != 'heating' }}
-            # Floor heating zones: GROUND TRUTH - Check actual switch states, not hvac_action
-            # If switch is unavailable, treat as OFF (satisfied) to avoid blocking other zones
-            - condition: template
-              value_template: >
-                {{ states('switch.floor_heating_controller_l1') in ['off', 'unknown', 'unavailable'] }}
-            - condition: template
-              value_template: >
-                {{ states('switch.floor_heating_controller_l2') in ['off', 'unknown', 'unavailable'] }}
+        - condition: template
+          value_template: >
+            {% set ns = namespace(heating_count=0) %}
+            {% for valve in radiator_valves %}
+              {% if state_attr(valve, 'hvac_mode') != 'off' and state_attr(valve, 'hvac_action') == 'heating' %}
+                {% set ns.heating_count = ns.heating_count + 1 %}
+              {% endif %}
+            {% endfor %}
+            {% for switch in floor_switches %}
+              {% if is_state(switch, 'on') %}
+                {% set ns.heating_count = ns.heating_count + 1 %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.heating_count == 0 }}
       then:
         # Turn off boiler - heating complete
         - service: switch.turn_off
@@ -463,113 +439,66 @@
                 message: "CRITICAL: Boiler failed to turn OFF! Switch may be stuck or relay failure."
         - stop: ""
     
-    # EVALUATE TURN ON: Check if ANY room needs heating
+    # EVALUATE TURN ON: Check if ANY zone needs heating
     - if:
-        - condition: or
-          conditions:
-            # Radiator rooms: Check if enabled, sensor available, and 1°C below setpoint
-            - condition: and
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.bedroom_radiator_heat_valve', 'hvac_mode') != 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ states('sensor.bedroom_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
-                - condition: template
-                  value_template: >
-                    {{ (states('sensor.bedroom_temperature_sensor_temperature') | float(20)) < 
-                       (state_attr('climate.bedroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-            - condition: and
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') != 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ states('sensor.kids_room_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
-                - condition: template
-                  value_template: >
-                    {{ (states('sensor.kids_room_temperature_sensor_temperature') | float(20)) < 
-                       (state_attr('climate.kids_room_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-            - condition: and
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') != 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ states('sensor.workshop_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
-                - condition: template
-                  value_template: >
-                    {{ (states('sensor.workshop_temperature_sensor_temperature') | float(20)) < 
-                       (state_attr('climate.workshop_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-            - condition: and
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') != 'off' }}
-                - condition: template
-                  value_template: >
-                    {{ states('sensor.entrance_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
-                - condition: template
-                  value_template: >
-                    {{ (states('sensor.entrance_temperature_sensor_temperature') | float(20)) < 
-                       (state_attr('climate.entrance_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-            # Check bathrooms with internal sensors (no window sensors, always active)
-            - condition: template
-              value_template: >
-                {{ (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
-                   (state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-            - condition: template
-              value_template: >
-                {{ (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20)) < 
-                   (state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') | float(20) - 1.0) }}
-            # Floor heating zones: GROUND TRUTH - Check actual switch states (only if available)
-            # If switch is unavailable, skip this check (don't demand heat from broken zone)
-            - condition: and
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ states('switch.floor_heating_controller_l1') not in ['unknown', 'unavailable'] }}
-                - condition: state
-                  entity_id: switch.floor_heating_controller_l1
-                  state: 'on'
-            - condition: and
-              conditions:
-                - condition: template
-                  value_template: >
-                    {{ states('switch.floor_heating_controller_l2') not in ['unknown', 'unavailable'] }}
-                - condition: state
-                  entity_id: switch.floor_heating_controller_l2
-                  state: 'on'
+        - condition: template
+          value_template: >
+            {% set ns = namespace(needs_heat=false) %}
+            
+            {# Radiator valves with external sensors: check temp < target - 1.0 #}
+            {% for room, sensor in radiator_sensors.items() %}
+              {% set valve = 'climate.' ~ room ~ '_radiator_heat_valve' %}
+              {% if state_attr(valve, 'hvac_mode') != 'off' and states(sensor) not in ['unknown', 'unavailable'] %}
+                {% if states(sensor) | float(20) < (state_attr(valve, 'temperature') | float(20) - 1.0) %}
+                  {% set ns.needs_heat = true %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            
+            {# Bathroom valves with internal sensors #}
+            {% for valve in ['climate.downstairs_bathroom_radiator_heat_valve', 'climate.upstairs_bathroom_radiator_heat_valve'] %}
+              {% if state_attr(valve, 'hvac_mode') != 'off' %}
+                {% if state_attr(valve, 'current_temperature') | float(20) < (state_attr(valve, 'temperature') | float(20) - 1.0) %}
+                  {% set ns.needs_heat = true %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            
+            {# Floor heating switches #}
+            {% for switch in floor_switches %}
+              {% if is_state(switch, 'on') %}
+                {% set ns.needs_heat = true %}
+              {% endif %}
+            {% endfor %}
+            
+            {{ ns.needs_heat }}
       then:
-            # Turn on boiler - heating needed
-            - service: switch.turn_on
-              target:
-                entity_id: switch.laundry_room_boiler_controller_l2
+        # Turn on boiler - heating needed
+        - service: switch.turn_on
+          target:
+            entity_id: switch.laundry_room_boiler_controller_l2
+        - service: system_log.write
+          data:
+            level: info
+            logger: homeassistant.components.automation.boiler_heating_control
+            message: >
+              BOILER ON: LR={{ states('sensor.living_room_temperature_sensor_temperature') }}°C [L1={{ states('switch.floor_heating_controller_l1') }}]
+              | Bedroom={{ states('sensor.bedroom_temperature_sensor_temperature') }}°C/{{ state_attr('climate.bedroom_radiator_heat_valve', 'temperature') }}°C
+              | Floor L2={{ states('switch.floor_heating_controller_l2') }}
+        # Wait briefly to allow state to propagate
+        - delay:
+            seconds: 2
+        # VERIFY boiler actually turned on - log error if stuck
+        - if:
+            - condition: state
+              entity_id: switch.laundry_room_boiler_controller_l2
+              state: 'off'
+          then:
             - service: system_log.write
               data:
-                level: info
+                level: error
                 logger: homeassistant.components.automation.boiler_heating_control
-                message: >
-                  BOILER ON: LR={{ states('sensor.living_room_temperature_sensor_temperature') }}°C [L1={{ states('switch.floor_heating_controller_l1') }}]
-                  | Bedroom={{ states('sensor.bedroom_temperature_sensor_temperature') }}°C/{{ state_attr('climate.bedroom_radiator_heat_valve', 'temperature') }}°C
-                  | Floor L2={{ states('switch.floor_heating_controller_l2') }}
-            # Wait briefly to allow state to propagate
-            - delay:
-                seconds: 2
-            # VERIFY boiler actually turned on - log error if stuck
-            - if:
-                - condition: state
-                  entity_id: switch.laundry_room_boiler_controller_l2
-                  state: 'off'
-              then:
-                - service: system_log.write
-                  data:
-                    level: error
-                    logger: homeassistant.components.automation.boiler_heating_control
-                    message: "CRITICAL: Boiler failed to turn ON! Switch may be stuck or relay failure."
+                message: "CRITICAL: Boiler failed to turn ON! Switch may be stuck or relay failure."
     # If neither turn-off nor turn-on conditions met, maintain current boiler state (hysteresis dead zone)
     # No else block - intentionally do nothing to prevent oscillation
   mode: single
