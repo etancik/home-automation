@@ -381,6 +381,7 @@
     # Startup trigger
     - platform: homeassistant
       event: start
+      id: start
   conditions:
     # ONLY block if boiler controller itself is unavailable
     # Individual sensor failures are handled per-zone in the logic below
@@ -388,10 +389,18 @@
       value_template: >
         {{ states('switch.laundry_room_boiler_controller_l2') not in ['unknown', 'unavailable'] }}
   actions:
+    # Wait for Zigbee2MQTT to initialize after startup
+    - if:
+        - condition: trigger
+          id: start
+      then:
+        - delay:
+            seconds: 30
+    
     # DIAGNOSTIC: Log current state - CRITICAL: Compare hvac_action vs actual switch state
     - service: system_log.write
       data:
-        level: warning
+        level: info
         logger: homeassistant.components.automation.boiler_heating_control
         message: >
           BOILER DEBUG: LR={{ states('sensor.living_room_temperature_sensor_temperature') }}°C/{{ state_attr('climate.living_room_floor_heating', 'temperature') }}°C [action={{ state_attr('climate.living_room_floor_heating', 'hvac_action') }} L1={{ states('switch.floor_heating_controller_l1') }}]
