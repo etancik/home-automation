@@ -334,6 +334,25 @@
   mode: single
 
 # Boiler Control Automation
+#
+# TWO-LEVEL HYSTERESIS SYSTEM:
+#
+# Level 1 - VALVE/ACTUATOR (0.2°C hysteresis):
+#   - Radiator valves: Open/close with tight 0.2°C hysteresis (built into SONOFF TRVZB)
+#   - Floor heating actuators: Zigbee Aqara switches with thermo valves (0.2°C hysteresis)
+#   - These respond QUICKLY to temperature changes
+#
+# Level 2 - BOILER (1.0°C hysteresis):
+#   - Boiler turns ON when: current_temp < target_temp - 1.0°C (any zone)
+#   - Boiler turns OFF when: all valves/actuators report NOT heating (hvac_action != 'heating')
+#   - This responds SLOWLY to prevent short cycling
+#
+# HOW IT WORKS:
+#   - Valves/actuators can open anytime based on local temperature
+#   - Boiler only runs when ANY zone is significantly cold (1.0°C below target)
+#   - Open valves take advantage of hot water when boiler is running
+#   - Result: Valves respond fast, boiler cycles slowly, energy efficient
+#
 - id: 'boiler_heating_control'
   alias: "Boiler Heating Control"
   description: "Control boiler based on radiator valve and floor heating zone demands"
@@ -347,6 +366,10 @@
         - climate.entrance_radiator_heat_valve
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.upstairs_bathroom_radiator_heat_valve
+    # Monitor temperature sensors for floor heating zones
+    - platform: state
+      entity_id:
+        - sensor.living_room_temperature_sensor_temperature
     # Monitor boiler state changes
     - platform: state
       entity_id: switch.laundry_room_boiler_controller_l2
@@ -379,34 +402,33 @@
           | Bath Down Floor [action={{ state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_action') }} L2={{ states('switch.floor_heating_controller_l2') }}]
           | Boiler={{ states('switch.laundry_room_boiler_controller_l2') }}
     
-    # Define entity lists for reusable logic
+    # Define zones: All climate entities need Level 2 (1.0°C) check for boiler turn-on
     - variables:
-        radiator_valves:
+        heating_zones:
           - climate.bedroom_radiator_heat_valve
           - climate.kids_room_radiator_heat_valve
           - climate.workshop_radiator_heat_valve
           - climate.entrance_radiator_heat_valve
           - climate.downstairs_bathroom_radiator_heat_valve
           - climate.upstairs_bathroom_radiator_heat_valve
+          - climate.living_room_floor_heating
+          - climate.downstairs_bathroom_floor_heating
         floor_switches:
           - switch.floor_heating_controller_l1
           - switch.floor_heating_controller_l2
-        radiator_sensors:
-          bedroom: sensor.bedroom_temperature_sensor_temperature
-          kids_room: sensor.kids_room_temperature_sensor_temperature
-          workshop: sensor.workshop_temperature_sensor_temperature
-          entrance: sensor.entrance_temperature_sensor_temperature
     
     # EVALUATE TURN OFF FIRST: Check if all zones satisfied
     - if:
         - condition: template
           value_template: >
             {% set ns = namespace(heating_count=0) %}
-            {% for valve in radiator_valves %}
-              {% if state_attr(valve, 'hvac_mode') != 'off' and state_attr(valve, 'hvac_action') == 'heating' %}
+            {# Check all heating zones (radiators + floor) - count those actively heating #}
+            {% for zone in heating_zones %}
+              {% if state_attr(zone, 'hvac_mode') != 'off' and state_attr(zone, 'hvac_action') == 'heating' %}
                 {% set ns.heating_count = ns.heating_count + 1 %}
               {% endif %}
             {% endfor %}
+            {# Check floor heating switches (ground truth) #}
             {% for switch in floor_switches %}
               {% if is_state(switch, 'on') %}
                 {% set ns.heating_count = ns.heating_count + 1 %}
@@ -445,29 +467,14 @@
           value_template: >
             {% set ns = namespace(needs_heat=false) %}
             
-            {# Radiator valves with external sensors: check temp < target - 1.0 #}
-            {% for room, sensor in radiator_sensors.items() %}
-              {% set valve = 'climate.' ~ room ~ '_radiator_heat_valve' %}
-              {% if state_attr(valve, 'hvac_mode') != 'off' and states(sensor) not in ['unknown', 'unavailable'] %}
-                {% if states(sensor) | float(20) < (state_attr(valve, 'temperature') | float(20) - 1.0) %}
+            {# All zones: current_temp < target_temp - 1.0°C (Level 2 hysteresis) #}
+            {% for zone in heating_zones %}
+              {% if state_attr(zone, 'hvac_mode') != 'off' %}
+                {% set current = state_attr(zone, 'current_temperature') | float(20) %}
+                {% set target = state_attr(zone, 'temperature') | float(20) %}
+                {% if current < (target - 1.0) %}
                   {% set ns.needs_heat = true %}
                 {% endif %}
-              {% endif %}
-            {% endfor %}
-            
-            {# Bathroom valves with internal sensors #}
-            {% for valve in ['climate.downstairs_bathroom_radiator_heat_valve', 'climate.upstairs_bathroom_radiator_heat_valve'] %}
-              {% if state_attr(valve, 'hvac_mode') != 'off' %}
-                {% if state_attr(valve, 'current_temperature') | float(20) < (state_attr(valve, 'temperature') | float(20) - 1.0) %}
-                  {% set ns.needs_heat = true %}
-                {% endif %}
-              {% endif %}
-            {% endfor %}
-            
-            {# Floor heating switches #}
-            {% for switch in floor_switches %}
-              {% if is_state(switch, 'on') %}
-                {% set ns.needs_heat = true %}
               {% endif %}
             {% endfor %}
             
