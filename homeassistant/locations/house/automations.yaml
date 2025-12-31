@@ -380,12 +380,10 @@
       event: start
   conditions:
     # ONLY block if boiler controller itself is unavailable
-    # Individual sensor failures are handled per-zone in the logic below
+    # Floor switch availability checked dynamically in templates (prevents startup warnings)
     - condition: template
       value_template: >
-        {{ states('switch.laundry_room_boiler_controller_l2') not in ['unknown', 'unavailable']
-           and states('switch.floor_heating_controller_l1') not in ['unknown', 'unavailable']
-           and states('switch.floor_heating_controller_l2') not in ['unknown', 'unavailable'] }}
+        {{ states('switch.laundry_room_boiler_controller_l2') not in ['unknown', 'unavailable'] }}
   actions:
     # DIAGNOSTIC: Log current state - CRITICAL: Compare hvac_action vs actual switch state
     - service: system_log.write
@@ -427,9 +425,9 @@
                 {% set ns.heating_count = ns.heating_count + 1 %}
               {% endif %}
             {% endfor %}
-            {# Check floor heating switches (ground truth) #}
+            {# Check floor heating switches (ground truth) - with availability guard #}
             {% for switch in floor_switches %}
-              {% if is_state(switch, 'on') %}
+              {% if states(switch) not in ['unknown', 'unavailable'] and is_state(switch, 'on') %}
                 {% set ns.heating_count = ns.heating_count + 1 %}
               {% endif %}
             {% endfor %}
