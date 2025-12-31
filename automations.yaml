@@ -366,6 +366,8 @@
         - climate.entrance_radiator_heat_valve
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.upstairs_bathroom_radiator_heat_valve
+        - climate.living_room_floor_heating
+        - climate.downstairs_bathroom_floor_heating
     # Monitor temperature sensors for floor heating zones
     - platform: state
       entity_id:
@@ -373,11 +375,6 @@
     # Monitor boiler state changes
     - platform: state
       entity_id: switch.laundry_room_boiler_controller_l2
-    # Monitor floor heating actuator switches (ground truth)
-    - platform: state
-      entity_id:
-        - switch.floor_heating_controller_l1
-        - switch.floor_heating_controller_l2
     # Startup trigger
     - platform: homeassistant
       event: start
@@ -386,9 +383,7 @@
     # Individual sensor failures are handled per-zone in the logic below
     - condition: template
       value_template: >
-        {{ states('switch.laundry_room_boiler_controller_l2') not in ['unknown', 'unavailable']
-           and states('switch.floor_heating_controller_l1') not in ['unknown', 'unavailable']
-           and states('switch.floor_heating_controller_l2') not in ['unknown', 'unavailable'] }}
+        {{ states('switch.laundry_room_boiler_controller_l2') not in ['unknown', 'unavailable'] }}
   actions:
     # DIAGNOSTIC: Log current state - CRITICAL: Compare hvac_action vs actual switch state
     - service: system_log.write
