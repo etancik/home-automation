@@ -223,21 +223,12 @@ homekit:
         # EV CHARGING (Auto-Discovered)
         # ========================================
         
-        # go-e Charger - Status & Monitoring
-        - sensor.go_echarger_600187_car_state
+        # go-e Charger - Essential Monitoring (for HomeKit)
         - sensor.go_echarger_600187_power_total
         - sensor.go_echarger_600187_energy_charged
-        - sensor.go_echarger_600187_total_energy_charged
-        - sensor.go_echarger_600187_allowed_charge_current
-        - binary_sensor.go_echarger_600187_allowed_to_charge
         
-        # go-e Charger - Controls
-        - number.go_echarger_600187_set_max_ampere_limit
-        - select.go_echarger_600187_force_state
-        
-        # go-e Controller - Power Monitoring
+        # go-e Controller - Home Power Monitoring
         - sensor.go_econtroller_917809_home_power
-        - sensor.go_econtroller_917809_car_power
     entity_config:
       # ========================================
       # ENVIRONMENTAL SENSORS
@@ -382,29 +373,15 @@ homekit:
       # EV CHARGING
       # ========================================
       
-      # go-e Charger
-      sensor.go_echarger_600187_car_state:
-        name: "EV Status"
+      # go-e Charger - Power sensors display well in HomeKit
       sensor.go_echarger_600187_power_total:
-        name: "EV Power"
+        name: "EV Charger Power"
       sensor.go_echarger_600187_energy_charged:
-        name: "EV Session"
-      sensor.go_echarger_600187_total_energy_charged:
-        name: "EV Total"
-      sensor.go_echarger_600187_allowed_charge_current:
-        name: "EV Current"
-      binary_sensor.go_echarger_600187_allowed_to_charge:
-        name: "EV Allowed"
-      number.go_echarger_600187_set_max_ampere_limit:
-        name: "EV Ampere"
-      select.go_echarger_600187_force_state:
-        name: "EV Force"
+        name: "EV Charging Session Energy"
       
-      # go-e Controller
+      # go-e Controller - Home monitoring for smart charging automation
       sensor.go_econtroller_917809_home_power:
-        name: "Home Power"
-      sensor.go_econtroller_917809_car_power:
-        name: "Car Power"
+        name: "House Power Consumption"
 
 # Shell commands for GitOps deployment
 shell_command:
