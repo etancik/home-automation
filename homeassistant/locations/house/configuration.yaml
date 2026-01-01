@@ -30,6 +30,18 @@ default_config:
 frontend:
   themes: !include_dir_merge_named themes
 
+# Lovelace dashboards
+lovelace:
+  mode: storage  # Main dashboard via UI
+  # Additional YAML dashboards
+  dashboards:
+    ev-power-monitor:
+      mode: yaml
+      title: EV Power Monitor
+      icon: mdi:car-electric
+      show_in_sidebar: true
+      filename: dashboards/ev_power_monitoring.yaml
+
 # Note: MQTT integration is configured via UI (Settings > Devices & Services)
 # The Zigbee2MQTT add-on will automatically configure MQTT discovery
 
