@@ -14,8 +14,10 @@ homeassistant:
   country: CZ
   time_zone: Europe/Prague
   currency: CZK
-  # Core shared packages
-  packages: !include_dir_named ../../core/packages
+  # Load packages from both core and location-specific directories
+  packages:
+    core: !include_dir_merge_named ../../core/packages
+    local: !include_dir_named packages
   # Location customizations
   customize: !include customize.yaml
 
@@ -216,6 +218,26 @@ homekit:
         # Garage Door (control + position feedback)
         - cover.garage_door
         - binary_sensor.door_lock
+        
+        # ========================================
+        # EV CHARGING (Auto-Discovered)
+        # ========================================
+        
+        # go-e Charger - Status & Monitoring
+        - sensor.go_echarger_600187_car_state
+        - sensor.go_echarger_600187_power_total
+        - sensor.go_echarger_600187_energy_charged
+        - sensor.go_echarger_600187_total_energy_charged
+        - sensor.go_echarger_600187_allowed_charge_current
+        - binary_sensor.go_echarger_600187_allowed_to_charge
+        
+        # go-e Charger - Controls
+        - number.go_echarger_600187_set_max_ampere_limit
+        - select.go_echarger_600187_force_state
+        
+        # go-e Controller - Power Monitoring
+        - sensor.go_econtroller_917809_home_power
+        - sensor.go_econtroller_917809_car_power
     entity_config:
       # ========================================
       # ENVIRONMENTAL SENSORS
@@ -355,6 +377,34 @@ homekit:
         name: "Garage Door"
       binary_sensor.door_lock:
         name: "Garage Door Position"
+      
+      # ========================================
+      # EV CHARGING
+      # ========================================
+      
+      # go-e Charger
+      sensor.go_echarger_600187_car_state:
+        name: "EV Status"
+      sensor.go_echarger_600187_power_total:
+        name: "EV Power"
+      sensor.go_echarger_600187_energy_charged:
+        name: "EV Session"
+      sensor.go_echarger_600187_total_energy_charged:
+        name: "EV Total"
+      sensor.go_echarger_600187_allowed_charge_current:
+        name: "EV Current"
+      binary_sensor.go_echarger_600187_allowed_to_charge:
+        name: "EV Allowed"
+      number.go_echarger_600187_set_max_ampere_limit:
+        name: "EV Ampere"
+      select.go_echarger_600187_force_state:
+        name: "EV Force"
+      
+      # go-e Controller
+      sensor.go_econtroller_917809_home_power:
+        name: "Home Power"
+      sensor.go_econtroller_917809_car_power:
+        name: "Car Power"
 
 # Shell commands for GitOps deployment
 shell_command:
