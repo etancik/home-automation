@@ -22,7 +22,7 @@ input_number:
   ev_last_set_amps:
     name: "EV Last Set Amperage"
     min: 0
-    max: 32
+    max: 16
     step: 1
     unit_of_measurement: "A"
     mode: box
@@ -99,7 +99,7 @@ automation:
           available: "{{ [0, grid_capacity - household_excluding_charger - reserve] | max | float }}"
           # 3-phase: amps per phase = available_power / (3 × 230V)
           target_raw: "{{ ((available / 690) | round(0, 'floor')) - 1 }}"
-          target: "{{ 0 if target_raw < 6 else [target_raw, 32] | min | int }}"
+          target: "{{ 0 if target_raw < 6 else [target_raw, 16] | min | int }}"
           diff: "{{ (target | int) - (current | int) }}"
       # Asymmetric hysteresis: instant decrease (safety), threshold for increase (prevent oscillation)
       - if:
