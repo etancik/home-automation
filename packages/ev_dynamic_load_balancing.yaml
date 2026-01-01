@@ -128,7 +128,7 @@ automation:
   # Sync charger power to controller for local tracking (no cloud required)
   - id: 'ev_sync_charger_power_to_controller'
     alias: "EV Sync Charger Power to Controller"
-    description: "Send charger power data to controller via MQTT for local car power tracking"
+    description: "Send charger power data to controller via MQTT for local car power tracking (ccp = car charging power)"
     mode: single
     triggers:
       - platform: state
@@ -139,7 +139,9 @@ automation:
       - condition: template
         value_template: "{{ states('sensor.go_echarger_600187_power_total') not in ['unknown', 'unavailable'] }}"
     actions:
+      # go-eController expects ccp as single value (not array) via go-e API v2
+      # Topic: go-eController/917809/ccp/set (car charging power set)
       - service: mqtt.publish
         data:
-          topic: "go-eController/917809/car/set"
+          topic: "go-eController/917809/ccp/set"
           payload: "{{ states('sensor.go_echarger_600187_power_total') | int }}"
