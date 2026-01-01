@@ -1,0 +1,57 @@
+# go-e Charger Integration Package
+# GitOps managed via Git Pull add-on
+# 
+# Hardware:
+# - go-e Charger PRO CORE V2X (11-22kW) - Serial: 600187
+# - go-eController - Serial: 917809
+#
+# MQTT Auto-Discovery (ENABLED):
+# All entities are automatically created via MQTT discovery.
+# Settings in go-e app → Internet → MQTT:
+#   - "MQTT homeassistant enabled" = ON
+#   - "MQTT homeassistant prefix" = homeassistant
+#
+# Device Pages:
+# - Charger: http://homeassistant.local:8123/config/devices/device/10632f297da9f6c23a6d35ba7da3a5f0
+# - Controller: http://homeassistant.local:8123/config/devices/device/201c76e1d31dca01629490bb0636c8a7
+#
+# Documentation: https://github.com/goecharger/go-eCharger-API-v2
+
+# ========================================
+# ENTITY CUSTOMIZATIONS
+# ========================================
+# Friendly names for better HomeKit and UI display
+# 
+# Note: Device names (shown in device pages) must be changed via UI:
+# Settings → Devices & Services → MQTT → Devices → Click device → Settings icon → Rename
+# Recommended device names:
+#   - "Car Charger" (currently: go-eCharger 600187)
+#   - "House Power Monitor" (currently: go-eController 917809)
+
+homeassistant:
+  customize:
+    # EV Charger - Monitoring
+    sensor.go_echarger_600187_car_state:
+      friendly_name: "Car Connection Status"
+    sensor.go_echarger_600187_power_total:
+      friendly_name: "Charging Power"
+    sensor.go_echarger_600187_energy_charged:
+      friendly_name: "Session Energy"
+    sensor.go_echarger_600187_total_energy_charged:
+      friendly_name: "Total Charged (Lifetime)"
+    sensor.go_echarger_600187_allowed_charge_current:
+      friendly_name: "Current Limit"
+    
+    # EV Charger - Controls
+    number.go_echarger_600187_set_max_ampere_limit:
+      friendly_name: "Max Charging Current"
+    select.go_echarger_600187_force_state:
+      friendly_name: "Force Charge State"
+    
+    # Power Monitor - Grid Monitoring
+    sensor.go_econtroller_917809_grid_power:
+      friendly_name: "Grid Import/Export"
+    sensor.go_econtroller_917809_home_power:
+      friendly_name: "Total Household Power"
+    sensor.go_econtroller_917809_car_power:
+      friendly_name: "Car Power Draw"
