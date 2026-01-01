@@ -45,33 +45,13 @@
 # 
 # ------------------------------------------------------------------------------------------------
 
-# Template sensors to fix state_class for Energy dashboard compatibility
-# (Energy dashboard requires state_class: total_increasing, but go-eController provides "total")
-template:
-  - sensor:
-      # Grid Energy Consumption (fixed state_class)
-      - name: "Grid Energy Consumed"
-        unique_id: grid_energy_consumed
-        state: "{{ states('sensor.go_econtroller_917809_grid_energy_in') }}"
-        unit_of_measurement: "Wh"
-        device_class: energy
-        state_class: total_increasing
-        availability: "{{ states('sensor.go_econtroller_917809_grid_energy_in') not in ['unknown', 'unavailable'] }}"
-        attributes:
-          friendly_name: "Grid Energy Consumed"
-          source: "go-eController Grid Energy In (state_class fixed)"
-          
-      # Home Energy Consumption (fixed state_class)
-      - name: "Home Energy Consumed"
-        unique_id: home_energy_consumed
-        state: "{{ states('sensor.go_econtroller_917809_home_energy_in') }}"
-        unit_of_measurement: "Wh"
-        device_class: energy
-        state_class: total_increasing
-        availability: "{{ states('sensor.go_econtroller_917809_home_energy_in') not in ['unknown', 'unavailable'] }}"
-        attributes:
-          friendly_name: "Home Energy Consumed"
-          source: "go-eController Home Energy In (state_class fixed)"
+# NOTE: Template sensors are defined in configuration.yaml (not here in package)
+# Reason: Home Assistant doesn't merge template: sections from packages when configuration.yaml
+# already has a template: section. The sensors would be ignored if defined here.
+#
+# Template sensors created in configuration.yaml:
+# - sensor.grid_energy_consumed (fixes state_class: total → total_increasing)
+# - sensor.home_energy_consumed (fixes state_class: total → total_increasing)
 
 # ================================================================================================
 # Energy Dashboard Configuration Guide (Based on HA Official Docs)
