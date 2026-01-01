@@ -4,60 +4,42 @@
 #
 # Installation: 3×32A (22kW grid capacity)
 # Logic: Monitors actual household power (updates every ~1s), reduces charging when consumption increases
+#        CRITICAL: go-eController household reading INCLUDES charger consumption - must subtract current 
+#        charger draw before calculating available power (otherwise charger counts against itself)
 # Reserve: Safety buffer for sudden spikes (kettle, oven, etc.)
 # MQTT: go-eCharger/600187/amp/set
 
 input_number:
   ev_household_reserve_watts:
     name: "EV Charging - Household Reserve"
-    min: 1000
-    max: 8000
+    min: 3000
+    max: 10000
     step: 1000
     unit_of_measurement: "W"
     icon: mdi:home-lightning-bolt
-    initial: 3000  # Safety buffer for sudden spikes (kettle, oven, etc.)
+    initial: 3000  # Safety buffer: kettle(2kW) + margin, adjustable up to 10kW
+
+  ev_last_set_amps:
+    name: "EV Last Set Amperage"
+    min: 0
+    max: 32
+    step: 1
+    unit_of_measurement: "A"
+    mode: box
 
 input_boolean:
   ev_dynamic_load_balancing_enabled:
     name: "EV Dynamic Load Balancing"
     icon: mdi:car-electric
 
-template:
-  - sensor:
-      - name: "EV Available Power"
-        unique_id: ev_available_power
-        unit_of_measurement: "W"
-        device_class: power
-        state_class: measurement
-        state: >
-          {% set grid_capacity = 22000 %}
-          {% set household = states('sensor.go_econtroller_917809_home_power') | float(0) %}
-          {% set reserve = states('input_number.ev_household_reserve_watts') | float(3000) %}
-          {{ [0, grid_capacity - household - reserve] | max | round(0) }}
-
-      - name: "EV Target Charging Amps"
-        unique_id: ev_target_charging_amps
-        unit_of_measurement: "A"
-        state: >
-          {% set available = states('sensor.ev_available_power') | float(0) %}
-          {% set amps = (available / 230) | round(0) %}
-          {% if amps < 6 %}
-            0
-          {% else %}
-            {{ [amps, 32] | min }}
-          {% endif %}
-
-# Automation for dynamic load balancing
-automation:
-  - id: 'ev_dynamic_load_balancing'
-    alias: "EV Dynamic Load Balancing"
-    description: "Adjust EV charging current based on real-time household consumption"
 automation:
   - id: 'ev_dynamic_load_balancing'
     alias: "EV Dynamic Load Balancing"
     description: "Adjust charging to prevent grid overload"
-    mode: queued
-    max: 5
+    # Mode: single is correct (not restart) - sensor updates every ~1s but execution takes ~70-100ms.
+    # Mode: restart would create infinite loop (automation never completes). 
+    # Risk of stale data during 70ms window is mitigated by 3kW reserve buffer.
+    mode: single
     triggers:
       - platform: state
         entity_id: sensor.go_econtroller_917809_home_power
@@ -67,16 +49,51 @@ automation:
       - condition: state
         entity_id: input_boolean.ev_dynamic_load_balancing_enabled
         state: 'on'
+      # Include WaitCar (ready to charge) and Complete (might resume) for pre-emptive safety
       - condition: template
-        value_template: "{{ states('sensor.go_echarger_600187_energy_charged') not in ['unknown', 'unavailable'] }}"
+        value_template: "{{ states('sensor.go_echarger_600187_car_state') in ['Charging', 'WaitCar', 'Complete'] }}"
+      # Prevent HA restart race condition with unavailable sensors
+      - condition: template
+        value_template: "{{ states('sensor.go_econtroller_917809_home_power') not in ['unknown', 'unavailable'] }}"
     actions:
       - variables:
-          target: "{{ states('sensor.ev_target_charging_amps') | int(0) }}"
-      - service: logbook.log
-        data:
-          name: "EV Load Balancing"
-          message: "Household {{ states('sensor.go_econtroller_917809_home_power') }}W → Charging {{ target }}A"
-      - service: mqtt.publish
-        data:
-          topic: "go-eCharger/600187/amp/set"
-          payload: "{{ target }}"
+          # Calculate inline to guarantee consistency with trigger source
+          grid_capacity: 22000
+          household_total: "{{ states('sensor.go_econtroller_917809_home_power') | float(0) }}"
+          reserve: "{{ states('input_number.ev_household_reserve_watts') | float(3000) }}"
+          current: "{{ states('input_number.ev_last_set_amps') | int(0) }}"
+          # CRITICAL: go-eController reading includes charger consumption in household total
+          # Must subtract current charger draw to get actual household-only consumption
+          # Without this subtraction, charger would count against itself causing incorrect calculations
+          charger_current_draw: "{{ (current | int) * 690 }}"
+          # Safety clamp: prevent negative household (data corruption/manual override edge case)
+          household_excluding_charger: "{{ [0, household_total - charger_current_draw] | max | float }}"
+          # Now calculate available power for charger
+          available: "{{ [0, grid_capacity - household_excluding_charger - reserve] | max | float }}"
+          # 3-phase: amps per phase = available_power / (3 × 230V)
+          target_raw: "{{ ((available / 690) | round(0, 'floor')) - 1 }}"
+          target: "{{ 0 if target_raw < 6 else [target_raw, 32] | min | int }}"
+          diff: "{{ (target | int) - (current | int) }}"
+      # Asymmetric hysteresis: instant decrease (safety), threshold for increase (prevent oscillation)
+      - if:
+          - condition: template
+            value_template: "{{ diff < 0 or diff >= 2 }}"
+        then:
+          - service: input_number.set_value
+            target:
+              entity_id: input_number.ev_last_set_amps
+            data:
+              value: "{{ target }}"
+          - service: logbook.log
+            data:
+              name: "EV Load Balancing"
+              message: "House {{ household_excluding_charger | int }}W + Charger {{ charger_current_draw | int }}W = {{ household_total | int }}W → {{ current }}A→{{ target }}A"
+          - service: mqtt.publish
+            data:
+              topic: "go-eCharger/600187/amp/set"
+              payload: "{{ target }}"
+        else:
+          - service: logbook.log
+            data:
+              name: "EV Load Balancing"
+              message: "Skipped: {{ current }}A→{{ target }}A (hysteresis, diff={{ diff }}A)"
