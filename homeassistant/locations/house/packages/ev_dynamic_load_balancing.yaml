@@ -33,6 +33,34 @@ input_boolean:
     icon: mdi:car-electric
 
 automation:
+  # Continuously sync actual charger amperage to track manual adjustments
+  - id: 'ev_sync_charger_amperage_continuous'
+    alias: "EV Sync Charger Amperage Continuously"
+    description: "Keep ev_last_set_amps synchronized with actual charger setting (tracks manual adjustments)"
+    mode: single
+    triggers:
+      - platform: homeassistant
+        event: start
+      # Track any change to actual charger amperage (manual adjustments, app changes, etc.)
+      - platform: state
+        entity_id: sensor.go_echarger_600187_allowed_charge_current
+    conditions:
+      - condition: template
+        value_template: "{{ states('sensor.go_echarger_600187_allowed_charge_current') not in ['unknown', 'unavailable'] }}"
+      # Only log if value actually changed (prevent spam)
+      - condition: template
+        value_template: "{{ states('sensor.go_echarger_600187_allowed_charge_current') | int != states('input_number.ev_last_set_amps') | int }}"
+    actions:
+      - service: input_number.set_value
+        target:
+          entity_id: input_number.ev_last_set_amps
+        data:
+          value: "{{ states('sensor.go_echarger_600187_allowed_charge_current') | int }}"
+      - service: logbook.log
+        data:
+          name: "EV Load Balancing"
+          message: "Synced charger amperage: {{ states('input_number.ev_last_set_amps') | int }}A → {{ states('sensor.go_echarger_600187_allowed_charge_current') }}A"
+
   - id: 'ev_dynamic_load_balancing'
     alias: "EV Dynamic Load Balancing"
     description: "Adjust charging to prevent grid overload"
@@ -43,8 +71,7 @@ automation:
     triggers:
       - platform: state
         entity_id: sensor.go_econtroller_917809_home_power
-      - platform: homeassistant
-        event: start
+      # Note: No homeassistant start trigger - sync automation handles startup
     conditions:
       - condition: state
         entity_id: input_boolean.ev_dynamic_load_balancing_enabled
