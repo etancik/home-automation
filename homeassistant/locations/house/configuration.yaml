@@ -218,17 +218,6 @@ homekit:
         # Garage Door (control + position feedback)
         - cover.garage_door
         - binary_sensor.door_lock
-        
-        # ========================================
-        # EV CHARGING (Auto-Discovered)
-        # ========================================
-        
-        # go-e Charger - Essential Monitoring (for HomeKit)
-        - sensor.go_echarger_600187_power_total
-        - sensor.go_echarger_600187_energy_charged
-        
-        # go-e Controller - Home Power Monitoring
-        - sensor.go_econtroller_917809_home_power
     entity_config:
       # ========================================
       # ENVIRONMENTAL SENSORS
@@ -368,20 +357,6 @@ homekit:
         name: "Garage Door"
       binary_sensor.door_lock:
         name: "Garage Door Position"
-      
-      # ========================================
-      # EV CHARGING
-      # ========================================
-      
-      # go-e Charger - Power sensors display well in HomeKit
-      sensor.go_echarger_600187_power_total:
-        name: "EV Charger Power"
-      sensor.go_echarger_600187_energy_charged:
-        name: "EV Charging Session Energy"
-      
-      # go-e Controller - Home monitoring for smart charging automation
-      sensor.go_econtroller_917809_home_power:
-        name: "House Power Consumption"
 
 # Shell commands for GitOps deployment
 shell_command:
