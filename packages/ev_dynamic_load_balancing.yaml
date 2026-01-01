@@ -126,22 +126,33 @@ automation:
               message: "Skipped: {{ current }}A→{{ target }}A (hysteresis, diff={{ diff }}A)"
 
   # Sync charger power to controller for local tracking (no cloud required)
-  - id: 'ev_sync_charger_power_to_controller'
-    alias: "EV Sync Charger Power to Controller"
-    description: "Send charger power data to controller via MQTT for local car power tracking (ccp = car charging power)"
-    mode: single
-    triggers:
-      - platform: state
-        entity_id: sensor.go_echarger_600187_power_total
-      - platform: homeassistant
-        event: start
-    conditions:
-      - condition: template
-        value_template: "{{ states('sensor.go_echarger_600187_power_total') not in ['unknown', 'unavailable'] }}"
-    actions:
-      # go-eController expects ccp as single value (not array) via go-e API v2
-      # Topic: go-eController/917809/ccp/set (car charging power set)
-      - service: mqtt.publish
-        data:
-          topic: "go-eController/917809/ccp/set"
-          payload: "{{ states('sensor.go_echarger_600187_power_total') | int }}"
+  # DISABLED: ccp array format not documented, causing MQTT spam without confirmed functionality
+  # Re-enable after testing correct array index via HA Developer Tools → Services
+  # Test payload: [null,null,5000,null...] or other index combinations
+  # - id: 'ev_sync_charger_power_to_controller'
+  #   alias: "EV Sync Charger Power to Controller"
+  #   description: "Send charger power data to controller via MQTT for local car power tracking (ccp = car charging power)"
+  #   mode: single
+  #   triggers:
+  #     - platform: state
+  #       entity_id: sensor.go_echarger_600187_power_total
+  #     - platform: homeassistant
+  #       event: start
+  #   conditions:
+  #     - condition: template
+  #       value_template: "{{ states('sensor.go_echarger_600187_power_total') not in ['unknown', 'unavailable'] }}"
+  #     # Throttle: only sync if power changed by >100W or first sync after HA start
+  #     - condition: template
+  #       value_template: >
+  #         {% set current = states('sensor.go_echarger_600187_power_total') | int(0) %}
+  #         {% set last = state_attr('automation.ev_sync_charger_power_to_controller', 'last_triggered') %}
+  #         {{ last is none or (current | int - trigger.from_state.state | int(0)) | abs > 100 }}
+  #   actions:
+  #     # go-eController ccp array format: [grid_power, home_power, car_power, ...nulls...]
+  #     # We only set car_power (index 2), leave grid/home as null (controller calculates from CT clamps)
+  #     # Topic: go-eController/917809/ccp/set (car charging power set)
+  #     - service: mqtt.publish
+  #       data:
+  #         topic: "go-eController/917809/ccp/set"
+  #         payload: >
+  #           [null,null,{{ states('sensor.go_echarger_600187_power_total') | int }},null,null,null,null,null,null,null,null,null,null,null,null,null]
