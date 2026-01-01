@@ -1,0 +1,82 @@
+# EV Dynamic Load Balancing
+# Dynamically adjusts EV charging to prevent grid overload based on real-time consumption
+# No cloud dependency - works fully offline via local MQTT
+#
+# Installation: 3×32A (22kW grid capacity)
+# Logic: Monitors actual household power (updates every ~1s), reduces charging when consumption increases
+# Reserve: Safety buffer for sudden spikes (kettle, oven, etc.)
+# MQTT: go-eCharger/600187/amp/set
+
+input_number:
+  ev_household_reserve_watts:
+    name: "EV Charging - Household Reserve"
+    min: 1000
+    max: 8000
+    step: 1000
+    unit_of_measurement: "W"
+    icon: mdi:home-lightning-bolt
+    initial: 3000  # Safety buffer for sudden spikes (kettle, oven, etc.)
+
+input_boolean:
+  ev_dynamic_load_balancing_enabled:
+    name: "EV Dynamic Load Balancing"
+    icon: mdi:car-electric
+
+template:
+  - sensor:
+      - name: "EV Available Power"
+        unique_id: ev_available_power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set grid_capacity = 22000 %}
+          {% set household = states('sensor.go_econtroller_917809_home_power') | float(0) %}
+          {% set reserve = states('input_number.ev_household_reserve_watts') | float(3000) %}
+          {{ [0, grid_capacity - household - reserve] | max | round(0) }}
+
+      - name: "EV Target Charging Amps"
+        unique_id: ev_target_charging_amps
+        unit_of_measurement: "A"
+        state: >
+          {% set available = states('sensor.ev_available_power') | float(0) %}
+          {% set amps = (available / 230) | round(0) %}
+          {% if amps < 6 %}
+            0
+          {% else %}
+            {{ [amps, 32] | min }}
+          {% endif %}
+
+# Automation for dynamic load balancing
+automation:
+  - id: 'ev_dynamic_load_balancing'
+    alias: "EV Dynamic Load Balancing"
+    description: "Adjust EV charging current based on real-time household consumption"
+automation:
+  - id: 'ev_dynamic_load_balancing'
+    alias: "EV Dynamic Load Balancing"
+    description: "Adjust charging to prevent grid overload"
+    mode: queued
+    max: 5
+    triggers:
+      - platform: state
+        entity_id: sensor.go_econtroller_917809_home_power
+      - platform: homeassistant
+        event: start
+    conditions:
+      - condition: state
+        entity_id: input_boolean.ev_dynamic_load_balancing_enabled
+        state: 'on'
+      - condition: template
+        value_template: "{{ states('sensor.go_echarger_600187_energy_charged') not in ['unknown', 'unavailable'] }}"
+    actions:
+      - variables:
+          target: "{{ states('sensor.ev_target_charging_amps') | int(0) }}"
+      - service: logbook.log
+        data:
+          name: "EV Load Balancing"
+          message: "Household {{ states('sensor.go_econtroller_917809_home_power') }}W → Charging {{ target }}A"
+      - service: mqtt.publish
+        data:
+          topic: "go-eCharger/600187/amp/set"
+          payload: "{{ target }}"
