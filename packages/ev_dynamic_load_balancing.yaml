@@ -124,3 +124,22 @@ automation:
             data:
               name: "EV Load Balancing"
               message: "Skipped: {{ current }}A→{{ target }}A (hysteresis, diff={{ diff }}A)"
+
+  # Sync charger power to controller for local tracking (no cloud required)
+  - id: 'ev_sync_charger_power_to_controller'
+    alias: "EV Sync Charger Power to Controller"
+    description: "Send charger power data to controller via MQTT for local car power tracking"
+    mode: single
+    triggers:
+      - platform: state
+        entity_id: sensor.go_echarger_600187_power_total
+      - platform: homeassistant
+        event: start
+    conditions:
+      - condition: template
+        value_template: "{{ states('sensor.go_echarger_600187_power_total') not in ['unknown', 'unavailable'] }}"
+    actions:
+      - service: mqtt.publish
+        data:
+          topic: "go-eController/917809/car/set"
+          payload: "{{ states('sensor.go_echarger_600187_power_total') | int }}"
