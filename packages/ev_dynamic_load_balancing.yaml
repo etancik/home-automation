@@ -102,7 +102,7 @@ automation:
           # Now calculate available power for charger
           available: "{{ [0, grid_capacity - household_excluding_charger - reserve] | max | float }}"
           # 3-phase: amps per phase = available_power / (3 × 230V)
-          target_raw: "{{ ((available / 690) | round(0, 'floor')) - 1 }}"
+          target_raw: "{{ (available / 690) | round(0, 'floor') }}"
           target: "{{ 0 if target_raw < 6 else [target_raw, 16] | min | int }}"
           diff: "{{ (target | int) - (current | int) }}"
       # Asymmetric hysteresis: instant decrease (safety), threshold for increase (prevent oscillation)
