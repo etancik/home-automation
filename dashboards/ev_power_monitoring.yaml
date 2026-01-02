@@ -10,86 +10,115 @@ views:
   - title: Real-Time Monitoring
     icon: mdi:flash
     cards:
-      # Top row - Current power values with gauges
+      # Three-column layout
       - type: horizontal-stack
         cards:
-          - type: gauge
-            entity: sensor.go_econtroller_917809_home_power
-            name: Household Power
-            min: 0
-            max: 22000
-            needle: true
-            severity:
-              green: 0
-              yellow: 15000
-              red: 20000
-            
-          - type: gauge
-            entity: sensor.go_echarger_600187_power_total
-            name: Charger Power
-            min: 0
-            max: 22000
-            needle: true
-            severity:
-              green: 0
-              yellow: 15000
-              red: 20000
-            
-          - type: gauge
-            entity: input_number.ev_last_set_amps
-            name: Charging Amps
-            min: 0
-            max: 32
-            needle: true
-            severity:
-              green: 0
-              yellow: 24
-              red: 30
+          # Column 1: Hourly graphs
+          - type: vertical-stack
+            cards:
+              - type: history-graph
+                title: Power (1 Hour)
+                hours_to_show: 1
+                refresh_interval: 10
+                entities:
+                  - entity: sensor.go_econtroller_917809_home_power
+                    name: Household
+                  - entity: sensor.go_echarger_600187_power_total
+                    name: Charger
 
-      # Second row - Status indicators
-      - type: horizontal-stack
-        cards:
-          - type: entity
-            entity: input_boolean.ev_dynamic_load_balancing_enabled
-            name: Load Balancing
-            icon: mdi:scale-balance
-            
-          - type: entity
-            entity: sensor.go_echarger_600187_car_state
-            name: Car Status
-            icon: mdi:car-electric
-            
-          - type: entity
-            entity: input_number.ev_household_reserve_watts
-            name: Reserve Buffer
-            icon: mdi:shield-home
+              - type: history-graph
+                title: Amperage (1 Hour)
+                hours_to_show: 1
+                refresh_interval: 10
+                entities:
+                  - entity: input_number.ev_last_set_amps
+                    name: Charging
 
-      # Power consumption history - Household and Charger
-      - type: history-graph
-        title: Power Consumption (Last Hour)
-        hours_to_show: 1
-        refresh_interval: 10
-        entities:
-          - entity: sensor.go_econtroller_917809_home_power
-            name: Total Household
-          - entity: sensor.go_echarger_600187_power_total
-            name: EV Charger
+          # Column 2: Daily graphs
+          - type: vertical-stack
+            cards:
+              - type: history-graph
+                title: Power (24 Hours)
+                hours_to_show: 24
+                refresh_interval: 60
+                entities:
+                  - entity: sensor.go_econtroller_917809_home_power
+                    name: Household
+                  - entity: sensor.go_echarger_600187_power_total
+                    name: Charger
 
-      # Charging amperage history
-      - type: history-graph
-        title: Charging Amperage (Last Hour)
-        hours_to_show: 1
-        refresh_interval: 10
-        entities:
-          - entity: input_number.ev_last_set_amps
-            name: Set Amperage
+              - type: history-graph
+                title: Amperage (24 Hours)
+                hours_to_show: 24
+                refresh_interval: 60
+                entities:
+                  - entity: input_number.ev_last_set_amps
+                    name: Charging
 
-      # Statistics cards
+          # Column 3: Status and Control
+          - type: vertical-stack
+            cards:
+              - type: gauge
+                entity: sensor.go_econtroller_917809_home_power
+                name: Household
+                min: 0
+                max: 22000
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 15000
+                  red: 20000
+                
+              - type: gauge
+                entity: sensor.go_echarger_600187_power_total
+                name: Charger
+                min: 0
+                max: 22000
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 15000
+                  red: 20000
+                
+              - type: gauge
+                entity: input_number.ev_last_set_amps
+                name: Max EV Amps
+                min: 0
+                max: 32
+                needle: true
+                severity:
+                  green: 0
+                  yellow: 24
+                  red: 30
+
+              - type: entities
+                title: Control
+                show_header_toggle: false
+                entities:
+                  - entity: input_boolean.ev_dynamic_load_balancing_enabled
+                    name: Load Balancing
+                    icon: mdi:toggle-switch
+                    
+                  - entity: input_number.ev_household_reserve_watts
+                    name: Reserve (W)
+                    icon: mdi:shield-home
+                    
+                  - type: divider
+                    
+                  - entity: sensor.go_echarger_600187_car_state
+                    name: Car State
+                    icon: mdi:car-info
+                    
+                  - entity: sensor.go_echarger_600187_energy_charged
+                    name: Session
+                    icon: mdi:battery-charging
+
+      # Statistics row (below 3 columns)
       - type: horizontal-stack
         cards:
           - type: statistic
             entity: sensor.go_econtroller_917809_home_power
-            name: Household Avg (1h)
+            name: House Avg
             stat_type: mean
             period:
               calendar:
@@ -97,7 +126,7 @@ views:
             
           - type: statistic
             entity: sensor.go_echarger_600187_power_total
-            name: Charger Avg (1h)
+            name: Charger Avg
             stat_type: mean
             period:
               calendar:
@@ -105,42 +134,8 @@ views:
                 
           - type: statistic
             entity: sensor.go_econtroller_917809_home_power
-            name: Peak Power (1h)
+            name: Peak
             stat_type: max
             period:
               calendar:
                 period: hour
-
-      # Control panel
-      - type: entities
-        title: Load Balancing Control
-        show_header_toggle: false
-        entities:
-          - entity: input_boolean.ev_dynamic_load_balancing_enabled
-            name: Enable Load Balancing
-            icon: mdi:toggle-switch
-            
-          - entity: input_number.ev_household_reserve_watts
-            name: Reserve Buffer (W)
-            icon: mdi:shield-home
-            
-          - entity: input_number.ev_last_set_amps
-            name: Current Amperage (A)
-            icon: mdi:current-ac
-            
-          - type: divider
-            
-          - entity: sensor.go_echarger_600187_car_state
-            name: Car State
-            icon: mdi:car-info
-            
-          - entity: sensor.go_echarger_600187_energy_charged
-            name: Session Energy
-            icon: mdi:battery-charging
-
-      # Recent load balancing events
-      - type: logbook
-        title: Load Balancing Events (Last 2 Hours)
-        hours_to_show: 2
-        entities:
-          - automation.ev_dynamic_load_balancing
