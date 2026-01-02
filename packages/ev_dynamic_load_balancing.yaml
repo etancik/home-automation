@@ -108,7 +108,7 @@ automation:
       # Asymmetric hysteresis: instant decrease (safety), threshold for increase (prevent oscillation)
       - if:
           - condition: template
-            value_template: "{{ diff < 0 or diff >= 2 }}"
+            value_template: "{{ diff < 0 or diff >= 1 }}"
         then:
           - service: input_number.set_value
             target:
