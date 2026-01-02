@@ -115,19 +115,15 @@ automation:
               entity_id: input_number.ev_last_set_amps
             data:
               value: "{{ target }}"
-          - service: logbook.log
-            data:
-              name: "EV Load Balancing"
-              message: "House {{ household_excluding_charger | int }}W + Charger {{ charger_current_draw | int }}W = {{ household_total | int }}W → {{ current }}A→{{ target }}A"
           - service: mqtt.publish
             data:
               topic: "go-eCharger/600187/amp/set"
               payload: "{{ target }}"
-        else:
+          # Log only on actual adjustment (reduce MQTT spam warning)
           - service: logbook.log
             data:
               name: "EV Load Balancing"
-              message: "Skipped: {{ current }}A→{{ target }}A (hysteresis, diff={{ diff }}A)"
+              message: "Adjusted: House {{ household_excluding_charger | int }}W + Charger {{ charger_current_draw | int }}W = {{ household_total | int }}W → {{ current }}A→{{ target }}A"
 
   # Sync charger power to controller for local tracking (no cloud required)
   # DISABLED: ccp array format not documented, causing MQTT spam without confirmed functionality
