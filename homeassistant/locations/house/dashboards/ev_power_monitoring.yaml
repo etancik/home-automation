@@ -10,10 +10,10 @@ views:
   - title: Real-Time Monitoring
     icon: mdi:flash
     cards:
-      # Three-column layout
+      # Two-column layout: graphs left, status/controls right
       - type: horizontal-stack
         cards:
-          # Column 1: Hourly graphs
+          # Left column: All graphs
           - type: vertical-stack
             cards:
               - type: history-graph
@@ -34,9 +34,6 @@ views:
                   - entity: input_number.ev_last_set_amps
                     name: Charging
 
-          # Column 2: Daily graphs
-          - type: vertical-stack
-            cards:
               - type: history-graph
                 title: Power (24 Hours)
                 hours_to_show: 24
@@ -55,7 +52,7 @@ views:
                   - entity: input_number.ev_last_set_amps
                     name: Charging
 
-          # Column 3: Status and Control
+          # Right column: Status and Control
           - type: vertical-stack
             cards:
               - type: gauge
