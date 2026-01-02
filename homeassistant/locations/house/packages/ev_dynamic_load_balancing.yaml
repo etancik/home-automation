@@ -82,6 +82,9 @@ automation:
       # Prevent HA restart race condition with unavailable sensors
       - condition: template
         value_template: "{{ states('sensor.go_econtroller_917809_home_power') not in ['unknown', 'unavailable'] }}"
+      # Safety: ensure charger power sensor is available before using it for calculations
+      - condition: template
+        value_template: "{{ states('sensor.go_echarger_600187_power_total') not in ['unknown', 'unavailable'] }}"
     actions:
       - variables:
           # Calculate inline to guarantee consistency with trigger source
@@ -92,14 +95,15 @@ automation:
           # CRITICAL: go-eController reading includes charger consumption in household total
           # Must subtract current charger draw to get actual household-only consumption
           # Without this subtraction, charger would count against itself causing incorrect calculations
-          charger_current_draw: "{{ (current | int) * 690 }}"
+          # Use actual power sensor (not calculated from amps) to handle non-charging states correctly
+          charger_current_draw: "{{ states('sensor.go_echarger_600187_power_total') | float(0) }}"
           # Safety clamp: prevent negative household (data corruption/manual override edge case)
           household_excluding_charger: "{{ [0, household_total - charger_current_draw] | max | float }}"
           # Now calculate available power for charger
           available: "{{ [0, grid_capacity - household_excluding_charger - reserve] | max | float }}"
           # 3-phase: amps per phase = available_power / (3 × 230V)
           target_raw: "{{ ((available / 690) | round(0, 'floor')) - 1 }}"
-          target: "{{ 0 if target_raw < 6 else [target_raw, 16] | min | int }}"
+          target: "{{ 0 if target_raw < 6 else [target_raw, 32] | min | int }}"
           diff: "{{ (target | int) - (current | int) }}"
       # Asymmetric hysteresis: instant decrease (safety), threshold for increase (prevent oscillation)
       - if:
