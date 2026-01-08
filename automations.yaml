@@ -21,133 +21,6 @@
 # House Automations
 # Location-specific automations for the house
 
-# CO2 Air Quality LED Notifications
-- id: 'co2_led_notification'
-  alias: "CO2 Air Quality LED Notifications"
-  description: "Adjust LED strip colors based on CO2 levels and window states for air quality awareness"
-  triggers:
-    # Monitor bedroom CO2 levels
-    - platform: numeric_state
-      entity_id: sensor.bedroom_co2_sensor_co2
-      above: 1500
-      id: bedroom_high_co2
-    - platform: numeric_state
-      entity_id: sensor.bedroom_co2_sensor_co2
-      below: 1500
-      above: 800
-      id: bedroom_normal_co2
-    - platform: numeric_state
-      entity_id: sensor.bedroom_co2_sensor_co2
-      below: 800
-      id: bedroom_low_co2
-    # Monitor window state changes (bedroom and kids room only)
-    - platform: state
-      entity_id: 
-        - binary_sensor.bedroom_window_sensor_contact
-        - binary_sensor.kids_room_window_sensor_contact
-      id: window_state_change
-  conditions: []
-  actions:
-    - choose:
-        # High CO2 + Windows closed -> Pulse (alert to open windows)
-        - conditions:
-            - condition: trigger
-              id: bedroom_high_co2
-            - condition: state
-              entity_id: binary_sensor.bedroom_window_sensor_contact
-              state: 'off'  # Bedroom window closed
-            - condition: state
-              entity_id: binary_sensor.kids_room_window_sensor_contact
-              state: 'off'  # Kids room window closed
-          sequence:
-            - if:
-                - condition: state
-                  entity_id: light.bedroom_led_strip
-                  state: 'on'
-              then:
-                - service: script.co2_led_pulse_current_color
-                  data:
-                    entity_id: light.bedroom_led_strip
-            - if:
-                - condition: state
-                  entity_id: light.kids_room_door_led_strip
-                  state: 'on'
-              then:
-                - service: script.co2_led_pulse_current_color
-                  data:
-                    entity_id: light.kids_room_door_led_strip
-        
-        # Low CO2 + Windows open in winter -> Pulse (alert to close windows)
-        - conditions:
-            - condition: trigger
-              id: bedroom_low_co2
-            - condition: or
-              conditions:
-                - condition: state
-                  entity_id: binary_sensor.bedroom_window_sensor_contact
-                  state: 'on'  # Bedroom window open
-                - condition: state
-                  entity_id: binary_sensor.kids_room_window_sensor_contact
-                  state: 'on'  # Kids room window open
-            # Winter condition: October through March
-            - condition: template
-              value_template: >
-                {% set month = now().month %}
-                {{ month >= 10 or month <= 3 }}
-          sequence:
-            - if:
-                - condition: state
-                  entity_id: light.bedroom_led_strip
-                  state: 'on'
-              then:
-                - service: script.co2_led_pulse_current_color
-                  data:
-                    entity_id: light.bedroom_led_strip
-            - if:
-                - condition: state
-                  entity_id: light.kids_room_door_led_strip
-                  state: 'on'
-              then:
-                - service: script.co2_led_pulse_current_color
-                  data:
-                    entity_id: light.kids_room_door_led_strip
-        
-        # Normal/Low CO2 + Windows closed -> Stop pulsing, return to normal
-        - conditions:
-            - condition: or
-              conditions:
-                # Normal CO2 reached
-                - condition: trigger
-                  id: bedroom_normal_co2
-                # Window closed while low CO2
-                - condition: and
-                  conditions:
-                    - condition: trigger
-                      id: window_state_change
-                    - condition: template
-                      value_template: "{{ trigger.to_state.state == 'off' }}"  # Window closed
-                    - condition: numeric_state
-                      entity_id: sensor.bedroom_co2_sensor_co2
-                      below: 800
-          sequence:
-            # Note: LED breathing effects now automatically restore original state
-            # No manual restoration needed for low CO2 notification
-        
-        # High CO2 + Window opened -> Stop pulsing, return to normal
-        - conditions:
-            - condition: trigger
-              id: window_state_change
-            - condition: template
-              value_template: "{{ trigger.to_state.state == 'on' }}"  # Window opened
-            - condition: numeric_state
-              entity_id: sensor.bedroom_co2_sensor_co2
-              above: 1500
-          sequence:
-            # Note: LED breathing effects now automatically restore original state  
-            # No manual restoration needed when windows open
-  mode: queued
-  max: 10
-
 # Heat Valve External Temperature Sync
 - id: 'heat_valves_external_temperature_sync'
   alias: "Heat Valves External Temperature Sync"
@@ -565,38 +438,66 @@
         # This happens when user releases button after dimming
   mode: restart
 
-# LED Strip Schedule Control
+# LED Strip Schedule Control with Color Transitions
 - id: 'led_strips_evening_schedule'
   alias: "LED Strips Evening Schedule"
-  description: "Turn on bedroom and kids room LED strips at 7 PM, turn off at 7:30 AM"
+  description: "Yellow from sundown (if before 7 PM), red at 7 PM, off at 7:30 AM"
   triggers:
-    # Turn on at 7 PM
+    # Turn on yellow at sunset (only if before 7 PM)
+    - platform: sun
+      event: sunset
+      offset: "00:00:00"
+      id: "yellow_on"
+    # Switch to red at 7 PM
     - platform: time
       at: "19:00:00"
-      id: "turn_on"
+      id: "red_on"
     # Turn off at 7:30 AM
     - platform: time
       at: "07:30:00"
       id: "turn_off"
   conditions: []
   actions:
-    - if:
-        - condition: trigger
-          id: "turn_on"
-      then:
-        # Turn on both LED strips at 7 PM
-        - service: light.turn_on
-          target:
-            entity_id:
-              - light.bedroom_led_strip
-              - light.kids_room_door_led_strip
-          data:
-            brightness_pct: 30
-      else:
-        # Turn off both LED strips at 7:30 AM
-        - service: light.turn_off
-          target:
-            entity_id:
-              - light.bedroom_led_strip
-              - light.kids_room_door_led_strip
+    - choose:
+        # Yellow light at sunset (only if sunset is before 7 PM)
+        - conditions:
+            - condition: trigger
+              id: "yellow_on"
+            # Only turn on yellow if sunset is before 7 PM (short winter days)
+            - condition: time
+              before: "19:00:00"
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id:
+                  - light.bedroom_led_strip
+                  - light.kids_room_door_led_strip
+              data:
+                brightness_pct: 30
+                rgb_color: [255, 200, 50]  # Warm yellow
+        
+        # Red night light at 7 PM
+        - conditions:
+            - condition: trigger
+              id: "red_on"
+          sequence:
+            - service: light.turn_on
+              target:
+                entity_id:
+                  - light.bedroom_led_strip
+                  - light.kids_room_door_led_strip
+              data:
+                brightness_pct: 30
+                rgb_color: [255, 0, 0]  # Red
+        
+        # Turn off at 7:30 AM
+        - conditions:
+            - condition: trigger
+              id: "turn_off"
+          sequence:
+            - service: light.turn_off
+              target:
+                entity_id:
+                  - light.bedroom_led_strip
+                  - light.kids_room_door_led_strip
   mode: single
