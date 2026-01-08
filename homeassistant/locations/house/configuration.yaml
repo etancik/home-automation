@@ -18,6 +18,9 @@ homeassistant:
   packages:
     core: !include_dir_merge_named ../../core/packages
     local: !include_dir_merge_named packages
+
+# Enable sun integration for sunrise/sunset data
+sun:
   # Location customizations
   customize: !include customize.yaml
 
