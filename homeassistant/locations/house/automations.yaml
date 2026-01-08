@@ -380,6 +380,71 @@
     # No else block - intentionally do nothing to prevent oscillation
   mode: single
 
+# Upstairs Bathroom Heating Schedule (Newborn Bath Time)
+- id: 'upstairs_bathroom_heating_schedule'
+  alias: "Upstairs Bathroom Heating Schedule"
+  description: "Higher temperature for bath time (17:00-20:00), normal otherwise"
+  triggers:
+    # Start bath time heating
+    - platform: time
+      at: "17:00:00"
+      id: "bath_time"
+    # Return to normal temperature
+    - platform: time
+      at: "20:00:00"
+      id: "normal"
+    # Restore on Home Assistant restart
+    - platform: homeassistant
+      event: start
+      id: "restore"
+  conditions: []
+  actions:
+    - choose:
+        # Bath time: 23°C (17:00-20:00)
+        - conditions:
+            - condition: or
+              conditions:
+                - condition: trigger
+                  id: "bath_time"
+                - condition: and
+                  conditions:
+                    - condition: trigger
+                      id: "restore"
+                    - condition: time
+                      after: "17:00:00"
+                      before: "20:00:00"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.upstairs_bathroom_radiator_heat_valve
+              data:
+                temperature: 23
+        # Normal temperature: 21°C (outside 17:00-20:00)
+        - conditions:
+            - condition: or
+              conditions:
+                - condition: trigger
+                  id: "normal"
+                - condition: and
+                  conditions:
+                    - condition: trigger
+                      id: "restore"
+                    - condition: time
+                      before: "17:00:00"
+                - condition: and
+                  conditions:
+                    - condition: trigger
+                      id: "restore"
+                    - condition: time
+                      after: "20:00:00"
+          sequence:
+            - service: climate.set_temperature
+              target:
+                entity_id: climate.upstairs_bathroom_radiator_heat_valve
+              data:
+                temperature: 21
+  mode: single
+
 # Kids Room Dimmer Switch Control
 - id: 'kids_room_dimmer_switch_control'
   alias: "Kids Room Dimmer Switch Control"
