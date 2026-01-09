@@ -538,8 +538,8 @@
                   - light.bedroom_led_strip
                   - light.kids_room_door_led_strip
               data:
-                brightness_pct: 30
-                rgb_color: [255, 200, 50]  # Warm yellow
+                brightness_pct: 10
+                rgb_color: [255, 137, 14]  # Warm Orange-Yellow
         
         # Red night light at 7 PM
         - conditions:
