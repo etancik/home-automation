@@ -188,10 +188,10 @@ devices:
   # ========================================
   # SMART PLUGS
   # ========================================
-  '0x348d13fffe07a842':
-    friendly_name: 'Laundry Room Smart Plug'
+  '0xa4c1381aa3bfa023':
+    friendly_name: 'Laundry Room Washing Machine Smart Plug'
     retain: false
-    description: 'Smart plug for laundry room appliances'
+    description: 'Lidl Silvercrest smart plug with power monitoring for washing machine (supports >300W motors)'
   '0x348d13fffe3d7bac':
     friendly_name: 'Living Room PC Smart Plug'
     retain: false

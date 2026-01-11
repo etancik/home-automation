@@ -503,6 +503,93 @@
         # This happens when user releases button after dimming
   mode: restart
 
+# Washing Machine State Tracking
+# Manages state machine: idle → washing → done → idle
+# Based on power consumption: >50W = washing, <10W for 2min = done
+- id: 'washing_machine_state_tracking'
+  alias: "Washing Machine State Tracking"
+  description: "Track washing machine states based on power consumption for HomeKit"
+  triggers:
+    # Power goes above 50W - start washing
+    - platform: numeric_state
+      entity_id: sensor.laundry_room_washing_machine_smart_plug_power
+      above: 50
+      id: "start_washing"
+    # Power stays below 10W for 2 minutes - washing done
+    - platform: numeric_state
+      entity_id: sensor.laundry_room_washing_machine_smart_plug_power
+      below: 10
+      for:
+        minutes: 2
+      id: "washing_done"
+    # Auto-reset from done to idle after 5 minutes
+    - platform: state
+      entity_id: input_select.washing_machine_state
+      to: 'done'
+      for:
+        minutes: 5
+      id: "reset_to_idle"
+  conditions: []
+  actions:
+    - choose:
+        # Start washing (from idle OR done state)
+        - conditions:
+            - condition: trigger
+              id: "start_washing"
+            - condition: or
+              conditions:
+                - condition: state
+                  entity_id: input_select.washing_machine_state
+                  state: 'idle'
+                - condition: state
+                  entity_id: input_select.washing_machine_state
+                  state: 'done'
+          sequence:
+            - service: input_select.select_option
+              target:
+                entity_id: input_select.washing_machine_state
+              data:
+                option: 'washing'
+            - service: logbook.log
+              data:
+                name: "Washing Machine"
+                message: "Washing cycle started - power above 50W"
+        
+        # Washing done (only from washing state)
+        - conditions:
+            - condition: trigger
+              id: "washing_done"
+            - condition: state
+              entity_id: input_select.washing_machine_state
+              state: 'washing'
+          sequence:
+            - service: input_select.select_option
+              target:
+                entity_id: input_select.washing_machine_state
+              data:
+                option: 'done'
+            - service: logbook.log
+              data:
+                name: "Washing Machine"
+                message: "Washing cycle completed - power dropped below 10W"
+        
+        # Auto-reset to idle
+        - conditions:
+            - condition: trigger
+              id: "reset_to_idle"
+          sequence:
+            - service: input_select.select_option
+              target:
+                entity_id: input_select.washing_machine_state
+              data:
+                option: 'idle'
+            - service: logbook.log
+              data:
+                name: "Washing Machine"
+                message: "State reset to idle"
+  mode: queued
+  max: 3
+
 # LED Strip Schedule Control with Color Transitions
 - id: 'led_strips_evening_schedule'
   alias: "LED Strips Evening Schedule"

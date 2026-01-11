@@ -53,9 +53,32 @@ automation: !include automations.yaml
 script: !include scripts.yaml  
 scene: !include scenes.yaml
 
+# Input Helpers for Appliances
+input_select:
+  washing_machine_state:
+    name: "Washing Machine State"
+    options:
+      - idle
+      - washing
+      - done
+    initial: idle
+    icon: mdi:washing-machine
+
 # Floor Heating Control Configuration
 # Template sensors and covers
 template:
+  - binary_sensor:
+      # Washing Machine Done (HomeKit Occupancy Sensor)
+      # Triggers occupancy when washing completes (washing → done state)
+      # Setup in HomeKit: Automation → When occupancy detected → Notify
+      - name: "Washing Machine"
+        unique_id: washing_machine_done
+        device_class: occupancy
+        state: >
+          {{ is_state('input_select.washing_machine_state', 'done') }}
+        availability: >
+          {{ states('sensor.laundry_room_washing_machine_smart_plug_power') not in ['unknown', 'unavailable'] }}
+  
   - sensor:
       # Extract current temperature from downstairs bathroom radiator valve for floor heating control
       - name: "Downstairs Bathroom Temperature"
@@ -243,6 +266,13 @@ homekit:
         - light.living_room_light
         
         # ========================================
+        # SMART PLUGS & APPLIANCES
+        # ========================================
+        
+        # Washing Machine (notifies when done)
+        - binary_sensor.washing_machine
+        
+        # ========================================
         # BOILER CONTROL
         # ========================================
         
@@ -349,6 +379,20 @@ homekit:
       # Heat Valves (alphabetical by room)
       climate.bedroom_radiator_heat_valve:
         name: "Bedroom Heating"
+      
+      # ========================================
+      # APPLIANCES
+      # ========================================
+      
+      # Washing Machine Sensor
+      binary_sensor.washing_machine:
+        name: "Washing Machine"
+      
+      # ========================================
+      # BOILER CONTROL
+      # ========================================
+      
+      # Boiler Controller
       climate.downstairs_bathroom_radiator_heat_valve:
         name: "Downstairs Bathroom Radiator"
       climate.entrance_radiator_heat_valve:
