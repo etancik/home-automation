@@ -181,11 +181,7 @@ homekit:
         
         # CO2 Sensors (alphabetical by room)
         - sensor.bedroom_co2_sensor_co2
-        - sensor.bedroom_co2_sensor_temperature
-        - sensor.bedroom_co2_sensor_humidity
         - sensor.living_room_co2_sensor_co2
-        - sensor.living_room_co2_sensor_temperature
-        - sensor.living_room_co2_sensor_humidity
         
         # Food Storage Sensor (kitchen)
         - sensor.food_storage_sensor_temperature
