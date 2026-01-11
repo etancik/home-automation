@@ -68,12 +68,12 @@ input_select:
 # Template sensors and covers
 template:
   - binary_sensor:
-      # Washing Machine Done (HomeKit Occupancy Sensor)
-      # Triggers occupancy when washing completes (washing → done state)
-      # Setup in HomeKit: Automation → When occupancy detected → Notify
+      # Washing Machine Done (HomeKit Contact Sensor)
+      # Acts like washing machine door: closed = washing/idle, open = done (ready to unload)
+      # Setup in HomeKit: Automation → When "Washing Machine" opens → Send notification
       - name: "Washing Machine"
         unique_id: washing_machine_done
-        device_class: occupancy
+        device_class: opening
         state: >
           {{ is_state('input_select.washing_machine_state', 'done') }}
         availability: >
