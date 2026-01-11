@@ -67,10 +67,3 @@ switch.living_room_pc_smart_plug:
 switch.laundry_room_smart_plug:
   friendly_name: "House Laundry Room Smart Plug"
   area: laundry_room
-
-# Hide input helpers from dashboard (automation-controlled only)
-# Read-only template sensors are exposed instead
-input_select.washing_machine_state:
-  hidden: true
-input_number.ev_last_set_amps:
-  hidden: true
