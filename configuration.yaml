@@ -139,7 +139,6 @@ climate:
     target_sensor: sensor.living_room_temperature_sensor_temperature
     min_temp: 4
     max_temp: 35
-    target_temp: 21
     cold_tolerance: 1.0
     hot_tolerance: 0
     initial_hvac_mode: "heat"
@@ -153,7 +152,6 @@ climate:
     target_sensor: sensor.downstairs_bathroom_temperature
     min_temp: 4
     max_temp: 35
-    target_temp: 22
     cold_tolerance: 1.0
     hot_tolerance: 0
     initial_hvac_mode: "heat"
