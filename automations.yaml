@@ -503,92 +503,44 @@
         # This happens when user releases button after dimming
   mode: restart
 
-# Washing Machine State Tracking
-# Manages state machine: idle → washing → done → idle
-# Based on power consumption: >50W = washing, <10W for 2min = done
-- id: 'washing_machine_state_tracking'
-  alias: "Washing Machine State Tracking"
-  description: "Track washing machine states based on power consumption for HomeKit"
+# Washing Machine Status Logging
+# Log when washing machine starts and finishes
+# Binary sensor automatically updates: closed=running (>10W), open=done/idle (≤10W)
+- id: 'washing_machine_status_logging'
+  alias: "Washing Machine Status Logging"
+  description: "Log washing machine state changes to logbook"
   triggers:
-    # Power goes above 50W - start washing
+    # When washing starts (power rises above 10W)
     - platform: numeric_state
       entity_id: sensor.laundry_room_washing_machine_smart_plug_power
-      above: 50
-      id: "start_washing"
-    # Power stays below 10W for 2 minutes - washing done
+      above: 10
+      id: "start"
+    # When washing finishes (power drops below 10W for 15s)
     - platform: numeric_state
       entity_id: sensor.laundry_room_washing_machine_smart_plug_power
       below: 10
       for:
-        minutes: 2
-      id: "washing_done"
-    # Auto-reset from done to idle after 5 minutes
-    - platform: state
-      entity_id: input_select.washing_machine_state
-      to: 'done'
-      for:
-        minutes: 5
-      id: "reset_to_idle"
-  conditions: []
+        seconds: 15
+      id: "done"
   actions:
     - choose:
-        # Start washing (from idle OR done state)
         - conditions:
             - condition: trigger
-              id: "start_washing"
-            - condition: or
-              conditions:
-                - condition: state
-                  entity_id: input_select.washing_machine_state
-                  state: 'idle'
-                - condition: state
-                  entity_id: input_select.washing_machine_state
-                  state: 'done'
+              id: "start"
           sequence:
-            - service: input_select.select_option
-              target:
-                entity_id: input_select.washing_machine_state
-              data:
-                option: 'washing'
             - service: logbook.log
               data:
                 name: "Washing Machine"
-                message: "Washing cycle started - power above 50W"
-        
-        # Washing done (only from washing state)
+                message: "Washing started - power above 10W"
         - conditions:
             - condition: trigger
-              id: "washing_done"
-            - condition: state
-              entity_id: input_select.washing_machine_state
-              state: 'washing'
+              id: "done"
           sequence:
-            - service: input_select.select_option
-              target:
-                entity_id: input_select.washing_machine_state
-              data:
-                option: 'done'
             - service: logbook.log
               data:
                 name: "Washing Machine"
-                message: "Washing cycle completed - power dropped below 10W"
-        
-        # Auto-reset to idle
-        - conditions:
-            - condition: trigger
-              id: "reset_to_idle"
-          sequence:
-            - service: input_select.select_option
-              target:
-                entity_id: input_select.washing_machine_state
-              data:
-                option: 'idle'
-            - service: logbook.log
-              data:
-                name: "Washing Machine"
-                message: "State reset to idle"
-  mode: queued
-  max: 3
+                message: "Washing finished - power below 10W for 15s"
+  mode: restart
 
 # LED Strip Schedule Control with Color Transitions
 - id: 'led_strips_evening_schedule'
