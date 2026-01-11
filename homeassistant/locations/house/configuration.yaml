@@ -53,29 +53,19 @@ automation: !include automations.yaml
 script: !include scripts.yaml  
 scene: !include scenes.yaml
 
-# Input Helpers for Appliances
-input_select:
-  washing_machine_state:
-    name: "Washing Machine State"
-    options:
-      - idle
-      - washing
-      - done
-    initial: idle
-    icon: mdi:washing-machine
-
 # Floor Heating Control Configuration
 # Template sensors and covers
 template:
   - binary_sensor:
-      # Washing Machine Done (HomeKit Contact Sensor)
-      # Acts like washing machine door: closed = washing/idle, open = done (ready to unload)
+      # Washing Machine Status (HomeKit Contact Sensor)
+      # Closed (OFF) = Running (power >10W, busy)
+      # Open (ON) = Done/Idle (power ≤10W, available)
       # Setup in HomeKit: Automation → When "Washing Machine" opens → Send notification
       - name: "Washing Machine"
         unique_id: washing_machine_done
         device_class: opening
         state: >
-          {{ is_state('input_select.washing_machine_state', 'done') }}
+          {{ states('sensor.laundry_room_washing_machine_smart_plug_power') | float(0) <= 10 }}
         availability: >
           {{ states('sensor.laundry_room_washing_machine_smart_plug_power') not in ['unknown', 'unavailable'] }}
   
@@ -150,7 +140,7 @@ climate:
     min_temp: 4
     max_temp: 35
     target_temp: 21
-    cold_tolerance: 0.2
+    cold_tolerance: 1.0
     hot_tolerance: 0
     initial_hvac_mode: "heat"
   
@@ -164,7 +154,7 @@ climate:
     min_temp: 4
     max_temp: 35
     target_temp: 22
-    cold_tolerance: 0.2
+    cold_tolerance: 1.0
     hot_tolerance: 0
     initial_hvac_mode: "heat"
 
