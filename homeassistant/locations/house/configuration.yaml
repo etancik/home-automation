@@ -101,7 +101,20 @@ template:
         attributes:
           friendly_name: "Home Energy Consumed"
           source: "go-eController Home Energy In (state_class fixed)"
-  
+
+# Energy Tracking for Washing Machine
+# Uses Riemann sum integration to convert power (W) to energy (kWh)
+sensor:
+  # Washing Machine Energy Tracking
+  - platform: integration
+    source: sensor.laundry_room_washing_machine_smart_plug_power
+    name: "Washing Machine Energy"
+    unique_id: washing_machine_energy
+    unit_prefix: k
+    round: 2
+    method: left
+
+template:
   # Garage Door Cover (modern template syntax)
   # Uses Hörmann Promatic 3 status feedback via Shelly Plus1PM
   - cover:
