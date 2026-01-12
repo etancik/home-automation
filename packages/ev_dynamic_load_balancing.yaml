@@ -9,6 +9,32 @@
 # Reserve: Safety buffer for sudden spikes (kettle, oven, etc.)
 # MQTT: go-eCharger/600187/amp/set
 
+# Template sensor for continuous calculation (works even without car connected)
+template:
+  - sensor:
+      - name: "EV Available Charging Current"
+        unique_id: ev_available_charging_current
+        unit_of_measurement: "A"
+        device_class: current
+        state_class: measurement
+        state: >
+          {% set grid_capacity = 22000 %}
+          {% set household_total = states('sensor.go_econtroller_917809_home_power') | float(0) %}
+          {% set reserve = states('input_number.ev_household_reserve_watts') | float(3000) %}
+          {% set charger_current_draw = states('sensor.go_echarger_600187_power_total') | float(0) %}
+          {% set household_excluding_charger = [0, household_total - charger_current_draw] | max | float %}
+          {% set available = [0, grid_capacity - household_excluding_charger - reserve] | max | float %}
+          {% set target_raw = (available / 690) | round(0, 'floor') %}
+          {{ 0 if target_raw < 6 else [target_raw, 16] | min | int }}
+        availability: "{{ has_value('sensor.go_econtroller_917809_home_power') }}"
+        attributes:
+          household_power: "{{ states('sensor.go_econtroller_917809_home_power') | float(0) | round(1) }}"
+          charger_power: "{{ states('sensor.go_echarger_600187_power_total') | float(0) | round(1) }}"
+          household_excluding_charger: "{{ ([0, states('sensor.go_econtroller_917809_home_power') | float(0) - states('sensor.go_echarger_600187_power_total') | float(0)] | max) | round(1) }}"
+          available_power: "{{ ([0, 22000 - ([0, states('sensor.go_econtroller_917809_home_power') | float(0) - states('sensor.go_echarger_600187_power_total') | float(0)] | max) - states('input_number.ev_household_reserve_watts') | float(3000)] | max) | round(1) }}"
+          reserve_watts: "{{ states('input_number.ev_household_reserve_watts') | float(3000) | round(0) }}"
+          grid_capacity: 22000
+
 input_number:
   ev_household_reserve_watts:
     name: "EV Charging - Household Reserve"
@@ -64,14 +90,10 @@ automation:
   - id: 'ev_dynamic_load_balancing'
     alias: "EV Dynamic Load Balancing"
     description: "Adjust charging to prevent grid overload"
-    # Mode: single is correct (not restart) - sensor updates every ~1s but execution takes ~70-100ms.
-    # Mode: restart would create infinite loop (automation never completes). 
-    # Risk of stale data during 70ms window is mitigated by 3kW reserve buffer.
     mode: single
     triggers:
       - platform: state
-        entity_id: sensor.go_econtroller_917809_home_power
-      # Note: No homeassistant start trigger - sync automation handles startup
+        entity_id: sensor.ev_available_charging_current
     conditions:
       - condition: state
         entity_id: input_boolean.ev_dynamic_load_balancing_enabled
@@ -79,31 +101,12 @@ automation:
       # Include WaitCar (ready to charge) and Complete (might resume) for pre-emptive safety
       - condition: template
         value_template: "{{ states('sensor.go_echarger_600187_car_state') in ['Charging', 'WaitCar', 'Complete'] }}"
-      # Prevent HA restart race condition with unavailable sensors
       - condition: template
-        value_template: "{{ states('sensor.go_econtroller_917809_home_power') not in ['unknown', 'unavailable'] }}"
-      # Safety: ensure charger power sensor is available before using it for calculations
-      - condition: template
-        value_template: "{{ states('sensor.go_echarger_600187_power_total') not in ['unknown', 'unavailable'] }}"
+        value_template: "{{ states('sensor.ev_available_charging_current') not in ['unknown', 'unavailable'] }}"
     actions:
       - variables:
-          # Calculate inline to guarantee consistency with trigger source
-          grid_capacity: 22000
-          household_total: "{{ states('sensor.go_econtroller_917809_home_power') | float(0) }}"
-          reserve: "{{ states('input_number.ev_household_reserve_watts') | float(3000) }}"
           current: "{{ states('input_number.ev_last_set_amps') | int(0) }}"
-          # CRITICAL: go-eController reading includes charger consumption in household total
-          # Must subtract current charger draw to get actual household-only consumption
-          # Without this subtraction, charger would count against itself causing incorrect calculations
-          # Use actual power sensor (not calculated from amps) to handle non-charging states correctly
-          charger_current_draw: "{{ states('sensor.go_echarger_600187_power_total') | float(0) }}"
-          # Safety clamp: prevent negative household (data corruption/manual override edge case)
-          household_excluding_charger: "{{ [0, household_total - charger_current_draw] | max | float }}"
-          # Now calculate available power for charger
-          available: "{{ [0, grid_capacity - household_excluding_charger - reserve] | max | float }}"
-          # 3-phase: amps per phase = available_power / (3 × 230V)
-          target_raw: "{{ (available / 690) | round(0, 'floor') }}"
-          target: "{{ 0 if target_raw < 6 else [target_raw, 16] | min | int }}"
+          target: "{{ states('sensor.ev_available_charging_current') | int(0) }}"
           diff: "{{ (target | int) - (current | int) }}"
       # Asymmetric hysteresis: instant decrease (safety), threshold for increase (prevent oscillation)
       - if:
@@ -119,11 +122,10 @@ automation:
             data:
               topic: "go-eCharger/600187/amp/set"
               payload: "{{ target }}"
-          # Log only on actual adjustment (reduce MQTT spam warning)
           - service: logbook.log
             data:
               name: "EV Load Balancing"
-              message: "Adjusted: House {{ household_excluding_charger | int }}W + Charger {{ charger_current_draw | int }}W = {{ household_total | int }}W → {{ current }}A→{{ target }}A"
+              message: "Adjusted: House {{ state_attr('sensor.ev_available_charging_current', 'household_excluding_charger') | int }}W + Charger {{ state_attr('sensor.ev_available_charging_current', 'charger_power') | int }}W → {{ current }}A→{{ target }}A"
 
   # Sync charger power to controller for local tracking (no cloud required)
   # DISABLED: ccp array format not documented, causing MQTT spam without confirmed functionality
