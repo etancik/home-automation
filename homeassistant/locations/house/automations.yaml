@@ -344,10 +344,14 @@
             
             {# All zones: current_temp < target_temp - 1.0°C (Level 2 hysteresis) #}
             {% for zone in heating_zones %}
-              {% set current = state_attr(zone, 'current_temperature') | float(20) %}
-              {% set target = state_attr(zone, 'temperature') | float(20) %}
-              {% if current < (target - 1.0) %}
-                {% set ns.needs_heat = true %}
+              {% set current_temp = state_attr(zone, 'current_temperature') %}
+              {% set target_temp = state_attr(zone, 'temperature') %}
+              {% if current_temp is not none and target_temp is not none %}
+                {% set current = current_temp | float %}
+                {% set target = target_temp | float %}
+                {% if current < (target - 1.0) %}
+                  {% set ns.needs_heat = true %}
+                {% endif %}
               {% endif %}
             {% endfor %}
             
