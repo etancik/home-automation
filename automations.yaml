@@ -269,6 +269,8 @@
           | Kids={{ states('sensor.kids_room_temperature_sensor_temperature') }}°C/{{ state_attr('climate.kids_room_radiator_heat_valve', 'temperature') }}°C [{{ state_attr('climate.kids_room_radiator_heat_valve', 'hvac_mode') }}]
           | Workshop={{ states('sensor.workshop_temperature_sensor_temperature') }}°C/{{ state_attr('climate.workshop_radiator_heat_valve', 'temperature') }}°C [{{ state_attr('climate.workshop_radiator_heat_valve', 'hvac_mode') }}]
           | Entrance={{ states('sensor.entrance_temperature_sensor_temperature') }}°C/{{ state_attr('climate.entrance_radiator_heat_valve', 'temperature') }}°C [{{ state_attr('climate.entrance_radiator_heat_valve', 'hvac_mode') }}]
+          | Bath Down={{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') }}°C/{{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'temperature') }}°C [{{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_mode') }}]
+          | Bath Up={{ state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'current_temperature') }}°C/{{ state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'temperature') }}°C [{{ state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_mode') }}]
           | Bath Down Floor [action={{ state_attr('climate.downstairs_bathroom_floor_heating', 'hvac_action') }} L2={{ states('switch.floor_heating_controller_l2') if states('switch.floor_heating_controller_l2') not in ['unknown', 'unavailable'] else 'N/A' }}]
           | Boiler={{ states('switch.laundry_room_boiler_controller_l2') }}
     
