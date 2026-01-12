@@ -287,14 +287,17 @@
           - switch.floor_heating_controller_l1
           - switch.floor_heating_controller_l2
     
-    # EVALUATE TURN OFF FIRST: Check if all zones satisfied
+    # EVALUATE TURN OFF: Check if boiler is ON and all zones satisfied
     - if:
+        - condition: state
+          entity_id: switch.laundry_room_boiler_controller_l2
+          state: 'on'
         - condition: template
           value_template: >
             {% set ns = namespace(heating_count=0) %}
             {# Check all heating zones (radiators + floor) - count those actively heating #}
             {% for zone in heating_zones %}
-              {% if state_attr(zone, 'hvac_mode') not in ['off', 'none', None] and state_attr(zone, 'hvac_action') == 'heating' %}
+              {% if state_attr(zone, 'hvac_action') == 'heating' %}
                 {% set ns.heating_count = ns.heating_count + 1 %}
               {% endif %}
             {% endfor %}
@@ -329,22 +332,22 @@
                 level: error
                 logger: homeassistant.components.automation.boiler_heating_control
                 message: "CRITICAL: Boiler failed to turn OFF! Switch may be stuck or relay failure."
-        - stop: ""
     
-    # EVALUATE TURN ON: Check if ANY zone needs heating
+    # EVALUATE TURN ON: Check if boiler is OFF and ANY zone needs heating
     - if:
+        - condition: state
+          entity_id: switch.laundry_room_boiler_controller_l2
+          state: 'off'
         - condition: template
           value_template: >
             {% set ns = namespace(needs_heat=false) %}
             
             {# All zones: current_temp < target_temp - 1.0°C (Level 2 hysteresis) #}
             {% for zone in heating_zones %}
-              {% if state_attr(zone, 'hvac_mode') not in ['off', 'none', None] %}
-                {% set current = state_attr(zone, 'current_temperature') | float(20) %}
-                {% set target = state_attr(zone, 'temperature') | float(20) %}
-                {% if current < (target - 1.0) %}
-                  {% set ns.needs_heat = true %}
-                {% endif %}
+              {% set current = state_attr(zone, 'current_temperature') | float(20) %}
+              {% set target = state_attr(zone, 'temperature') | float(20) %}
+              {% if current < (target - 1.0) %}
+                {% set ns.needs_heat = true %}
               {% endif %}
             {% endfor %}
             
