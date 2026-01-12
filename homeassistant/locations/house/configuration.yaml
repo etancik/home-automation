@@ -12,6 +12,7 @@ homeassistant:
   # Unit system and locale
   unit_system: metric
   country: CZ
+  language: en-GB  # British English: Monday as first day, European date formats
   time_zone: Europe/Prague
   currency: CZK
   # Load packages from both core and location-specific directories
