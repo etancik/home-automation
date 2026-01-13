@@ -39,6 +39,8 @@ views:
         entities:
           - entity: input_number.ev_last_set_amps
             name: Charging
+          - entity: sensor.ev_available_charging_current
+            name: Available
 
       - type: history-graph
         title: Amperage (24 Hours)
@@ -47,6 +49,8 @@ views:
         entities:
           - entity: input_number.ev_last_set_amps
             name: Charging
+          - entity: sensor.ev_available_charging_current
+            name: Available
 
       # Gauges row
       - type: horizontal-stack
@@ -96,6 +100,10 @@ views:
           - entity: input_number.ev_household_reserve_watts
             name: Reserve (W)
             icon: mdi:shield-home
+            
+          - entity: sensor.ev_available_charging_current
+            name: Available Current
+            icon: mdi:current-ac
             
           - type: divider
             
