@@ -392,7 +392,7 @@
 # Upstairs Bathroom Heating Schedule (Newborn Bath Time)
 - id: 'upstairs_bathroom_heating_schedule'
   alias: "Upstairs Bathroom Heating Schedule"
-  description: "Higher temperature for bath time (17:00-20:00), normal otherwise"
+  description: "Higher temperature for bath time (17:00-18:30), normal otherwise"
   triggers:
     # Start bath time heating
     - platform: time
@@ -400,7 +400,7 @@
       id: "bath_time"
     # Return to normal temperature
     - platform: time
-      at: "20:00:00"
+      at: "18:30:00"
       id: "normal"
     # Restore on Home Assistant restart
     - platform: homeassistant
@@ -421,14 +421,14 @@
                       id: "restore"
                     - condition: time
                       after: "17:00:00"
-                      before: "20:00:00"
+                      before: "18:30:00"
           sequence:
             - service: climate.set_temperature
               target:
                 entity_id: climate.upstairs_bathroom_radiator_heat_valve
               data:
                 temperature: 23
-        # Normal temperature: 21°C (outside 17:00-20:00)
+        # Normal temperature: 21°C (outside 17:00-18:30)
         - conditions:
             - condition: or
               conditions:
@@ -445,7 +445,7 @@
                     - condition: trigger
                       id: "restore"
                     - condition: time
-                      after: "20:00:00"
+                      after: "18:30:00"
           sequence:
             - service: climate.set_temperature
               target:
@@ -524,12 +524,15 @@
       entity_id: sensor.laundry_room_washing_machine_smart_plug_power
       above: 10
       id: "start"
-    # When washing finishes (power drops below 10W for 15s)
+    # When washing finishes (power drops below 10W for 16 min to avoid mid-cycle false triggers)
+    # Data: 29 days of power data correlated with dryer runs (37 loads = ground truth).
+    # True mid-cycle gaps: max 15.8min (bimodal: <3min or 10-16min soak pauses).
+    # 16min covers 100% of mid-cycle gaps with zero false triggers.
     - platform: numeric_state
       entity_id: sensor.laundry_room_washing_machine_smart_plug_power
       below: 10
       for:
-        seconds: 15
+        minutes: 16
       id: "done"
   actions:
     - choose:
@@ -548,7 +551,7 @@
             - service: logbook.log
               data:
                 name: "Washing Machine"
-                message: "Washing finished - power below 10W for 15s"
+                message: "Washing finished - power below 10W for 16 min"
   mode: restart
 
 # LED Strip Schedule Control with Color Transitions
