@@ -49,6 +49,20 @@ devices:
     friendly_name: 'Food Storage Sensor'
     retain: false
     description: 'Kitchen food storage temperature and humidity sensor'
+  '0xa4c1380906ecffff':
+    friendly_name: 'Attic Temperature Sensor'
+    retain: false
+    description: 'SONOFF SNZB-02LD IP65 probe temperature sensor for attic monitoring'
+  '0xa4c138093692ffff':
+    friendly_name: 'Indoor Plants Pre-Grow Temperature Sensor'
+    retain: false
+    description: 'SONOFF SNZB-02LD IP65 probe temperature sensor for indoor plants pre-grow area'
+  '0xa4c138090930ffff':
+    friendly_name: 'Outdoor Plants Temperature Sensor'
+    retain: false
+    description: 'SONOFF SNZB-02LD IP65 probe temperature sensor for outdoor plants area'
+    retain: false
+    description: 'Kitchen food storage temperature and humidity sensor'
   
   # ========================================
   # WINDOW/DOOR CONTACT SENSORS
@@ -113,11 +127,15 @@ devices:
     retain: false
     description: 'External temperature sensor for accurate bedroom temperature reading'
   
-  # Downstairs Bathroom (valve only - no external sensor yet)
+  # Downstairs Bathroom (valve + sensor)
   '0x286847fffe96f01b':
     friendly_name: 'Downstairs Bathroom Radiator Heat Valve'
     retain: false
     description: 'Zigbee thermostatic radiator valve for downstairs bathroom heating control'
+  '0xc09b9efffe66e9a2':
+    friendly_name: 'Downstairs Bathroom Temperature Sensor'
+    retain: false
+    description: 'External temperature sensor for accurate downstairs bathroom temperature reading'
   
   # Entrance (valve + sensor)
   '0x286847fffe96b1da':
@@ -145,11 +163,15 @@ devices:
     retain: false
     description: 'External temperature sensor for accurate living room temperature reading'
   
-  # Upstairs Bathroom (valve only - no external sensor yet)
+  # Upstairs Bathroom (valve + sensor)
   '0x286847fffe398e24':
     friendly_name: 'Upstairs Bathroom Radiator Heat Valve'
     retain: false
     description: 'Zigbee thermostatic radiator valve for upstairs bathroom heating control'
+  '0xc09b9efffe679e70':
+    friendly_name: 'Upstairs Bathroom Temperature Sensor'
+    retain: false
+    description: 'External temperature sensor for accurate upstairs bathroom temperature reading'
   
   # Workshop (valve + sensor)
   '0xc4d8c8fffe5a2c03':
