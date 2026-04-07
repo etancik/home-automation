@@ -1,6 +1,18 @@
 # Home Assistant Configuration - House Location
 # GitOps managed via Git Pull add-on
 
+# Enable REST API (required for /api/error_log etc.)
+api:
+
+# Restrict API access to local network only
+http:
+  ip_ban_enabled: true
+  login_attempts_threshold: 5
+  trusted_proxies:
+    - 127.0.0.1
+    - ::1
+  use_x_forwarded_for: false
+
 # Basic Home Assistant configuration
 homeassistant:
   # Name of the location
