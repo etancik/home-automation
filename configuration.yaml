@@ -75,13 +75,21 @@ template:
           {{ states('sensor.laundry_room_washing_machine_smart_plug_power') not in ['unknown', 'unavailable'] }}
   
   - sensor:
-      # Extract current temperature from downstairs bathroom radiator valve for floor heating control
+      # Downstairs bathroom temperature - uses real external sensor, falls back to valve internal
       - name: "Downstairs Bathroom Temperature"
         unique_id: downstairs_bathroom_temperature
         unit_of_measurement: "°C"
         device_class: temperature
         state: >
-          {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20) }}
+          {% set ext = states('sensor.downstairs_bathroom_temperature_sensor_temperature') %}
+          {% if ext not in ['unknown', 'unavailable'] %}
+            {{ ext | float }}
+          {% else %}
+            {{ state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') | float(20) }}
+          {% endif %}
+        availability: >
+          {{ states('sensor.downstairs_bathroom_temperature_sensor_temperature') not in ['unknown', 'unavailable']
+             or state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'current_temperature') is not none }}
       
       # Grid Energy Consumption (fixed state_class for Energy dashboard)
       - name: "Grid Energy Consumed"
@@ -195,18 +203,30 @@ homekit:
         - sensor.food_storage_sensor_battery
         
         # External Temperature Sensors (alphabetical by room)
+        - sensor.attic_temperature_sensor_temperature
+        - sensor.attic_temperature_sensor_battery
         - sensor.bedroom_temperature_sensor_temperature
         - sensor.bedroom_temperature_sensor_humidity
         - sensor.bedroom_temperature_sensor_battery
+        - sensor.downstairs_bathroom_temperature_sensor_temperature
+        - sensor.downstairs_bathroom_temperature_sensor_humidity
+        - sensor.downstairs_bathroom_temperature_sensor_battery
         - sensor.entrance_temperature_sensor_temperature
         - sensor.entrance_temperature_sensor_humidity
         - sensor.entrance_temperature_sensor_battery
+        - sensor.indoor_plants_pre_grow_temperature_sensor_temperature
+        - sensor.indoor_plants_pre_grow_temperature_sensor_battery
         - sensor.kids_room_temperature_sensor_temperature
         - sensor.kids_room_temperature_sensor_humidity
         - sensor.kids_room_temperature_sensor_battery
         - sensor.living_room_temperature_sensor_temperature
         - sensor.living_room_temperature_sensor_humidity
         - sensor.living_room_temperature_sensor_battery
+        - sensor.outdoor_plants_temperature_sensor_temperature
+        - sensor.outdoor_plants_temperature_sensor_battery
+        - sensor.upstairs_bathroom_temperature_sensor_temperature
+        - sensor.upstairs_bathroom_temperature_sensor_humidity
+        - sensor.upstairs_bathroom_temperature_sensor_battery
         - sensor.workshop_temperature_sensor_temperature
         - sensor.workshop_temperature_sensor_humidity
         - sensor.workshop_temperature_sensor_battery
@@ -322,14 +342,24 @@ homekit:
         name: "Kitchen Sensor Battery"
       
       # External Temperature Sensors (alphabetical by room)
+      sensor.attic_temperature_sensor_temperature:
+        name: "Attic Temperature"
       sensor.bedroom_temperature_sensor_temperature:
         name: "Bedroom Temperature"
+      sensor.downstairs_bathroom_temperature_sensor_temperature:
+        name: "Downstairs Bathroom Temperature"
       sensor.entrance_temperature_sensor_temperature:
         name: "Entrance Temperature"
+      sensor.indoor_plants_pre_grow_temperature_sensor_temperature:
+        name: "Indoor Plants Pre-Grow Temperature"
       sensor.kids_room_temperature_sensor_temperature:
         name: "Kids Room Temperature"
       sensor.living_room_temperature_sensor_temperature:
         name: "Living Room Temperature"
+      sensor.outdoor_plants_temperature_sensor_temperature:
+        name: "Outdoor Plants Temperature"
+      sensor.upstairs_bathroom_temperature_sensor_temperature:
+        name: "Upstairs Bathroom Temperature"
       sensor.workshop_temperature_sensor_temperature:
         name: "Workshop Temperature"
       

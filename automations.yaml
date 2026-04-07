@@ -29,72 +29,91 @@
     - platform: state
       entity_id: 
         - sensor.bedroom_temperature_sensor_temperature
+        - sensor.downstairs_bathroom_temperature_sensor_temperature
         - sensor.kids_room_temperature_sensor_temperature
-        - sensor.workshop_temperature_sensor_temperature
         - sensor.entrance_temperature_sensor_temperature
+        - sensor.upstairs_bathroom_temperature_sensor_temperature
+        - sensor.workshop_temperature_sensor_temperature
     - platform: homeassistant
       event: start
-  conditions:
-    # Only run if all temperature sensors are available
-    - condition: template
-      value_template: >
-        {{ states('sensor.bedroom_temperature_sensor_temperature') not in ['unknown', 'unavailable']
-           and states('sensor.kids_room_temperature_sensor_temperature') not in ['unknown', 'unavailable']
-           and states('sensor.workshop_temperature_sensor_temperature') not in ['unknown', 'unavailable']
-           and states('sensor.entrance_temperature_sensor_temperature') not in ['unknown', 'unavailable'] }}
+      id: startup
+  conditions: []
   actions:
-    # Wait for Zigbee2MQTT to initialize after startup
-    - delay:
-        seconds: 30
-    # Configure each valve: external sensor + minimal 0.2°C hysteresis for centralized boiler control
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
-        payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
-    # Configure bathroom valves with minimal hysteresis
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Downstairs Bathroom Radiator Heat Valve/set"
-        payload: '{"temperature_accuracy": -0.2}'
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Upstairs Bathroom Radiator Heat Valve/set"
-        payload: '{"temperature_accuracy": -0.2}'
-    # Sync current temperature readings
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
-        payload: >
-          {"external_temperature_input": {{ states('sensor.bedroom_temperature_sensor_temperature') | float(20) }}}
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
-        payload: >
-          {"external_temperature_input": {{ states('sensor.kids_room_temperature_sensor_temperature') | float(20) }}}
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
-        payload: >
-          {"external_temperature_input": {{ states('sensor.workshop_temperature_sensor_temperature') | float(20) }}}
-    - service: mqtt.publish
-      data:
-        topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
-        payload: >
-          {"external_temperature_input": {{ states('sensor.entrance_temperature_sensor_temperature') | float(20) }}}
+    # On startup only: wait for Z2M to initialize, then configure all valves to use external sensor
+    - if:
+        - condition: template
+          value_template: "{{ trigger.id == 'startup' }}"
+      then:
+        - delay:
+            seconds: 30
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Bedroom Radiator Heat Valve/set"
+            payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Downstairs Bathroom Radiator Heat Valve/set"
+            payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Kids Room Radiator Heat Valve/set"
+            payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Entrance Radiator Heat Valve/set"
+            payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Upstairs Bathroom Radiator Heat Valve/set"
+            payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
+            payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
+    
+    # Sensor-to-valve mapping
+    - variables:
+        sensor_valve_map:
+          sensor.bedroom_temperature_sensor_temperature: "Bedroom Radiator Heat Valve"
+          sensor.downstairs_bathroom_temperature_sensor_temperature: "Downstairs Bathroom Radiator Heat Valve"
+          sensor.kids_room_temperature_sensor_temperature: "Kids Room Radiator Heat Valve"
+          sensor.entrance_temperature_sensor_temperature: "Entrance Radiator Heat Valve"
+          sensor.upstairs_bathroom_temperature_sensor_temperature: "Upstairs Bathroom Radiator Heat Valve"
+          sensor.workshop_temperature_sensor_temperature: "Workshop Radiator Heat Valve"
+    
+    # If triggered by a sensor state change: sync only that valve (if sensor is available)
+    - if:
+        - condition: template
+          value_template: >
+            {{ trigger.id != 'startup'
+               and trigger.to_state is defined
+               and trigger.to_state.state not in ['unknown', 'unavailable'] }}
+      then:
+        - service: mqtt.publish
+          data:
+            topic: "zigbee2mqtt/{{ sensor_valve_map[trigger.entity_id] }}/set"
+            payload: >
+              {"external_temperature_input": {{ trigger.to_state.state | float(20) }}}
+    
+    # On startup: sync all valves that have an available sensor
+    - if:
+        - condition: template
+          value_template: "{{ trigger.id == 'startup' }}"
+      then:
+        - repeat:
+            for_each: "{{ sensor_valve_map | list }}"
+            sequence:
+              - if:
+                  - condition: template
+                    value_template: "{{ states(repeat.item) not in ['unknown', 'unavailable'] }}"
+                then:
+                  - service: mqtt.publish
+                    data:
+                      topic: "zigbee2mqtt/{{ sensor_valve_map[repeat.item] }}/set"
+                      payload: >
+                        {"external_temperature_input": {{ states(repeat.item) | float(20) }}}
   mode: queued
-  max: 5
+  max: 6
 
 # Window State Synchronization for All Heat Valves
 - id: 'heat_valves_window_sync_all'
