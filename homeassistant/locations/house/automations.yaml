@@ -239,8 +239,11 @@
         - climate.entrance_radiator_heat_valve
         - climate.downstairs_bathroom_radiator_heat_valve
         - climate.upstairs_bathroom_radiator_heat_valve
-        - climate.living_room_floor_heating
-        - climate.downstairs_bathroom_floor_heating
+    # Monitor floor heating switches directly (ground truth for floor zones)
+    - platform: state
+      entity_id:
+        - switch.floor_heating_controller_l1
+        - switch.floor_heating_controller_l2
     # Monitor temperature sensors for floor heating zones
     - platform: state
       entity_id:
@@ -248,6 +251,13 @@
     # Monitor boiler state changes
     - platform: state
       entity_id: switch.laundry_room_boiler_controller_l2
+    # Safety: max runtime watchdog - re-evaluate every hour while boiler is on
+    - platform: state
+      entity_id: switch.laundry_room_boiler_controller_l2
+      to: 'on'
+      for:
+        hours: 2
+      id: max_runtime_exceeded
     # Startup trigger
     - platform: homeassistant
       event: start
@@ -275,7 +285,36 @@
           | Boiler={{ states('switch.laundry_room_boiler_controller_l2') }}
     
     # Define zones: All climate entities need Level 2 (1.0°C) check for boiler turn-on
+    # Safety: turn off immediately if max runtime exceeded
+    - if:
+        - condition: template
+          value_template: "{{ trigger.id == 'max_runtime_exceeded' }}"
+      then:
+        - service: switch.turn_off
+          target:
+            entity_id: switch.laundry_room_boiler_controller_l2
+        - service: persistent_notification.create
+          data:
+            title: "Boiler Safety Shutoff"
+            message: "Boiler was running for 2+ hours continuously and was shut off automatically. Check heating zones."
+            notification_id: boiler_max_runtime
+        - service: system_log.write
+          data:
+            level: warning
+            logger: homeassistant.components.automation.boiler_heating_control
+            message: "BOILER SAFETY SHUTOFF: Running >2 hours. Turned off automatically."
+        - stop: "Max runtime exceeded - boiler shut off"
+
     - variables:
+        # Radiator valves only - floor heating uses physical switches as ground truth
+        radiator_zones:
+          - climate.bedroom_radiator_heat_valve
+          - climate.kids_room_radiator_heat_valve
+          - climate.workshop_radiator_heat_valve
+          - climate.entrance_radiator_heat_valve
+          - climate.downstairs_bathroom_radiator_heat_valve
+          - climate.upstairs_bathroom_radiator_heat_valve
+        # All zones for turn-on temperature evaluation
         heating_zones:
           - climate.bedroom_radiator_heat_valve
           - climate.kids_room_radiator_heat_valve
@@ -297,13 +336,13 @@
         - condition: template
           value_template: >
             {% set ns = namespace(heating_count=0) %}
-            {# Check all heating zones (radiators + floor) - count those actively heating #}
-            {% for zone in heating_zones %}
+            {# Check radiator valves only via hvac_action - floor heating uses switches as ground truth #}
+            {% for zone in radiator_zones %}
               {% if state_attr(zone, 'hvac_action') == 'heating' %}
                 {% set ns.heating_count = ns.heating_count + 1 %}
               {% endif %}
             {% endfor %}
-            {# Check floor heating switches (ground truth) - with availability guard #}
+            {# Floor heating ground truth: physical switch state only (prevents stuck generic_thermostat blocking shutoff) #}
             {% for switch in floor_switches %}
               {% if states(switch) not in ['unknown', 'unavailable'] and is_state(switch, 'on') %}
                 {% set ns.heating_count = ns.heating_count + 1 %}
@@ -387,7 +426,8 @@
                 message: "CRITICAL: Boiler failed to turn ON! Switch may be stuck or relay failure."
     # If neither turn-off nor turn-on conditions met, maintain current boiler state (hysteresis dead zone)
     # No else block - intentionally do nothing to prevent oscillation
-  mode: single
+  mode: queued
+  max: 5
 
 # Upstairs Bathroom Heating Schedule (Newborn Bath Time)
 - id: 'upstairs_bathroom_heating_schedule'

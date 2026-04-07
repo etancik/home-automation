@@ -457,6 +457,7 @@ recorder:
       - light
       - switch
       - binary_sensor
+      - climate
       - automation
       - person
       - device_tracker
