@@ -256,7 +256,7 @@
       entity_id: switch.laundry_room_boiler_controller_l2
       to: 'on'
       for:
-        hours: 2
+        hours: 3
       id: max_runtime_exceeded
     # Startup trigger
     - platform: homeassistant
@@ -296,13 +296,13 @@
         - service: persistent_notification.create
           data:
             title: "Boiler Safety Shutoff"
-            message: "Boiler was running for 2+ hours continuously and was shut off automatically. Check heating zones."
+            message: "Boiler was running for 3+ hours continuously and was shut off automatically. Check heating zones."
             notification_id: boiler_max_runtime
         - service: system_log.write
           data:
             level: warning
             logger: homeassistant.components.automation.boiler_heating_control
-            message: "BOILER SAFETY SHUTOFF: Running >2 hours. Turned off automatically."
+            message: 'BOILER SAFETY SHUTOFF: Running >3 hours. Turned off automatically.'
         - stop: "Max runtime exceeded - boiler shut off"
 
     - variables:
