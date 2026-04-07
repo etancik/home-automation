@@ -61,8 +61,6 @@ devices:
     friendly_name: 'Outdoor Plants Temperature Sensor'
     retain: false
     description: 'SONOFF SNZB-02LD IP65 probe temperature sensor for outdoor plants area'
-    retain: false
-    description: 'Kitchen food storage temperature and humidity sensor'
   
   # ========================================
   # WINDOW/DOOR CONTACT SENSORS
