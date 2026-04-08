@@ -70,7 +70,7 @@
           data:
             topic: "zigbee2mqtt/Workshop Radiator Heat Valve/set"
             payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
-    
+
     # Sensor-to-valve mapping
     - variables:
         sensor_valve_map:
@@ -80,7 +80,7 @@
           sensor.entrance_temperature_sensor_temperature: "Entrance Radiator Heat Valve"
           sensor.upstairs_bathroom_temperature_sensor_temperature: "Upstairs Bathroom Radiator Heat Valve"
           sensor.workshop_temperature_sensor_temperature: "Workshop Radiator Heat Valve"
-    
+
     # If triggered by a sensor state change: sync only that valve (if sensor is available)
     - if:
         - condition: template
@@ -94,7 +94,7 @@
             topic: "zigbee2mqtt/{{ sensor_valve_map[trigger.entity_id] }}/set"
             payload: >
               {"external_temperature_input": {{ trigger.to_state.state | float(20) }}}
-    
+
     # On startup: sync all valves that have an available sensor
     - if:
         - condition: template
@@ -275,7 +275,7 @@
       entity_id: switch.laundry_room_boiler_controller_l2
       to: 'on'
       for:
-        hours: 3
+        hours: 4
       id: max_runtime_exceeded
     # Startup trigger
     - platform: homeassistant
@@ -315,13 +315,13 @@
         - service: persistent_notification.create
           data:
             title: "Boiler Safety Shutoff"
-            message: "Boiler was running for 3+ hours continuously and was shut off automatically. Check heating zones."
+            message: "Boiler was running for 4+ hours continuously and was shut off automatically. Check heating zones."
             notification_id: boiler_max_runtime
         - service: system_log.write
           data:
             level: warning
             logger: homeassistant.components.automation.boiler_heating_control
-            message: 'BOILER SAFETY SHUTOFF: Running >3 hours. Turned off automatically.'
+            message: 'BOILER SAFETY SHUTOFF: Running >4 hours. Turned off automatically.'
         - stop: "Max runtime exceeded - boiler shut off"
 
     - variables:
