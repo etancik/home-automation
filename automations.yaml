@@ -578,10 +578,12 @@
   alias: "Washing Machine Status Logging"
   description: "Log washing machine state changes to logbook"
   triggers:
-    # When washing starts (power rises above 10W)
+    # When washing starts (power stays above 10W for 2 min to avoid mid-cycle oscillation false triggers)
     - platform: numeric_state
       entity_id: sensor.laundry_room_washing_machine_smart_plug_power
       above: 10
+      for:
+        minutes: 2
       id: "start"
     # When washing finishes (power drops below 10W for 16 min to avoid mid-cycle false triggers)
     # Data: 29 days of power data correlated with dryer runs (37 loads = ground truth).
