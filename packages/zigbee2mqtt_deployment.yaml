@@ -1,0 +1,21 @@
+# Deploy the Git-managed Zigbee2MQTT configuration after Home Assistant starts.
+shell_command:
+  deploy_zigbee2mqtt_config: >
+    cp /config/zigbee2mqtt_configuration.yaml /config/zigbee2mqtt/configuration.yaml
+
+automation:
+  - id: 'zigbee2mqtt_gitops_deploy'
+    alias: "Deploy Zigbee2MQTT Configuration from Git"
+    description: "Automatically deploy Git-managed Z2M config when changed"
+    triggers:
+      - platform: homeassistant
+        event: start
+    conditions: []
+    actions:
+      - service: shell_command.deploy_zigbee2mqtt_config
+        data: {}
+      - delay: 5
+      - service: hassio.addon_restart
+        data:
+          addon: 45df7312_zigbee2mqtt
+    mode: single

@@ -1,0 +1,28 @@
+# Garage door control and position feedback.
+template:
+  # Garage Door Cover (modern template syntax)
+  # Uses Hörmann Promatic 3 status feedback via Shelly Plus1PM
+  - cover:
+      - name: "Garage Door"
+        unique_id: garage_door
+        device_class: garage
+        state: >
+          {% if is_state('binary_sensor.door_lock', 'off') %}
+            closed
+          {% elif is_state('binary_sensor.door_lock', 'on') %}
+            open
+          {% else %}
+            unknown
+          {% endif %}
+        open_cover:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
+        close_cover:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
+        stop_cover:
+          - service: switch.turn_on
+            target:
+              entity_id: switch.garage_door
