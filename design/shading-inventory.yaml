@@ -1,0 +1,162 @@
+# Planning data only. Not loaded by Home Assistant or lab/prepare.py.
+# Dimensions from the order, page 4; order-position-to-room mapping pending.
+# Controller IEEE-to-room assignments confirmed by the owner on 2026-09-28.
+schema_version: 1
+default_mode: observe
+motor_family: Somfy ILMO WT
+controller_model: SONOFF MINI-ZBRBS-E
+controller_quantity_purchased: 5
+purchase_confirmed_date: '2026-09-16'
+hardware_validation_complete: false
+# Purchase does not establish installation, motor compatibility or calibration.
+# Installation-site numbers below are NOT order_position values.
+installation_sites:
+  - id: site_01
+    frame_positions: 3
+    controls: [shutter, double_light_switch, single_light_switch]
+    shutter_id: null
+  - id: site_02
+    frame_positions: 2
+    controls: [shutter, double_light_switch]
+    shutter_id: null
+  - id: site_03
+    frame_positions: 1
+    controls: [shutter]
+    shutter_id: null
+  - id: site_04
+    frame_positions: 1
+    controls: [shutter]
+    shutter_id: null
+  - id: site_05
+    frame_positions: 1
+    controls: [shutter]
+    shutter_id: null
+default_capabilities:
+  tilt: false
+shutters:
+  - id: shutter_01
+    order_position: 1
+    width_mm: 3449
+    height_mm: 2093
+    kind: roller_shutter
+    commissioned: false
+    cover_entity: null
+    room: null
+    facade_azimuth_deg: null
+    motor_model: null
+    rated_current_a: null
+    protects_passage: null
+  - id: shutter_02
+    order_position: 2
+    width_mm: 1450
+    height_mm: 1220
+    kind: roller_shutter
+    commissioned: false
+    cover_entity: null
+    room: null
+    facade_azimuth_deg: null
+    motor_model: null
+    rated_current_a: null
+    protects_passage: null
+  - id: shutter_03
+    order_position: 3
+    width_mm: 1452
+    height_mm: 1220
+    kind: roller_shutter
+    commissioned: false
+    cover_entity: null
+    room: null
+    facade_azimuth_deg: null
+    motor_model: null
+    rated_current_a: null
+    protects_passage: null
+  - id: shutter_04
+    order_position: 4
+    width_mm: 1448
+    height_mm: 1220
+    kind: roller_shutter
+    commissioned: false
+    cover_entity: null
+    room: null
+    facade_azimuth_deg: null
+    motor_model: null
+    rated_current_a: null
+    protects_passage: null
+  - id: shutter_05
+    order_position: 5
+    width_mm: 1448
+    height_mm: 1220
+    kind: roller_shutter
+    commissioned: false
+    cover_entity: null
+    room: null
+    facade_azimuth_deg: null
+    motor_model: null
+    rated_current_a: null
+    protects_passage: null
+
+# Controller room mapping is independent of order positions and installation sites.
+# Target entity IDs are naming targets, not verified live HA registry entries.
+# Contact mapping and living-room passage confirmed by the owner on 2026-09-28.
+controller_mapping_confirmed_date: "2026-09-28"
+controllers:
+  - id: bedroom
+    ieee_address: "0x04e3e5fffea33313"
+    room: bedroom
+    desired_friendly_name: "Bedroom Roller Shutter"
+    desired_cover_entity: cover.bedroom_roller_shutter
+    cover_entity: null
+    order_position: null
+    commissioned: false
+    contact_entity: binary_sensor.bedroom_window_sensor_contact
+    contact_mapping_verified: true
+    protects_passage: false
+    skip_morning_open: true
+  - id: kids_room
+    ieee_address: "0x180df9fffe85feb7"
+    room: kids_room
+    desired_friendly_name: "Kids Room Roller Shutter"
+    desired_cover_entity: cover.kids_room_roller_shutter
+    cover_entity: null
+    order_position: null
+    commissioned: false
+    contact_entity: binary_sensor.kids_room_window_sensor_contact
+    contact_mapping_verified: true
+    protects_passage: false
+    skip_morning_open: false
+  - id: workshop
+    ieee_address: "0x20a716fffe3ffa73"
+    room: workshop
+    desired_friendly_name: "Workshop Roller Shutter"
+    desired_cover_entity: cover.workshop_roller_shutter
+    cover_entity: null
+    order_position: null
+    commissioned: false
+    contact_entity: binary_sensor.workshop_window_sensor_contact
+    contact_mapping_verified: true
+    protects_passage: false
+    skip_morning_open: false
+  - id: kitchen
+    ieee_address: "0x20a716fffe41b6fb"
+    room: kitchen
+    desired_friendly_name: "Kitchen Roller Shutter"
+    desired_cover_entity: cover.kitchen_roller_shutter
+    cover_entity: null
+    order_position: null
+    commissioned: false
+    contact_entity: binary_sensor.kitchen_window_sensor_contact
+    contact_mapping_verified: true
+    protects_passage: false
+    skip_morning_open: false
+  - id: living_room
+    ieee_address: "0x20a716fffe41d34e"
+    room: living_room
+    desired_friendly_name: "Living Room Roller Shutter"
+    desired_cover_entity: cover.living_room_roller_shutter
+    cover_entity: null
+    order_position: null
+    commissioned: false
+    contact_entity: binary_sensor.living_room_door_sensor_contact
+    contact_mapping_verified: true
+    protects_passage: true
+    skip_morning_open: false

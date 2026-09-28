@@ -1,0 +1,45 @@
+name: home-automation-heating-lab
+services:
+  mqtt:
+    image: eclipse-mosquitto:2.0.22
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    networks: [lab]
+    healthcheck:
+      test: ["CMD", "mosquitto_pub", "-h", "localhost", "-t", "lab/health", "-m", "ok"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  simulator:
+    image: ghcr.io/home-assistant/home-assistant:2026.9.2
+    entrypoint: ["python", "/lab/simulator.py"]
+    volumes:
+      - ./:/lab:ro
+    networks: [lab]
+    depends_on:
+      mqtt:
+        condition: service_healthy
+  ha:
+    image: ghcr.io/home-assistant/home-assistant:2026.9.2
+    volumes:
+      - ./.runtime/config:/config
+      - ./:/lab:ro
+    networks: [lab]
+    environment:
+      TZ: Europe/Prague
+    depends_on:
+      mqtt:
+        condition: service_healthy
+  ui:
+    image: ghcr.io/home-assistant/home-assistant:2026.9.2
+    entrypoint: ["python", "/lab/ui_proxy.py"]
+    volumes:
+      - ./:/lab:ro
+    ports:
+      - "127.0.0.1:18123:8123"
+    networks: [lab, ui]
+    depends_on: [ha]
+networks:
+  lab:
+    internal: true
+  ui: {}

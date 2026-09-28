@@ -1,0 +1,123 @@
+# House lighting: physical dimmer and evening schedule.
+automation:
+  # Kids Room Dimmer Switch Control
+  - id: 'kids_room_dimmer_switch_control'
+    alias: "Kids Room Dimmer Switch Control"
+    description: "Control kids room LED strip with IKEA RODRET wireless dimmer"
+    triggers:
+      # IKEA RODRET uses device automation - listen to MQTT events
+      - platform: mqtt
+        topic: zigbee2mqtt/Kids Room Dimmer Switch
+        value_template: "{{ value_json.action }}"
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.payload_json.action is defined and trigger.payload_json.action != '' }}"
+    actions:
+      - choose:
+          # ON button press - turn on LED strip
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.action == 'on' }}"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.kids_room_door_led_strip
+
+          # OFF button press - turn off LED strip
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.action == 'off' }}"
+            sequence:
+              - service: light.turn_off
+                target:
+                  entity_id: light.kids_room_door_led_strip
+
+          # Brightness move up - increase brightness
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.action == 'brightness_move_up' }}"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.kids_room_door_led_strip
+                data:
+                  brightness_step_pct: 20
+
+          # Brightness move down - decrease brightness
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.payload_json.action == 'brightness_move_down' }}"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: light.kids_room_door_led_strip
+                data:
+                  brightness_step_pct: -20
+
+          # Brightness stop - do nothing (just stops dimming)
+          # This happens when user releases button after dimming
+    mode: restart
+
+  # LED Strip Schedule Control with Color Transitions
+  - id: 'led_strips_evening_schedule'
+    alias: "LED Strips Evening Schedule"
+    description: "Yellow from sundown (if before 6:30 PM), red at 6:30 PM, off at 6:30 AM"
+    triggers:
+      # Turn on yellow at sunset (only if before 7 PM)
+      - platform: sun
+        event: sunset
+        offset: "00:00:00"
+        id: "yellow_on"
+      # Switch to red at 6:30 PM
+      - platform: time
+        at: "18:30:00"
+        id: "red_on"
+      # Turn off at 6:30 AM
+      - platform: time
+        at: "06:30:00"
+        id: "turn_off"
+    conditions: []
+    actions:
+      - choose:
+          # Yellow light at sunset (only if sunset is before 7 PM)
+          - conditions:
+              - condition: trigger
+                id: "yellow_on"
+              # Only turn on yellow if sunset is before 6:30 PM (short winter days)
+              - condition: time
+                before: "18:30:00"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id:
+                    - light.bedroom_led_strip
+                    - light.kids_room_door_led_strip
+                data:
+                  brightness_pct: 10
+                  rgb_color: [255, 137, 14]  # Warm Orange-Yellow
+
+          # Red night light at 6:30 PM
+          - conditions:
+              - condition: trigger
+                id: "red_on"
+            sequence:
+              - service: light.turn_on
+                target:
+                  entity_id:
+                    - light.bedroom_led_strip
+                    - light.kids_room_door_led_strip
+                data:
+                  brightness_pct: 15
+                  rgb_color: [255, 0, 0]  # Red
+
+          # Turn off at 6:30 AM
+          - conditions:
+              - condition: trigger
+                id: "turn_off"
+            sequence:
+              - service: light.turn_off
+                target:
+                  entity_id:
+                    - light.bedroom_led_strip
+                    - light.kids_room_door_led_strip
+    mode: single

@@ -12,8 +12,8 @@ homeassistant/
 │   └── automations/               # Core automation patterns
 ├── locations/
 │   ├── house/                     # House-specific configuration
-│   │   ├── configuration.yaml     # Main config with core includes
-│   │   ├── automations.yaml       # House automations
+│   │   ├── configuration.yaml     # Installation settings and package loader
+│   │   ├── automations.yaml       # Empty list reserved for UI-created automations
 │   │   ├── customize.yaml         # Device customizations
 │   │   ├── scripts.yaml           # House scripts
 │   │   └── scenes.yaml            # House scenes
@@ -28,6 +28,18 @@ homeassistant/
     ├── flat.yaml                  # Flat deployment config
     └── README.md                  # Deployment instructions
 ```
+
+## House Package Layout
+
+The house deployment loads its own `locations/house/packages/*.yaml` files.
+Heating, lighting, washing machine, garage, go-e energy monitoring, HomeKit and
+Zigbee2MQTT deployment are grouped by function. See the
+[package map](locations/house/packages/README.md) for responsibilities and editing
+conventions. `configuration.yaml` retains installation settings, frontend,
+dashboard registration, Recorder, logging and file includes.
+
+The shared `core/` directory is not automatically loaded by this house package
+include. The flat configuration remains dormant.
 
 ## Key Features
 

@@ -23,3 +23,10 @@ device_config_*.h
 # Home Assistant secrets - DO NOT COMMIT!
 secrets.yaml
 secrets_*.yaml
+
+# Isolated lab state and test artifacts (never deploy or commit)
+lab/.runtime/
+__pycache__/
+.pytest_cache/
+*.pyc
+.test-results/

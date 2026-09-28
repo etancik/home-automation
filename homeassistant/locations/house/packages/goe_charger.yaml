@@ -1,6 +1,6 @@
 # go-e Charger Integration Package
 # GitOps managed via Git Pull add-on
-# 
+#
 # Hardware:
 # - go-e Charger PRO CORE V2X (11-22kW) - Serial: 600187
 # - go-eController - Serial: 917809
@@ -21,7 +21,7 @@
 # ENTITY CUSTOMIZATIONS
 # ========================================
 # Friendly names for better HomeKit and UI display
-# 
+#
 # Note: Device names (shown in device pages) must be changed via UI:
 # Settings → Devices & Services → MQTT → Devices → Click device → Settings icon → Rename
 # Recommended device names:
@@ -41,13 +41,13 @@ homeassistant:
       friendly_name: "Total Charged (Lifetime)"
     sensor.go_echarger_600187_allowed_charge_current:
       friendly_name: "Current Limit"
-    
+
     # EV Charger - Controls
     number.go_echarger_600187_set_max_ampere_limit:
       friendly_name: "Max Charging Current"
     select.go_echarger_600187_force_state:
       friendly_name: "Force Charge State"
-    
+
     # Power Monitor - Grid Monitoring
     sensor.go_econtroller_917809_grid_power:
       friendly_name: "Grid Import/Export"
@@ -55,3 +55,30 @@ homeassistant:
       friendly_name: "Total Household Power"
     sensor.go_econtroller_917809_car_power:
       friendly_name: "Car Power Draw"
+
+# Energy dashboard sensors derived from go-eController readings.
+template:
+  - sensor:
+      # Grid Energy Consumption (fixed state_class for Energy dashboard)
+      - name: "Grid Energy Consumed"
+        unique_id: grid_energy_consumed
+        state: "{{ states('sensor.go_econtroller_917809_grid_energy_in') | float(0) }}"
+        unit_of_measurement: "Wh"
+        device_class: energy
+        state_class: total_increasing
+        availability: "{{ has_value('sensor.go_econtroller_917809_grid_energy_in') }}"
+        attributes:
+          friendly_name: "Grid Energy Consumed"
+          source: "go-eController Grid Energy In (state_class fixed)"
+
+      # Home Energy Consumption (fixed state_class for Energy dashboard)
+      - name: "Home Energy Consumed"
+        unique_id: home_energy_consumed
+        state: "{{ states('sensor.go_econtroller_917809_home_energy_in') | float(0) }}"
+        unit_of_measurement: "Wh"
+        device_class: energy
+        state_class: total_increasing
+        availability: "{{ has_value('sensor.go_econtroller_917809_home_energy_in') }}"
+        attributes:
+          friendly_name: "Home Energy Consumed"
+          source: "go-eController Home Energy In (state_class fixed)"

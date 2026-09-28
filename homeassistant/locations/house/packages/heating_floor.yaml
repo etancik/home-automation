@@ -1,0 +1,37 @@
+# Two zones controlled by Aqara Dual Relay T2 (0x54ef44100148cb6d) with Elektrobock SEH101-NC actuators
+climate:
+  # Zone 1: Kitchen + Living Room floor heating (Relay L1)
+  - platform: generic_thermostat
+    name: "Living Room Floor Heating"
+    unique_id: living_room_floor_heating
+    heater: switch.floor_heating_controller_l1
+    target_sensor: sensor.living_room_temperature_sensor_temperature
+    min_temp: 4
+    max_temp: 35
+    cold_tolerance: 1.0
+    hot_tolerance: 0
+    # Restore the user mode; do not force heat after a restart.
+
+  # Zone 2: Downstairs Bathroom floor heating (Relay L2)
+  # Uses the external room sensor with explicit availability
+  - platform: generic_thermostat
+    name: "Downstairs Bathroom Floor Heating"
+    unique_id: downstairs_bathroom_floor_heating
+    heater: switch.floor_heating_controller_l2
+    target_sensor: sensor.downstairs_bathroom_temperature
+    min_temp: 4
+    max_temp: 35
+    cold_tolerance: 1.0
+    hot_tolerance: 0
+    # Restore the user mode; do not force heat after a restart.
+
+
+template:
+  - sensor:
+      - name: Downstairs Bathroom Temperature
+        unique_id: downstairs_bathroom_temperature
+        device_class: temperature
+        state_class: measurement
+        unit_of_measurement: "°C"
+        state: "{{ states('sensor.downstairs_bathroom_temperature_sensor_temperature') }}"
+        availability: "{{ is_number(states('sensor.downstairs_bathroom_temperature_sensor_temperature')) }}"

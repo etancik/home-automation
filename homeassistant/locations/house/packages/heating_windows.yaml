@@ -1,0 +1,133 @@
+input_boolean:
+  heating_window_bedroom:
+    name: bedroom heating window block
+  heating_window_kids_room:
+    name: kids_room heating window block
+  heating_window_workshop:
+    name: workshop heating window block
+  heating_window_entrance:
+    name: entrance heating window block
+  heating_window_living_room:
+    name: living_room heating window block
+input_select:
+  heating_saved_bedroom:
+    name: bedroom mode before window block
+    options:
+    - 'off'
+    - heat
+    - auto
+  heating_saved_kids_room:
+    name: kids_room mode before window block
+    options:
+    - 'off'
+    - heat
+    - auto
+  heating_saved_workshop:
+    name: workshop mode before window block
+    options:
+    - 'off'
+    - heat
+    - auto
+  heating_saved_entrance:
+    name: entrance mode before window block
+    options:
+    - 'off'
+    - heat
+    - auto
+  heating_saved_living_room:
+    name: living_room mode before window block
+    options:
+    - 'off'
+    - heat
+    - auto
+automation:
+- id: heating_window_control
+  alias: Heating - reconcile window blocks
+  mode: queued
+  max: 20
+  triggers:
+  - trigger: homeassistant
+    event: start
+  - trigger: time_pattern
+    minutes: /1
+  - trigger: state
+    entity_id:
+    - climate.bedroom_radiator_heat_valve
+    - binary_sensor.bedroom_window_sensor_contact
+    - climate.kids_room_radiator_heat_valve
+    - binary_sensor.kids_room_window_sensor_contact
+    - climate.workshop_radiator_heat_valve
+    - binary_sensor.workshop_window_sensor_contact
+    - climate.entrance_radiator_heat_valve
+    - binary_sensor.entrance_door_sensor_contact
+    - climate.living_room_floor_heating
+    - binary_sensor.kitchen_window_sensor_contact
+    - binary_sensor.living_room_door_sensor_contact
+  actions:
+  - repeat:
+      for_each:
+      - climate: climate.bedroom_radiator_heat_valve
+        contacts:
+        - binary_sensor.bedroom_window_sensor_contact
+        blocked: input_boolean.heating_window_bedroom
+        saved: input_select.heating_saved_bedroom
+      - climate: climate.kids_room_radiator_heat_valve
+        contacts:
+        - binary_sensor.kids_room_window_sensor_contact
+        blocked: input_boolean.heating_window_kids_room
+        saved: input_select.heating_saved_kids_room
+      - climate: climate.workshop_radiator_heat_valve
+        contacts:
+        - binary_sensor.workshop_window_sensor_contact
+        blocked: input_boolean.heating_window_workshop
+        saved: input_select.heating_saved_workshop
+      - climate: climate.entrance_radiator_heat_valve
+        contacts:
+        - binary_sensor.entrance_door_sensor_contact
+        blocked: input_boolean.heating_window_entrance
+        saved: input_select.heating_saved_entrance
+      - climate: climate.living_room_floor_heating
+        contacts:
+        - binary_sensor.kitchen_window_sensor_contact
+        - binary_sensor.living_room_door_sensor_contact
+        blocked: input_boolean.heating_window_living_room
+        saved: input_select.heating_saved_living_room
+      sequence:
+      - variables:
+          z: '{{ repeat.item }}'
+          closed: "{% set ns = namespace(ok=true) %} {% for contact in repeat.item.contacts\
+            \ %}\n  {% if not is_state(contact, 'off') %}{% set ns.ok = false %}{%\
+            \ endif %}\n{% endfor %} {{ ns.ok }}"
+      - if: '{{ states(z.climate) in [''off'', ''heat'', ''auto''] }}'
+        then:
+        - if: '{{ not closed }}'
+          then:
+          - if: '{{ not is_state(z.blocked, ''on'') }}'
+            then:
+            - action: input_select.select_option
+              target:
+                entity_id: '{{ z.saved }}'
+              data:
+                option: '{{ states(z.climate) }}'
+            - action: input_boolean.turn_on
+              target:
+                entity_id: '{{ z.blocked }}'
+          - if: '{{ not is_state(z.climate, ''off'') }}'
+            then:
+            - action: climate.set_hvac_mode
+              target:
+                entity_id: '{{ z.climate }}'
+              data:
+                hvac_mode: 'off'
+          else:
+          - if: '{{ is_state(z.blocked, ''on'') }}'
+            then:
+            - action: climate.set_hvac_mode
+              target:
+                entity_id: '{{ z.climate }}'
+              data:
+                hvac_mode: '{{ states(z.saved) if states(z.saved) in [''off'',''heat'',''auto'']
+                  else ''off'' }}'
+            - action: input_boolean.turn_off
+              target:
+                entity_id: '{{ z.blocked }}'

@@ -1,0 +1,245 @@
+# Shared by production and the isolated lab. No hardware addresses or credentials.
+# First installation is disabled; subsequent restarts restore the selected mode.
+input_boolean:
+  heating_controller_ready:
+    name: Heating controller ready
+    initial: false
+  heating_enabled:
+    name: Heating enabled
+    icon: mdi:radiator
+  heating_safety_lock:
+    name: Heating safety lock
+    icon: mdi:lock-alert
+
+input_datetime:
+  heating_boiler_deadline:
+    name: Boiler run deadline
+    has_date: true
+    has_time: true
+
+script:
+  heating_set_boiler:
+    alias: Heating - set and verify boiler relay
+    mode: queued
+    max: 10
+    fields:
+      requested:
+        required: true
+        selector:
+          select:
+            options: ["on", "off"]
+    sequence:
+      - condition: template
+        value_template: "{{ requested in ['on', 'off'] }}"
+      - action: "switch.turn_{{ requested }}"
+        continue_on_error: true
+        target:
+          entity_id: switch.laundry_room_boiler_controller_l2
+      - wait_template: "{{ is_state('switch.laundry_room_boiler_controller_l2', requested) }}"
+        timeout: "00:00:05"
+        continue_on_timeout: true
+      - if: "{{ not wait.completed }}"
+        then:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.heating_safety_lock
+          - action: persistent_notification.create
+            data:
+              notification_id: heating_fault
+              title: Heating relay did not confirm command
+              message: "Requested {{ requested }}; reported {{ states('switch.laundry_room_boiler_controller_l2') }}. Heating is locked."
+
+  heating_reset_safety:
+    alias: Heating - acknowledge safety lock
+    sequence:
+      - condition: state
+        entity_id: switch.laundry_room_boiler_controller_l2
+        state: "off"
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.heating_boiler_deadline
+        data:
+          timestamp: 0
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.heating_safety_lock
+      - action: persistent_notification.dismiss
+        data:
+          notification_id: heating_fault
+
+automation:
+  - id: boiler_heating_control
+    alias: Boiler Heating Control
+    description: Two-level hysteresis with eligible zones, confirmed relay state and persistent safety lock.
+    mode: queued
+    max: 20
+    trace:
+      stored_traces: 30
+    triggers:
+      - trigger: homeassistant
+        event: start
+        id: startup
+      - trigger: time_pattern
+        seconds: "/30"
+        id: reconcile
+      - trigger: state
+        entity_id: input_datetime.heating_boiler_deadline
+        id: deadline_changed
+      - trigger: time
+        at: input_datetime.heating_boiler_deadline
+        id: deadline
+      - trigger: state
+        entity_id:
+          - input_boolean.heating_controller_ready
+          - input_boolean.heating_enabled
+          - input_boolean.heating_safety_lock
+          - climate.bedroom_radiator_heat_valve
+          - climate.kids_room_radiator_heat_valve
+          - climate.workshop_radiator_heat_valve
+          - climate.entrance_radiator_heat_valve
+          - climate.downstairs_bathroom_radiator_heat_valve
+          - climate.upstairs_bathroom_radiator_heat_valve
+          - climate.living_room_floor_heating
+          - climate.downstairs_bathroom_floor_heating
+          - switch.floor_heating_controller_l1
+          - switch.floor_heating_controller_l2
+          - switch.laundry_room_boiler_controller_l2
+          - sensor.bedroom_temperature_sensor_temperature
+          - sensor.kids_room_temperature_sensor_temperature
+          - sensor.workshop_temperature_sensor_temperature
+          - sensor.entrance_temperature_sensor_temperature
+          - sensor.downstairs_bathroom_temperature_sensor_temperature
+          - sensor.upstairs_bathroom_temperature_sensor_temperature
+          - sensor.living_room_temperature_sensor_temperature
+          - binary_sensor.bedroom_window_sensor_contact
+          - binary_sensor.kids_room_window_sensor_contact
+          - binary_sensor.workshop_window_sensor_contact
+          - binary_sensor.entrance_door_sensor_contact
+          - binary_sensor.kitchen_window_sensor_contact
+          - binary_sensor.living_room_door_sensor_contact
+        id: state_changed
+    conditions:
+      - condition: state
+        entity_id: input_boolean.heating_controller_ready
+        state: "on"
+    actions:
+      - variables:
+          zones:
+            - climate: climate.bedroom_radiator_heat_valve
+              sensor: sensor.bedroom_temperature_sensor_temperature
+              contacts: [binary_sensor.bedroom_window_sensor_contact]
+            - climate: climate.kids_room_radiator_heat_valve
+              sensor: sensor.kids_room_temperature_sensor_temperature
+              contacts: [binary_sensor.kids_room_window_sensor_contact]
+            - climate: climate.workshop_radiator_heat_valve
+              sensor: sensor.workshop_temperature_sensor_temperature
+              contacts: [binary_sensor.workshop_window_sensor_contact]
+            - climate: climate.entrance_radiator_heat_valve
+              sensor: sensor.entrance_temperature_sensor_temperature
+              contacts: [binary_sensor.entrance_door_sensor_contact]
+            - climate: climate.downstairs_bathroom_radiator_heat_valve
+              sensor: sensor.downstairs_bathroom_temperature_sensor_temperature
+              contacts: []
+            - climate: climate.upstairs_bathroom_radiator_heat_valve
+              sensor: sensor.upstairs_bathroom_temperature_sensor_temperature
+              contacts: []
+            - climate: climate.living_room_floor_heating
+              sensor: sensor.living_room_temperature_sensor_temperature
+              relay: switch.floor_heating_controller_l1
+              contacts: [binary_sensor.kitchen_window_sensor_contact, binary_sensor.living_room_door_sensor_contact]
+            - climate: climate.downstairs_bathroom_floor_heating
+              sensor: sensor.downstairs_bathroom_temperature_sensor_temperature
+              relay: switch.floor_heating_controller_l2
+              contacts: []
+          demand: >-
+            {% set ns = namespace(start=false, keep=false) %}
+            {% for z in zones %}
+              {% set c = namespace(closed=true) %}
+              {% for contact in z.contacts %}
+                {% if not is_state(contact, 'off') %}{% set c.closed = false %}{% endif %}
+              {% endfor %}
+              {% set target = state_attr(z.climate, 'temperature') %}
+              {% if states(z.climate) in ['heat', 'auto'] and c.closed
+                    and is_number(states(z.sensor)) and is_number(target) %}
+                {% set emitter = is_state(z.relay, 'on') if z.relay is defined
+                      else state_attr(z.climate, 'hvac_action') == 'heating' %}
+                {% if emitter %}
+                  {% set ns.keep = true %}
+                  {% if states(z.sensor) | float < target | float - 1.0 %}
+                    {% set ns.start = true %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {{ {'start': ns.start, 'keep': ns.keep} }}
+          deadline: "{{ state_attr('input_datetime.heating_boiler_deadline', 'timestamp') | float(0) }}"
+      # No known deadline while already on is an unsafe restart/manual override.
+      # Set the deadline BEFORE an automatic ON command, never on every state update.
+      - if: >-
+          {{ is_state('switch.laundry_room_boiler_controller_l2', 'on')
+             and (deadline <= 0 or as_timestamp(now()) >= deadline) }}
+        then:
+          - action: input_boolean.turn_on
+            target:
+              entity_id: input_boolean.heating_safety_lock
+          - action: persistent_notification.create
+            data:
+              notification_id: heating_fault
+              title: Heating safety shutoff
+              message: Boiler exceeded four hours or resumed without a known run deadline. Inspect before acknowledging.
+      - choose:
+          - conditions: "{{ not has_value('switch.laundry_room_boiler_controller_l2') }}"
+            sequence:
+              - if: "{{ deadline > 0 }}"
+                then:
+                  - action: input_boolean.turn_on
+                    target:
+                      entity_id: input_boolean.heating_safety_lock
+              - stop: Boiler unavailable; preserve deadline and block an interrupted run.
+          - conditions: >-
+              {{ not is_state('input_boolean.heating_enabled', 'on')
+                 or is_state('input_boolean.heating_safety_lock', 'on') or not demand.keep }}
+            sequence:
+              - if: "{{ is_state('switch.laundry_room_boiler_controller_l2', 'on') }}"
+                then:
+                  - action: script.heating_set_boiler
+                    data:
+                      requested: "off"
+              - if: "{{ is_state('switch.laundry_room_boiler_controller_l2', 'off') and deadline > 0 }}"
+                then:
+                  - action: input_datetime.set_datetime
+                    target:
+                      entity_id: input_datetime.heating_boiler_deadline
+                    data:
+                      timestamp: 0
+          - conditions: "{{ is_state('switch.laundry_room_boiler_controller_l2', 'off') and demand.start }}"
+            sequence:
+              - action: input_datetime.set_datetime
+                target:
+                  entity_id: input_datetime.heating_boiler_deadline
+                data:
+                  timestamp: "{{ (as_timestamp(now()) + 4 * 60 * 60) | int }}"
+              - action: script.heating_set_boiler
+                data:
+                  requested: "on"
+
+  - id: heating_startup_readiness
+    alias: Heating - wait for restored devices
+    mode: single
+    triggers:
+      - trigger: homeassistant
+        event: start
+    actions:
+      - wait_template: >-
+          {% set entities = ['climate.bedroom_radiator_heat_valve', 'climate.kids_room_radiator_heat_valve', 'climate.workshop_radiator_heat_valve', 'climate.entrance_radiator_heat_valve', 'climate.downstairs_bathroom_radiator_heat_valve', 'climate.upstairs_bathroom_radiator_heat_valve', 'climate.living_room_floor_heating', 'climate.downstairs_bathroom_floor_heating', 'switch.floor_heating_controller_l1', 'switch.floor_heating_controller_l2', 'switch.laundry_room_boiler_controller_l2', 'sensor.bedroom_temperature_sensor_temperature', 'sensor.kids_room_temperature_sensor_temperature', 'sensor.workshop_temperature_sensor_temperature', 'sensor.entrance_temperature_sensor_temperature', 'sensor.downstairs_bathroom_temperature_sensor_temperature', 'sensor.upstairs_bathroom_temperature_sensor_temperature', 'sensor.living_room_temperature_sensor_temperature', 'binary_sensor.bedroom_window_sensor_contact', 'binary_sensor.kids_room_window_sensor_contact', 'binary_sensor.workshop_window_sensor_contact', 'binary_sensor.entrance_door_sensor_contact', 'binary_sensor.kitchen_window_sensor_contact', 'binary_sensor.living_room_door_sensor_contact'] %}
+          {% set ns = namespace(ready=true) %}
+          {% for entity in entities %}
+            {% if not has_value(entity) %}{% set ns.ready = false %}{% endif %}
+          {% endfor %}
+          {{ ns.ready }}
+        timeout: "00:00:30"
+        continue_on_timeout: true
+      # After the grace period, missing inputs are handled conservatively by the controller.
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.heating_controller_ready

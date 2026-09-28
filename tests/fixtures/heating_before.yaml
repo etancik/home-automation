@@ -1,0 +1,444 @@
+# Source: master 6d2016ade0cfbe97281fda5408249e5d64312798. Regression evidence only.
+- id: heat_valves_external_temperature_sync
+  alias: Heat Valves External Temperature Sync
+  description: Configure heat valves to use external sensors for heating control
+  triggers:
+  - platform: state
+    entity_id:
+    - sensor.bedroom_temperature_sensor_temperature
+    - sensor.downstairs_bathroom_temperature_sensor_temperature
+    - sensor.kids_room_temperature_sensor_temperature
+    - sensor.entrance_temperature_sensor_temperature
+    - sensor.upstairs_bathroom_temperature_sensor_temperature
+    - sensor.workshop_temperature_sensor_temperature
+  - platform: homeassistant
+    event: start
+    id: startup
+  conditions: []
+  actions:
+  - if:
+    - condition: template
+      value_template: '{{ trigger.id == ''startup'' }}'
+    then:
+    - delay:
+        seconds: 30
+    - service: mqtt.publish
+      data:
+        topic: zigbee2mqtt/Bedroom Radiator Heat Valve/set
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy":
+          -0.2}'
+    - service: mqtt.publish
+      data:
+        topic: zigbee2mqtt/Downstairs Bathroom Radiator Heat Valve/set
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy":
+          -0.2}'
+    - service: mqtt.publish
+      data:
+        topic: zigbee2mqtt/Kids Room Radiator Heat Valve/set
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy":
+          -0.2}'
+    - service: mqtt.publish
+      data:
+        topic: zigbee2mqtt/Entrance Radiator Heat Valve/set
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy":
+          -0.2}'
+    - service: mqtt.publish
+      data:
+        topic: zigbee2mqtt/Upstairs Bathroom Radiator Heat Valve/set
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy":
+          -0.2}'
+    - service: mqtt.publish
+      data:
+        topic: zigbee2mqtt/Workshop Radiator Heat Valve/set
+        payload: '{"temperature_sensor_select": "external", "temperature_accuracy":
+          -0.2}'
+  - variables:
+      sensor_valve_map:
+        sensor.bedroom_temperature_sensor_temperature: Bedroom Radiator Heat Valve
+        sensor.downstairs_bathroom_temperature_sensor_temperature: Downstairs Bathroom
+          Radiator Heat Valve
+        sensor.kids_room_temperature_sensor_temperature: Kids Room Radiator Heat Valve
+        sensor.entrance_temperature_sensor_temperature: Entrance Radiator Heat Valve
+        sensor.upstairs_bathroom_temperature_sensor_temperature: Upstairs Bathroom
+          Radiator Heat Valve
+        sensor.workshop_temperature_sensor_temperature: Workshop Radiator Heat Valve
+  - if:
+    - condition: template
+      value_template: "{{ trigger.id != 'startup'\n   and trigger.to_state is defined\n\
+        \   and trigger.to_state.state not in ['unknown', 'unavailable'] }}\n"
+    then:
+    - service: mqtt.publish
+      data:
+        topic: zigbee2mqtt/{{ sensor_valve_map[trigger.entity_id] }}/set
+        payload: '{"external_temperature_input": {{ trigger.to_state.state | float(20)
+          }}}
+
+          '
+  - if:
+    - condition: template
+      value_template: '{{ trigger.id == ''startup'' }}'
+    then:
+    - repeat:
+        for_each: '{{ sensor_valve_map | list }}'
+        sequence:
+        - if:
+          - condition: template
+            value_template: '{{ states(repeat.item) not in [''unknown'', ''unavailable'']
+              }}'
+          then:
+          - service: mqtt.publish
+            data:
+              topic: zigbee2mqtt/{{ sensor_valve_map[repeat.item] }}/set
+              payload: '{"external_temperature_input": {{ states(repeat.item) | float(20)
+                }}}
+
+                '
+  mode: queued
+  max: 6
+- id: heat_valves_window_sync_all
+  alias: Heat Valves Window State Sync (All Rooms)
+  description: Turn off heating when windows open, resume when windows close for all
+    heat valves with window sensors
+  triggers:
+  - platform: state
+    entity_id:
+    - binary_sensor.bedroom_window_sensor_contact
+    - binary_sensor.entrance_door_sensor_contact
+    - binary_sensor.kids_room_window_sensor_contact
+    - binary_sensor.workshop_window_sensor_contact
+  conditions: []
+  actions:
+  - variables:
+      room_map:
+        binary_sensor.bedroom_window_sensor_contact:
+          name: Bedroom
+          valve: Bedroom Radiator Heat Valve
+        binary_sensor.entrance_door_sensor_contact:
+          name: Entrance
+          valve: Entrance Radiator Heat Valve
+        binary_sensor.kids_room_window_sensor_contact:
+          name: Kids Room
+          valve: Kids Room Radiator Heat Valve
+        binary_sensor.workshop_window_sensor_contact:
+          name: Workshop
+          valve: Workshop Radiator Heat Valve
+  - variables:
+      room_config: '{{ room_map[trigger.entity_id] }}'
+  - if:
+    - condition: template
+      value_template: '{{ trigger.to_state.state in [''unknown'', ''unavailable'']
+        }}'
+    then:
+    - service: logbook.log
+      data:
+        name: Heat Valve Window Sync
+        message: '{{ room_config.name }} sensor offline - skipping heating control'
+    else:
+    - if:
+      - condition: template
+        value_template: '{{ trigger.to_state.state == ''on'' }}'
+      then:
+      - service: mqtt.publish
+        data:
+          topic: zigbee2mqtt/{{ room_config.valve }}/set
+          payload: '{"system_mode": "off"}'
+      - service: logbook.log
+        data:
+          name: Heat Valve Window Sync
+          message: '{{ room_config.name }} window/door opened - heating turned OFF'
+      else:
+      - service: mqtt.publish
+        data:
+          topic: zigbee2mqtt/{{ room_config.valve }}/set
+          payload: '{"system_mode": "heat"}'
+      - service: logbook.log
+        data:
+          name: Heat Valve Window Sync
+          message: '{{ room_config.name }} window/door closed - heating resumed'
+  mode: queued
+  max: 5
+- id: floor_heating_window_sync
+  alias: Floor Heating Window/Door Sync
+  description: Turn off floor heating when windows/doors open, resume when closed
+  triggers:
+  - platform: state
+    entity_id:
+    - binary_sensor.kitchen_window_sensor_contact
+    - binary_sensor.living_room_door_sensor_contact
+  conditions: []
+  actions:
+  - variables:
+      any_opening_open: "{{ is_state('binary_sensor.kitchen_window_sensor_contact',\
+        \ 'on') or \n   is_state('binary_sensor.living_room_door_sensor_contact',\
+        \ 'on') }}\n"
+  - if:
+    - condition: template
+      value_template: '{{ any_opening_open }}'
+    then:
+    - service: climate.turn_off
+      target:
+        entity_id: climate.living_room_floor_heating
+    - service: logbook.log
+      data:
+        name: Floor Heating Window Sync
+        message: 'Living Room floor heating turned OFF -  Kitchen window: {{ states(''binary_sensor.kitchen_window_sensor_contact'')
+          }},  Living room door: {{ states(''binary_sensor.living_room_door_sensor_contact'')
+          }}
+
+          '
+    else:
+    - service: climate.turn_on
+      target:
+        entity_id: climate.living_room_floor_heating
+    - service: logbook.log
+      data:
+        name: Floor Heating Window Sync
+        message: Living Room floor heating resumed - all openings closed
+  mode: single
+- id: boiler_heating_control
+  alias: Boiler Heating Control
+  description: Control boiler based on radiator valve and floor heating zone demands
+  triggers:
+  - platform: state
+    entity_id:
+    - climate.bedroom_radiator_heat_valve
+    - climate.kids_room_radiator_heat_valve
+    - climate.workshop_radiator_heat_valve
+    - climate.entrance_radiator_heat_valve
+    - climate.downstairs_bathroom_radiator_heat_valve
+    - climate.upstairs_bathroom_radiator_heat_valve
+  - platform: state
+    entity_id:
+    - switch.floor_heating_controller_l1
+    - switch.floor_heating_controller_l2
+  - platform: state
+    entity_id:
+    - sensor.living_room_temperature_sensor_temperature
+  - platform: state
+    entity_id: switch.laundry_room_boiler_controller_l2
+  - platform: state
+    entity_id: switch.laundry_room_boiler_controller_l2
+    to: 'on'
+    for:
+      hours: 4
+    id: max_runtime_exceeded
+  - platform: homeassistant
+    event: start
+  conditions:
+  - condition: template
+    value_template: '{{ states(''switch.laundry_room_boiler_controller_l2'') not in
+      [''unknown'', ''unavailable''] }}
+
+      '
+  actions:
+  - service: system_log.write
+    data:
+      level: info
+      logger: homeassistant.components.automation.boiler_heating_control
+      message: 'BOILER DEBUG: LR={{ states(''sensor.living_room_temperature_sensor_temperature'')
+        }}°C/{{ state_attr(''climate.living_room_floor_heating'', ''temperature'')
+        }}°C [action={{ state_attr(''climate.living_room_floor_heating'', ''hvac_action'')
+        }} L1={{ states(''switch.floor_heating_controller_l1'') if states(''switch.floor_heating_controller_l1'')
+        not in [''unknown'', ''unavailable''] else ''N/A'' }}] | Bedroom={{ states(''sensor.bedroom_temperature_sensor_temperature'')
+        }}°C/{{ state_attr(''climate.bedroom_radiator_heat_valve'', ''temperature'')
+        }}°C [{{ state_attr(''climate.bedroom_radiator_heat_valve'', ''hvac_mode'')
+        }}] | Kids={{ states(''sensor.kids_room_temperature_sensor_temperature'')
+        }}°C/{{ state_attr(''climate.kids_room_radiator_heat_valve'', ''temperature'')
+        }}°C [{{ state_attr(''climate.kids_room_radiator_heat_valve'', ''hvac_mode'')
+        }}] | Workshop={{ states(''sensor.workshop_temperature_sensor_temperature'')
+        }}°C/{{ state_attr(''climate.workshop_radiator_heat_valve'', ''temperature'')
+        }}°C [{{ state_attr(''climate.workshop_radiator_heat_valve'', ''hvac_mode'')
+        }}] | Entrance={{ states(''sensor.entrance_temperature_sensor_temperature'')
+        }}°C/{{ state_attr(''climate.entrance_radiator_heat_valve'', ''temperature'')
+        }}°C [{{ state_attr(''climate.entrance_radiator_heat_valve'', ''hvac_mode'')
+        }}] | Bath Down={{ state_attr(''climate.downstairs_bathroom_radiator_heat_valve'',
+        ''current_temperature'') }}°C/{{ state_attr(''climate.downstairs_bathroom_radiator_heat_valve'',
+        ''temperature'') }}°C [{{ state_attr(''climate.downstairs_bathroom_radiator_heat_valve'',
+        ''hvac_mode'') }}] | Bath Up={{ state_attr(''climate.upstairs_bathroom_radiator_heat_valve'',
+        ''current_temperature'') }}°C/{{ state_attr(''climate.upstairs_bathroom_radiator_heat_valve'',
+        ''temperature'') }}°C [{{ state_attr(''climate.upstairs_bathroom_radiator_heat_valve'',
+        ''hvac_mode'') }}] | Bath Down Floor [action={{ state_attr(''climate.downstairs_bathroom_floor_heating'',
+        ''hvac_action'') }} L2={{ states(''switch.floor_heating_controller_l2'') if
+        states(''switch.floor_heating_controller_l2'') not in [''unknown'', ''unavailable'']
+        else ''N/A'' }}] | Boiler={{ states(''switch.laundry_room_boiler_controller_l2'')
+        }}
+
+        '
+  - if:
+    - condition: template
+      value_template: '{{ trigger.id == ''max_runtime_exceeded'' }}'
+    then:
+    - service: switch.turn_off
+      target:
+        entity_id: switch.laundry_room_boiler_controller_l2
+    - service: persistent_notification.create
+      data:
+        title: Boiler Safety Shutoff
+        message: Boiler was running for 4+ hours continuously and was shut off automatically.
+          Check heating zones.
+        notification_id: boiler_max_runtime
+    - service: system_log.write
+      data:
+        level: warning
+        logger: homeassistant.components.automation.boiler_heating_control
+        message: 'BOILER SAFETY SHUTOFF: Running >4 hours. Turned off automatically.'
+    - stop: Max runtime exceeded - boiler shut off
+  - variables:
+      radiator_zones:
+      - climate.bedroom_radiator_heat_valve
+      - climate.kids_room_radiator_heat_valve
+      - climate.workshop_radiator_heat_valve
+      - climate.entrance_radiator_heat_valve
+      - climate.downstairs_bathroom_radiator_heat_valve
+      - climate.upstairs_bathroom_radiator_heat_valve
+      heating_zones:
+      - climate.bedroom_radiator_heat_valve
+      - climate.kids_room_radiator_heat_valve
+      - climate.workshop_radiator_heat_valve
+      - climate.entrance_radiator_heat_valve
+      - climate.downstairs_bathroom_radiator_heat_valve
+      - climate.upstairs_bathroom_radiator_heat_valve
+      - climate.living_room_floor_heating
+      - climate.downstairs_bathroom_floor_heating
+      floor_switches:
+      - switch.floor_heating_controller_l1
+      - switch.floor_heating_controller_l2
+  - if:
+    - condition: state
+      entity_id: switch.laundry_room_boiler_controller_l2
+      state: 'on'
+    - condition: template
+      value_template: "{% set ns = namespace(heating_count=0) %} {# Check radiator\
+        \ valves only via hvac_action - floor heating uses switches as ground truth\
+        \ #} {% for zone in radiator_zones %}\n  {% if state_attr(zone, 'hvac_action')\
+        \ == 'heating' %}\n    {% set ns.heating_count = ns.heating_count + 1 %}\n\
+        \  {% endif %}\n{% endfor %} {# Floor heating ground truth: physical switch\
+        \ state only (prevents stuck generic_thermostat blocking shutoff) #} {% for\
+        \ switch in floor_switches %}\n  {% if states(switch) not in ['unknown', 'unavailable']\
+        \ and is_state(switch, 'on') %}\n    {% set ns.heating_count = ns.heating_count\
+        \ + 1 %}\n  {% endif %}\n{% endfor %} {{ ns.heating_count == 0 }}\n"
+    then:
+    - service: switch.turn_off
+      target:
+        entity_id: switch.laundry_room_boiler_controller_l2
+    - service: system_log.write
+      data:
+        level: info
+        logger: homeassistant.components.automation.boiler_heating_control
+        message: 'BOILER OFF: All zones satisfied (radiators + floor heating actuators
+          OFF)'
+    - delay:
+        seconds: 2
+    - if:
+      - condition: state
+        entity_id: switch.laundry_room_boiler_controller_l2
+        state: 'on'
+      then:
+      - service: system_log.write
+        data:
+          level: error
+          logger: homeassistant.components.automation.boiler_heating_control
+          message: 'CRITICAL: Boiler failed to turn OFF! Switch may be stuck or relay
+            failure.'
+  - if:
+    - condition: state
+      entity_id: switch.laundry_room_boiler_controller_l2
+      state: 'off'
+    - condition: template
+      value_template: "{% set ns = namespace(needs_heat=false) %}\n{# All zones: current_temp\
+        \ < target_temp - 1.0°C (Level 2 hysteresis) #} {% for zone in heating_zones\
+        \ %}\n  {% set current_temp = state_attr(zone, 'current_temperature') %}\n\
+        \  {% set target_temp = state_attr(zone, 'temperature') %}\n  {% if current_temp\
+        \ is not none and target_temp is not none %}\n    {% set current = current_temp\
+        \ | float %}\n    {% set target = target_temp | float %}\n    {% if current\
+        \ < (target - 1.0) %}\n      {% set ns.needs_heat = true %}\n    {% endif\
+        \ %}\n  {% endif %}\n{% endfor %}\n{{ ns.needs_heat }}\n"
+    then:
+    - service: switch.turn_on
+      target:
+        entity_id: switch.laundry_room_boiler_controller_l2
+    - service: system_log.write
+      data:
+        level: info
+        logger: homeassistant.components.automation.boiler_heating_control
+        message: 'BOILER ON: LR={{ states(''sensor.living_room_temperature_sensor_temperature'')
+          }}°C [L1={{ states(''switch.floor_heating_controller_l1'') if states(''switch.floor_heating_controller_l1'')
+          not in [''unknown'', ''unavailable''] else ''N/A'' }}] | Bedroom={{ states(''sensor.bedroom_temperature_sensor_temperature'')
+          }}°C/{{ state_attr(''climate.bedroom_radiator_heat_valve'', ''temperature'')
+          }}°C | Floor L2={{ states(''switch.floor_heating_controller_l2'') if states(''switch.floor_heating_controller_l2'')
+          not in [''unknown'', ''unavailable''] else ''N/A'' }}
+
+          '
+    - delay:
+        seconds: 2
+    - if:
+      - condition: state
+        entity_id: switch.laundry_room_boiler_controller_l2
+        state: 'off'
+      then:
+      - service: system_log.write
+        data:
+          level: error
+          logger: homeassistant.components.automation.boiler_heating_control
+          message: 'CRITICAL: Boiler failed to turn ON! Switch may be stuck or relay
+            failure.'
+  mode: queued
+  max: 5
+- id: upstairs_bathroom_heating_schedule
+  alias: Upstairs Bathroom Heating Schedule
+  description: Higher temperature for bath time (17:00-18:30), normal otherwise
+  triggers:
+  - platform: time
+    at: '17:00:00'
+    id: bath_time
+  - platform: time
+    at: '18:30:00'
+    id: normal
+  - platform: homeassistant
+    event: start
+    id: restore
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: bath_time
+        - condition: and
+          conditions:
+          - condition: trigger
+            id: restore
+          - condition: time
+            after: '17:00:00'
+            before: '18:30:00'
+      sequence:
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.upstairs_bathroom_radiator_heat_valve
+        data:
+          temperature: 23
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: normal
+        - condition: and
+          conditions:
+          - condition: trigger
+            id: restore
+          - condition: time
+            before: '17:00:00'
+        - condition: and
+          conditions:
+          - condition: trigger
+            id: restore
+          - condition: time
+            after: '18:30:00'
+      sequence:
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.upstairs_bathroom_radiator_heat_valve
+        data:
+          temperature: 21
+  mode: single

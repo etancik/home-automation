@@ -1,0 +1,156 @@
+# Roller shutter automation V1.
+# The helper is OFF on first installation and restores its state afterwards.
+# Physical wall controls remain independent of Home Assistant.
+input_boolean:
+  shading_automation_enabled:
+    name: Roller shutter automation
+    icon: mdi:window-shutter-cog
+
+script:
+  shading_apply_night_positions:
+    alias: Shading - apply night positions
+    mode: queued
+    max: 5
+    fields:
+      changed_contact:
+        description: Optional contact entity; empty evaluates all shutters.
+        example: binary_sensor.bedroom_window_sensor_contact
+    sequence:
+      - condition: state
+        entity_id: input_boolean.shading_automation_enabled
+        state: "on"
+      - variables:
+          selected_contact: "{{ changed_contact | default('', true) }}"
+      - repeat:
+          for_each:
+            - cover: cover.bedroom_roller_shutter
+              contact: binary_sensor.bedroom_window_sensor_contact
+              passage: false
+            - cover: cover.kids_room_roller_shutter
+              contact: binary_sensor.kids_room_window_sensor_contact
+              passage: false
+            - cover: cover.workshop_roller_shutter
+              contact: binary_sensor.workshop_window_sensor_contact
+              passage: false
+            - cover: cover.kitchen_roller_shutter
+              contact: binary_sensor.kitchen_window_sensor_contact
+              passage: false
+            - cover: cover.living_room_roller_shutter
+              contact: binary_sensor.living_room_door_sensor_contact
+              passage: true
+          sequence:
+            - if:
+                - condition: template
+                  value_template: >-
+                    {{ (selected_contact == '' or selected_contact == repeat.item.contact) and
+                       has_value(repeat.item.cover) }}
+              then:
+                - choose:
+                    - conditions: "{{ is_state(repeat.item.contact, 'off') }}"
+                      sequence:
+                        - action: cover.set_cover_position
+                          target:
+                            entity_id: "{{ repeat.item.cover }}"
+                          data:
+                            position: 0
+                    - conditions: >-
+                        {{ not repeat.item.passage and
+                           is_state(repeat.item.contact, 'on') }}
+                      sequence:
+                        - action: cover.set_cover_position
+                          target:
+                            entity_id: "{{ repeat.item.cover }}"
+                          data:
+                            position: 20
+
+  shading_open_morning:
+    alias: Shading - open before sunrise
+    mode: single
+    sequence:
+      - condition: state
+        entity_id: input_boolean.shading_automation_enabled
+        state: "on"
+      - repeat:
+          for_each:
+            - cover.kids_room_roller_shutter
+            - cover.workshop_roller_shutter
+            - cover.kitchen_roller_shutter
+            - cover.living_room_roller_shutter
+          sequence:
+            - if: "{{ has_value(repeat.item) }}"
+              then:
+                - action: cover.set_cover_position
+                  target:
+                    entity_id: "{{ repeat.item }}"
+                  data:
+                    position: 100
+
+automation:
+  - id: shading_v1_night_positions
+    alias: Shading V1 - night positions
+    description: Close at sunset and re-evaluate ordinary windows during the night.
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: sun
+        event: sunset
+        id: sunset
+      - trigger: state
+        entity_id:
+          - binary_sensor.bedroom_window_sensor_contact
+          - binary_sensor.kids_room_window_sensor_contact
+          - binary_sensor.workshop_window_sensor_contact
+          - binary_sensor.kitchen_window_sensor_contact
+        id: window
+    conditions:
+      - condition: state
+        entity_id: input_boolean.shading_automation_enabled
+        state: "on"
+      - condition: or
+        conditions:
+          - condition: trigger
+            id: sunset
+          - condition: sun
+            after: sunset
+            before: sunrise
+            before_offset: "-00:30:00"
+    actions:
+      - action: script.shading_apply_night_positions
+        data:
+          changed_contact: >-
+            {{ '' if trigger.id == 'sunset' else trigger.entity_id }}
+
+  - id: shading_v1_morning_open
+    alias: Shading V1 - open before sunrise
+    description: Open all configured shutters except the bedroom 30 minutes before sunrise.
+    mode: single
+    triggers:
+      - trigger: sun
+        event: sunrise
+        offset: "-00:30:00"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.shading_automation_enabled
+        state: "on"
+    actions:
+      - action: script.shading_open_morning
+
+  - id: shading_v1_living_room_passage_stop
+    alias: Shading V1 - stop living room passage
+    description: Stop a closing living-room shutter when the passage is open or unknown.
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.living_room_door_sensor_contact
+    conditions:
+      - condition: state
+        entity_id: input_boolean.shading_automation_enabled
+        state: "on"
+      - condition: template
+        value_template: >-
+          {{ not is_state('binary_sensor.living_room_door_sensor_contact', 'off') and
+             is_state('cover.living_room_roller_shutter', 'closing') }}
+    actions:
+      - action: cover.stop_cover
+        target:
+          entity_id: cover.living_room_roller_shutter

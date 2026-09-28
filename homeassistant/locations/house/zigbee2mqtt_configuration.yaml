@@ -1,5 +1,5 @@
 # Zigbee2MQTT Configuration - House Location
-# This file will be managed by Git and deployed via Git Pull add-on
+# This file is managed by Git and deployed on Home Assistant startup.
 # Secrets (network keys, passwords) are configured via Home Assistant add-on page
 
 # Version (required by Z2M)  
@@ -197,6 +197,31 @@ devices:
     retain: false  
     description: 'Main living room light bulb'
   
+  # ========================================
+  # ROLLER SHUTTERS
+  # Room assignments confirmed by owner on 2026-09-28.
+  # ========================================
+  '0x04e3e5fffea33313':
+    friendly_name: 'Bedroom Roller Shutter'
+    retain: false
+    description: 'SONOFF MINI-ZBRBS-E roller shutter controller - Bedroom'
+  '0x180df9fffe85feb7':
+    friendly_name: 'Kids Room Roller Shutter'
+    retain: false
+    description: 'SONOFF MINI-ZBRBS-E roller shutter controller - Kids Room'
+  '0x20a716fffe41b6fb':
+    friendly_name: 'Kitchen Roller Shutter'
+    retain: false
+    description: 'SONOFF MINI-ZBRBS-E roller shutter controller - Kitchen'
+  '0x20a716fffe41d34e':
+    friendly_name: 'Living Room Roller Shutter'
+    retain: false
+    description: 'SONOFF MINI-ZBRBS-E roller shutter controller - Living Room'
+  '0x20a716fffe3ffa73':
+    friendly_name: 'Workshop Roller Shutter'
+    retain: false
+    description: 'SONOFF MINI-ZBRBS-E roller shutter controller - Workshop'
+
   # ========================================
   # WIRELESS CONTROLS
   # ========================================

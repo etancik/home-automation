@@ -1,0 +1,52 @@
+automation:
+  - id: heat_valves_external_temperature_sync
+    alias: Heat Valves External Temperature Sync
+    description: Configure external sensors and reconcile after HA/MQTT restart.
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: state
+        entity_id:
+          - sensor.bedroom_temperature_sensor_temperature
+          - sensor.downstairs_bathroom_temperature_sensor_temperature
+          - sensor.kids_room_temperature_sensor_temperature
+          - sensor.entrance_temperature_sensor_temperature
+          - sensor.upstairs_bathroom_temperature_sensor_temperature
+          - sensor.workshop_temperature_sensor_temperature
+      - trigger: homeassistant
+        event: start
+        id: reconcile
+      - trigger: time_pattern
+        minutes: "/5"
+        id: reconcile
+      - trigger: mqtt
+        topic: zigbee2mqtt/bridge/state
+        value_template: "{{ value_json.state }}"
+        payload: online
+        id: reconcile
+    actions:
+      - variables:
+          sensor_valve_map:
+            sensor.bedroom_temperature_sensor_temperature: Bedroom Radiator Heat Valve
+            sensor.downstairs_bathroom_temperature_sensor_temperature: Downstairs Bathroom Radiator Heat Valve
+            sensor.kids_room_temperature_sensor_temperature: Kids Room Radiator Heat Valve
+            sensor.entrance_temperature_sensor_temperature: Entrance Radiator Heat Valve
+            sensor.upstairs_bathroom_temperature_sensor_temperature: Upstairs Bathroom Radiator Heat Valve
+            sensor.workshop_temperature_sensor_temperature: Workshop Radiator Heat Valve
+      - repeat:
+          for_each: "{{ sensor_valve_map | list }}"
+          sequence:
+            - if: "{{ trigger.id == 'reconcile' }}"
+              then:
+                - action: mqtt.publish
+                  data:
+                    topic: "zigbee2mqtt/{{ sensor_valve_map[repeat.item] }}/set"
+                    payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
+            - if: >-
+                {{ is_number(states(repeat.item))
+                   and (trigger.id == 'reconcile' or trigger.entity_id | default('') == repeat.item) }}
+              then:
+                - action: mqtt.publish
+                  data:
+                    topic: "zigbee2mqtt/{{ sensor_valve_map[repeat.item] }}/set"
+                    payload: '{{ {"external_temperature_input": states(repeat.item) | float} | to_json }}'

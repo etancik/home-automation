@@ -1,0 +1,62 @@
+automation:
+- id: upstairs_bathroom_heating_schedule
+  alias: Upstairs Bathroom Heating Schedule
+  description: Higher temperature for bath time (17:00-18:30), normal otherwise
+  triggers:
+  - platform: time
+    at: '17:00:00'
+    id: bath_time
+  - platform: time
+    at: '18:30:00'
+    id: normal
+  - platform: homeassistant
+    event: start
+    id: restore
+  conditions: []
+  actions:
+  - wait_template: "{{ has_value('climate.upstairs_bathroom_radiator_heat_valve') }}"
+    timeout: "00:01:00"
+    continue_on_timeout: false
+  - choose:
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: bath_time
+        - condition: and
+          conditions:
+          - condition: trigger
+            id: restore
+          - condition: time
+            after: '17:00:00'
+            before: '18:30:00'
+      sequence:
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.upstairs_bathroom_radiator_heat_valve
+        data:
+          temperature: 23
+    - conditions:
+      - condition: or
+        conditions:
+        - condition: trigger
+          id: normal
+        - condition: and
+          conditions:
+          - condition: trigger
+            id: restore
+          - condition: time
+            before: '17:00:00'
+        - condition: and
+          conditions:
+          - condition: trigger
+            id: restore
+          - condition: time
+            after: '18:30:00'
+      sequence:
+      - service: climate.set_temperature
+        target:
+          entity_id: climate.upstairs_bathroom_radiator_heat_valve
+        data:
+          temperature: 21
+  mode: single
