@@ -40,7 +40,7 @@ python lab/run_smoke.py
 
 The first command builds the pinned test runtime, runs pytest with actual HA automation/template/script/helper integrations and blocked network access, and validates the complete house configuration with dummy location secrets. The second command requires the running lab; it tests real MQTT integrations, native generic thermostats, acknowledgement failure and two actual HA shutdown/start cycles. One restart preserves an active deadline; the other deliberately keeps HA stopped until that deadline expires. Temperatures are explicit inputs, not a thermal model.
 
-The GitHub Actions workflow runs both layers on pushes and pull requests. Deployment branches are excluded from push runs. It has read-only repository permissions and performs no deployment. It has been exercised locally through its underlying commands; its first hosted Actions run is still pending.
+Run `python tests/run.py` locally before every push. GitHub Actions invokes that exact same entry point and then runs the live lab, so CI confirms a locally tested result instead of maintaining a separate copy of the unit and configuration-check commands. Deployment branches are excluded from push runs. The workflow has read-only repository permissions and performs no deployment.
 
 The regression fixture `tests/fixtures/heating_before.yaml` preserves the original heating automations at commit `6d2016ade0cfbe97281fda5408249e5d64312798`. A test evaluates the original boiler-start template and demonstrates that an OFF room could request heat. Other tests evaluate the new production packages. This is not a claim that every historical defect was reproduced against a complete old HA instance.
 

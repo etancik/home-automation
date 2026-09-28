@@ -35,7 +35,12 @@ async def shading(hass: HomeAssistant):
         hass.states.async_set(entity_id, "off")
 
     async def cover_service(call):
-        calls.append((call.service, call.data["entity_id"], call.data.get("position")))
+        targets = call.data["entity_id"]
+        if isinstance(targets, str):
+            targets = [targets]
+        calls.extend(
+            (call.service, target, call.data.get("position")) for target in targets
+        )
 
     hass.services.async_register("cover", "set_cover_position", cover_service)
     hass.services.async_register("cover", "stop_cover", cover_service)
@@ -47,7 +52,18 @@ async def shading(hass: HomeAssistant):
         hass, "automation", {"automation": package["automation"]}
     )
     await hass.async_block_till_done()
-    return package, calls
+    yield package, calls
+    await hass.services.async_call(
+        "automation",
+        "turn_off",
+        {
+            "entity_id": [
+                state.entity_id for state in hass.states.async_all("automation")
+            ],
+            "stop_actions": True,
+        },
+        blocking=True,
+    )
 
 
 async def enable(hass):

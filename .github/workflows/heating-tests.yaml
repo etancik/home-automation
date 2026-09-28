@@ -12,14 +12,8 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Build exact HA test runtime
-        run: docker build -f tests/Dockerfile -t heating-tests .
-      - name: Test production heating logic without network access
-        run: docker run --rm --network none -v "$GITHUB_WORKSPACE:/workspace" heating-tests --tb=short
-      - name: Validate complete house configuration
-        run: |
-          python3 lab/prepare_validation.py
-          docker run --rm --network none -v "$GITHUB_WORKSPACE/lab/.runtime/production-check:/config" ghcr.io/home-assistant/home-assistant:2026.9.2 python -m homeassistant --script check_config -c /config
+      - name: Run the same offline suite used locally
+        run: python3 tests/run.py
       - name: Run MQTT integration and actual HA restart scenarios
         run: |
           python3 lab/prepare.py
