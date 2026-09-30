@@ -92,6 +92,20 @@ mqtt_password: "YOUR_MQTT_PASSWORD_HERE"
 
 ## Maintenance
 
+### Backups
+
+Configure encrypted automatic full backups and an off-machine location before
+making further production changes. Follow [House backup and recovery](backup.md),
+then perform and record the first restore drill.
+
+### Diagnostics on demand
+
+Run `python tools/ha_observer.py setup` once with a dedicated non-administrator
+HA user's token, then `python tools/ha_observer.py check` for a state/history
+report. Windows setup encrypts credentials outside Git; other platforms can use
+`HA_OBSERVER_URL` and `HA_OBSERVER_TOKEN`. This tool does not run continuously
+and currently does not collect Core or app logs.
+
 ### Configuration Updates
 - **Git commits** automatically deploy via Git Pull add-on
 - **No manual file editing** required on Home Assistant

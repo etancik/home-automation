@@ -1,0 +1,34 @@
+automation:
+  - id: backup_report_automatic_backup_result
+    alias: Backup - Report automatic backup result
+    description: Keep a persistent HA notification active while the latest automatic backup has failed.
+    mode: queued
+    max: 2
+    triggers:
+      - trigger: state
+        entity_id: event.backup_automatic_backup
+    actions:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: event.backup_automatic_backup
+                attribute: event_type
+                state: failed
+            sequence:
+              - action: persistent_notification.create
+                data:
+                  notification_id: automatic_backup_failed
+                  title: Automatic backup failed
+                  message: >-
+                    Home Assistant could not create the automatic backup.
+                    Reason: {{ state_attr('event.backup_automatic_backup', 'failed_reason') | default('unknown', true) }}.
+                    Check Settings > System > Backups and the Home Assistant logs.
+          - conditions:
+              - condition: state
+                entity_id: event.backup_automatic_backup
+                attribute: event_type
+                state: completed
+            sequence:
+              - action: persistent_notification.dismiss
+                data:
+                  notification_id: automatic_backup_failed
