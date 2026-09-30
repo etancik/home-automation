@@ -76,7 +76,6 @@ Set `available` to `online` to recover a room. Set `fail` to an empty string to 
 | `heating_floor.yaml` | Two native thermostats and bathroom external temperature template |
 | `heating_windows.yaml` | Remember and restore HVAC modes when contacts block heating |
 | `heating_sensor_sync.yaml` | Send external temperatures and reconcile after HA/MQTT restart and every five minutes |
-| `heating_schedule.yaml` | Existing upstairs bathroom schedule with bounded device readiness wait |
 
 The main configuration loads each file as a separate package with `!include_dir_named packages`. This avoids shallow domain-key overwrites from `!include_dir_merge_named`. The house deployment subtree is self-contained; it no longer references the absent `../../core/packages`. Those core files contained CO2 customization/thresholds and a template using an undefined `co2_value`. They remain in the repository but are not imported into the house. Before deployment, check whether the actual installation has any manually added core files or references to these CO2 helpers. This change does not reconstruct those unrelated features.
 
