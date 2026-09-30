@@ -9,7 +9,6 @@ files again from another configuration section.
 | --- | --- |
 | `heating_boiler.yaml` | Boiler demand, relay control and safety watchdog |
 | `heating_floor.yaml` | Floor heating thermostats |
-| `heating_schedule.yaml` | Heating schedule |
 | `heating_sensor_sync.yaml` | External temperature synchronization with radiator valves |
 | `heating_windows.yaml` | Window handling and restoration of heating mode |
 | `washing_machine.yaml` | Running/done sensor, energy integration and status logging |
