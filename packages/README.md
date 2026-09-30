@@ -20,6 +20,7 @@ files again from another configuration section.
 | `ev_dynamic_load_balancing.yaml` | Existing EV load-balancing configuration |
 | `homekit.yaml` | House Main bridge, entity filters and HomeKit names |
 | `zigbee2mqtt_deployment.yaml` | Configuration copy and add-on restart on HA startup |
+| `backup.yaml` | Persistent notification on backup failure |
 
 Keep HomeKit in one package, preserving the bridge name, port, filters and entity
 settings. Feature packages do not create additional bridges.
