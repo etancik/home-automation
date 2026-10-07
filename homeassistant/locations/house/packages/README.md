@@ -14,6 +14,7 @@ files again from another configuration section.
 | `washing_machine.yaml` | Running/done sensor, energy integration and status logging |
 | `lighting.yaml` | Kids room dimmer and evening LED strip schedule |
 | `lighting_living_room.yaml` | Front/rear Hue groups and detached window-switch test |
+| `lighting_profiles.yaml` | Day/evening Hue profiles and per-zone manual override |
 | `shading_v1.yaml` | Disabled-by-default sunset, night-window and morning shutter logic |
 | `garage.yaml` | Garage cover and position feedback |
 | `goe_charger.yaml` | Charger/controller customizations and energy dashboard sensors |
