@@ -36,7 +36,7 @@ async def profiles(hass):
     }, blocking=True)
 
 
-@pytest.mark.parametrize('sun,kelvin,brightness', [('above_horizon', 4000, 80), ('below_horizon', 2300, 45)])
+@pytest.mark.parametrize('sun,kelvin,brightness', [('above_horizon', 4000, 80), ('below_horizon', 2237, 50)])
 async def test_refresh_uses_profile_without_turning_on_unlit_members(hass, profiles, sun, kelvin, brightness):
     hass.states.async_set('sun.sun', sun)
     await hass.async_block_till_done()
