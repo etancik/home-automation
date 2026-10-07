@@ -1,0 +1,45 @@
+# First detached-button test. L1 supplies Kitchen Table Light permanently.
+# Physical top/bottom assignment must be verified with actual button presses.
+light:
+  - platform: group
+    name: Living Room Front
+    unique_id: living_room_front_lights
+    entities:
+      - light.living_room_fireplace_light
+      - light.living_room_palm_light
+  - platform: group
+    name: Living Room Rear
+    unique_id: living_room_rear_lights
+    entities:
+      - light.living_room_bookshelf_light
+
+input_boolean:
+  living_room_button_test_enabled:
+    name: Living Room Button Test
+    icon: mdi:gesture-tap-button
+
+automation:
+  - id: living_room_window_switch_groups
+    alias: Living Room - window switch groups
+    description: Detached button events toggle Hue groups; never operate supply relays.
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/Living Room Window Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle_l1
+        id: front
+      - trigger: mqtt
+        topic: zigbee2mqtt/Living Room Window Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle_l2
+        id: rear
+    conditions:
+      - condition: state
+        entity_id: input_boolean.living_room_button_test_enabled
+        state: 'on'
+    actions:
+      - action: light.toggle
+        target:
+          entity_id: "{{ 'light.living_room_front' if trigger.id == 'front' else 'light.living_room_rear' }}"
+    mode: queued
+    max: 10

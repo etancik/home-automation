@@ -184,6 +184,34 @@ devices:
   # ========================================
   # LIGHTS
   # ========================================
+  '0x001788010f71788a':
+    friendly_name: 'Kitchen Counter Light'
+    retain: false
+    description: 'Hue Essential bulb above the kitchen counter'
+  '0x001788010f70df06':
+    friendly_name: 'Kitchen Table Light'
+    retain: false
+    description: 'Hue Essential bulb above the kitchen table'
+  '0x001788010f717906':
+    friendly_name: 'Living Room Bookshelf Light'
+    retain: false
+    description: 'Hue Essential bulb at the living room bookshelf'
+  '0x001788010f36838c':
+    friendly_name: 'Living Room Fireplace Light'
+    retain: false
+    description: 'Hue Essential bulb at the living room fireplace'
+  '0x001788010f3861a7':
+    friendly_name: 'Living Room Palm Light'
+    retain: false
+    description: 'Hue Essential bulb at the living room palm'
+  '0x001788010f7289f2':
+    friendly_name: 'Spare Hue Light 1'
+    retain: false
+    description: 'Hue Essential bulb with no assigned location yet'
+  '0x001788010f7273f2':
+    friendly_name: 'Spare Hue Light 2'
+    retain: false
+    description: 'Hue Essential bulb with no assigned location yet'
   '0x84fd27fffe92fa7c':
     friendly_name: 'Bedroom LED Strip'
     retain: false
@@ -225,6 +253,11 @@ devices:
   # ========================================
   # WIRELESS CONTROLS
   # ========================================
+  '0x8c73dafffe26afae':
+    friendly_name: 'Living Room Window Switch'
+    retain: false
+    state_action: false
+    description: 'SONOFF Orb-ZBW2L detached button test; L1 supplies Kitchen Table Light'
   '0x08fd52fffe638df7':
     friendly_name: 'Kids Room Dimmer Switch'
     retain: false
