@@ -1,0 +1,139 @@
+# Automatic profiles apply only to lit zones outside manual mode.
+input_boolean:
+  lighting_manual_living_room_front:
+    name: Living Room Front - Manual Lighting
+    icon: mdi:hand-back-right
+  lighting_manual_living_room_rear:
+    name: Living Room Rear - Manual Lighting
+    icon: mdi:hand-back-right
+  lighting_manual_kitchen_counter:
+    name: Kitchen Counter - Manual Lighting
+    icon: mdi:hand-back-right
+  lighting_manual_kitchen_table:
+    name: Kitchen Table - Manual Lighting
+    icon: mdi:hand-back-right
+
+script:
+  lighting_turn_on_with_time_profile:
+    alias: Lighting - turn on with time profile
+    mode: queued
+    max: 10
+    fields:
+      only_lit:
+        name: Update only lights already on
+        default: false
+        selector:
+          boolean:
+      light_entity:
+        name: Light or group
+        required: true
+        selector:
+          entity:
+            domain: light
+    sequence:
+      - condition: template
+        value_template: >-
+          {{ light_entity in ['light.living_room_front', 'light.living_room_rear',
+                              'light.kitchen_counter_light', 'light.kitchen_table_light']
+             and has_value(light_entity) }}
+      - variables:
+          selected_lights: >-
+            {{ expand(state_attr(light_entity, 'entity_id') or [light_entity]) | selectattr('state', 'eq', 'on')
+               | map(attribute='entity_id') | list
+               if only_lit | default(false) else [light_entity] }}
+          manual_helper: >-
+            {{ {'light.living_room_front': 'input_boolean.lighting_manual_living_room_front',
+                'light.living_room_rear': 'input_boolean.lighting_manual_living_room_rear',
+                'light.kitchen_counter_light': 'input_boolean.lighting_manual_kitchen_counter',
+                'light.kitchen_table_light': 'input_boolean.lighting_manual_kitchen_table'}[light_entity] }}
+      - condition: template
+        value_template: "{{ selected_lights | count > 0 }}"
+      - choose:
+          - conditions: "{{ not is_state(manual_helper, 'off') }}"
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: "{{ selected_lights }}"
+          - conditions: "{{ is_state('sun.sun', 'above_horizon') }}"
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: "{{ selected_lights }}"
+                data:
+                  color_temp_kelvin: 4000
+                  brightness_pct: 80
+                  transition: 1
+          - conditions: "{{ is_state('sun.sun', 'below_horizon') }}"
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: "{{ selected_lights }}"
+                data:
+                  color_temp_kelvin: 2700
+                  brightness_pct: 35
+                  transition: 1
+        default:
+          - action: light.turn_on
+            target:
+              entity_id: "{{ selected_lights }}"
+
+automation:
+  - id: lighting_refresh_time_profiles
+    alias: Lighting - refresh time profiles
+    description: Update lit automatic zones at sunrise/sunset and every five minutes.
+    mode: restart
+    triggers:
+      - trigger: time_pattern
+        minutes: '/5'
+      - trigger: state
+        entity_id: sun.sun
+        to:
+          - above_horizon
+          - below_horizon
+      - trigger: state
+        entity_id:
+          - light.living_room_front
+          - light.living_room_rear
+          - light.kitchen_counter_light
+          - light.kitchen_table_light
+        from: 'off'
+        to: 'on'
+    actions:
+      - repeat:
+          for_each:
+            - light: light.living_room_front
+              manual: input_boolean.lighting_manual_living_room_front
+            - light: light.living_room_rear
+              manual: input_boolean.lighting_manual_living_room_rear
+            - light: light.kitchen_counter_light
+              manual: input_boolean.lighting_manual_kitchen_counter
+            - light: light.kitchen_table_light
+              manual: input_boolean.lighting_manual_kitchen_table
+          sequence:
+            - if: "{{ is_state(repeat.item.light, 'on') and is_state(repeat.item.manual, 'off') }}"
+              then:
+                - action: script.lighting_turn_on_with_time_profile
+                  data:
+                    light_entity: "{{ repeat.item.light }}"
+                    only_lit: true
+
+  - id: lighting_reset_manual_when_off
+    alias: Lighting - reset manual mode when off
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id:
+          - light.living_room_front
+          - light.living_room_rear
+          - light.kitchen_counter_light
+          - light.kitchen_table_light
+        from: 'on'
+        to: 'off'
+    actions:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: >-
+            {{ {'light.living_room_front': 'input_boolean.lighting_manual_living_room_front',
+                'light.living_room_rear': 'input_boolean.lighting_manual_living_room_rear',
+                'light.kitchen_counter_light': 'input_boolean.lighting_manual_kitchen_counter',
+                'light.kitchen_table_light': 'input_boolean.lighting_manual_kitchen_table'}[trigger.entity_id] }}
