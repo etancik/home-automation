@@ -36,17 +36,18 @@ automation:
       - repeat:
           for_each: "{{ sensor_valve_map | list }}"
           sequence:
-            - if: "{{ trigger.id == 'reconcile' }}"
-              then:
-                - action: mqtt.publish
-                  data:
-                    topic: "zigbee2mqtt/{{ sensor_valve_map[repeat.item] }}/set"
-                    payload: '{"temperature_sensor_select": "external", "temperature_accuracy": -0.2}'
             - if: >-
                 {{ is_number(states(repeat.item))
+                   and 0 <= states(repeat.item) | float <= 99.9
                    and (trigger.id == 'reconcile' or trigger.entity_id | default('') == repeat.item) }}
               then:
                 - action: mqtt.publish
                   data:
                     topic: "zigbee2mqtt/{{ sensor_valve_map[repeat.item] }}/set"
                     payload: '{{ {"external_temperature_input": states(repeat.item) | float} | to_json }}'
+                - if: "{{ trigger.id == 'reconcile' }}"
+                  then:
+                    - action: mqtt.publish
+                      data:
+                        topic: "zigbee2mqtt/{{ sensor_valve_map[repeat.item] }}/set"
+                        payload: '{"temperature_sensor_select": "remote_temperature", "temperature_accuracy": -0.2}'
