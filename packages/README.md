@@ -13,6 +13,7 @@ files again from another configuration section.
 | `heating_windows.yaml` | Window handling and restoration of heating mode |
 | `washing_machine.yaml` | Running/done sensor, energy integration and status logging |
 | `lighting.yaml` | Kids room dimmer and evening LED strip schedule |
+| `lighting_living_room.yaml` | Front/rear Hue groups and detached window-switch test |
 | `shading_v1.yaml` | Disabled-by-default sunset, night-window and morning shutter logic |
 | `garage.yaml` | Garage cover and position feedback |
 | `goe_charger.yaml` | Charger/controller customizations and energy dashboard sensors |
