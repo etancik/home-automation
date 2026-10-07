@@ -100,8 +100,11 @@ then perform and record the first restore drill.
 
 ### Diagnostics on demand
 
-Run `python tools/ha_observer.py setup` once with a dedicated non-administrator
-HA user's token, then `python tools/ha_observer.py check` for a state/history
+Run `python tools/ha_observer.py setup` once with a dedicated HA user's token.
+Non-administrator access covers states/history; MQTT subscription and system/add-on
+logs require administrator access. Change the user's role in HA, then verify with
+the existing token before replacing it. Never put tokens in Git or chat.
+Run `python tools/ha_observer.py check` for a state/history
 report. Windows setup encrypts credentials outside Git; other platforms can use
 `HA_OBSERVER_URL` and `HA_OBSERVER_TOKEN`. This tool does not run continuously
 and currently does not collect Core or app logs.

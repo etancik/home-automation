@@ -28,6 +28,71 @@
 #   - "Car Charger" (currently: go-eCharger 600187)
 #   - "House Power Monitor" (currently: go-eController 917809)
 
+# Repair firmware discovery metadata without writing charger/controller settings.
+# Guards exclude repaired payloads to prevent same-topic feedback loops.
+automation:
+  - id: goe_repair_mqtt_discovery
+    alias: Go-e - repair MQTT discovery
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: mqtt
+        topic: homeassistant/sensor/go-e_917809/brightness_sensor/config
+        id: brightness
+      - trigger: mqtt
+        topic: homeassistant/sensor/go-e_600187/error_state/config
+        id: error_state
+      - trigger: mqtt
+        topic: homeassistant/switch/go-e_600187/force_single_phase/config
+        id: single_phase
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.payload_json is defined and trigger.payload_json is mapping }}"
+    actions:
+      - variables:
+          source: "{{ trigger.payload_json }}"
+      - choose:
+          - conditions: >-
+              {{ trigger.id == 'brightness'
+                 and source.get('device_class', source.get('dev_cla')) == 'illuminance'
+                 and source.get('unit_of_measurement', source.get('unit_of_meas')) == '%' }}
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: "{{ trigger.topic }}"
+                  payload: >-
+                    {{ dict(source.items() | rejectattr('0', 'in', ['device_class', 'dev_cla']) | list) | to_json }}
+                  retain: true
+          - conditions: >-
+              {{ trigger.id == 'error_state'
+                 and source.get('options', source.get('ops', [])) | first == 'None' }}
+            sequence:
+              - variables:
+                  template_key: "{{ 'value_template' if 'value_template' in source else 'val_tpl' }}"
+                  options_key: "{{ 'options' if 'options' in source else 'ops' }}"
+              - action: mqtt.publish
+                data:
+                  topic: "{{ trigger.topic }}"
+                  payload: >-
+                    {{ dict(source, **{
+                      template_key: source[template_key].replace("'None'", "'NoError'").replace('"None"', '"NoError"'),
+                      options_key: ['NoError'] + source[options_key][1:]
+                    }) | to_json }}
+                  retain: true
+          - conditions: >-
+              {{ trigger.id == 'single_phase'
+                 and (source.get('payload_on', source.get('pl_on')) != 'true'
+                      or source.get('payload_off', source.get('pl_off')) != 'false') }}
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: "{{ trigger.topic }}"
+                  payload: >-
+                    {{ dict(dict(source.items() | rejectattr('0', 'in',
+                      ['payload_on', 'payload_off', 'pl_on', 'pl_off']) | list),
+                      payload_on='true', payload_off='false') | to_json }}
+                  retain: true
+
 homeassistant:
   customize:
     # EV Charger - Monitoring
