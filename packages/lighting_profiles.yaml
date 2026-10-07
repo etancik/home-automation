@@ -69,8 +69,8 @@ script:
                 target:
                   entity_id: "{{ selected_lights }}"
                 data:
-                  color_temp_kelvin: 2700
-                  brightness_pct: 35
+                  color_temp_kelvin: 2300
+                  brightness_pct: 45
                   transition: 1
         default:
           - action: light.turn_on
