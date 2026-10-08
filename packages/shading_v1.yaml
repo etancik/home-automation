@@ -14,7 +14,7 @@ script:
     fields:
       changed_contact:
         description: Optional contact entity; empty evaluates all shutters.
-        example: binary_sensor.bedroom_window_sensor_contact
+        example: binary_sensor.kids_room_window_sensor_contact
     sequence:
       - condition: state
         entity_id: input_boolean.shading_automation_enabled
@@ -26,6 +26,7 @@ script:
             - cover: cover.bedroom_roller_shutter
               contact: binary_sensor.bedroom_window_sensor_contact
               passage: false
+              follow_window: false
             - cover: cover.kids_room_roller_shutter
               contact: binary_sensor.kids_room_window_sensor_contact
               passage: false
@@ -43,6 +44,7 @@ script:
                 - condition: template
                   value_template: >-
                     {{ (selected_contact == '' or selected_contact == repeat.item.contact) and
+                       (selected_contact == '' or repeat.item.get('follow_window', true)) and
                        has_value(repeat.item.cover) }}
               then:
                 - choose:
@@ -88,7 +90,7 @@ script:
 automation:
   - id: shading_v1_night_positions
     alias: Shading V1 - night positions
-    description: Close at sunset and re-evaluate ordinary windows during the night.
+    description: Close at sunset; re-evaluate ordinary windows except bedroom during the night.
     mode: queued
     max: 10
     triggers:
@@ -97,7 +99,6 @@ automation:
         id: sunset
       - trigger: state
         entity_id:
-          - binary_sensor.bedroom_window_sensor_contact
           - binary_sensor.kids_room_window_sensor_contact
           - binary_sensor.workshop_window_sensor_contact
           - binary_sensor.kitchen_window_sensor_contact
