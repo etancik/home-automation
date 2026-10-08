@@ -128,6 +128,23 @@ async def test_morning_excludes_bedroom(hass, shading):
     ]
 
 
+async def test_bedroom_window_open_and_close_never_move_shutter(hass, shading):
+    _, calls = shading
+    await enable(hass)
+    for state in ("on", "off"):
+        hass.states.async_set(CONTACTS["bedroom"], state)
+        await hass.async_block_till_done()
+        await run_script(hass, "shading_apply_night_positions", {"changed_contact": CONTACTS["bedroom"]})
+    assert calls == []
+
+
+async def test_bedroom_still_participates_in_sunset_positions(hass, shading):
+    _, calls = shading
+    await enable(hass)
+    await run_script(hass, "shading_apply_night_positions")
+    assert ("set_cover_position", COVERS[0], 0) in calls
+
+
 async def test_opening_living_room_passage_stops_closing_shutter(hass, shading):
     _, calls = shading
     await enable(hass)
