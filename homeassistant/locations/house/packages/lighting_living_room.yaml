@@ -1,5 +1,5 @@
-# First detached-button test. L1 supplies Kitchen Table Light permanently.
-# Physical top/bottom assignment must be verified with actual button presses.
+# Detached controls: legacy window pilot and neutral switches at passage D.
+# Hue supply is independent of the new switches; automations never operate relays.
 light:
   - platform: group
     name: Living Room Front
@@ -41,5 +41,42 @@ automation:
       - action: light.toggle
         target:
           entity_id: "{{ 'light.living_room_front' if trigger.id == 'front' else 'light.living_room_rear' }}"
+    mode: queued
+    max: 10
+
+
+  - id: living_room_passage_switch_groups
+    alias: Living Room - passage switch groups
+    description: Neutral double button at D; top Front, bottom Rear. No relay commands.
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/Living Room Passage Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle_l1
+        id: front
+      - trigger: mqtt
+        topic: zigbee2mqtt/Living Room Passage Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle_l2
+        id: rear
+    actions:
+      - action: light.toggle
+        target:
+          entity_id: "{{ 'light.living_room_front' if trigger.id == 'front' else 'light.living_room_rear' }}"
+    mode: queued
+    max: 10
+
+  - id: kitchen_table_switch_toggle
+    alias: Kitchen - table switch
+    description: Neutral single button at D toggles Kitchen Table, never its supply relay.
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/Kitchen Table Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle
+    actions:
+      - action: light.toggle
+        target:
+          entity_id: light.kitchen_table_light
     mode: queued
     max: 10
