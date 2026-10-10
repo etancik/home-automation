@@ -102,14 +102,11 @@ homekit:
         - light.bedroom_led_strip
         - light.kids_room_door_led_strip
         - light.living_room_light
-        - light.living_room_front
-        - light.living_room_rear
+        - light.living_room_palm_light
+        - light.living_room_fireplace_light
+        - light.living_room_bookshelf_light
         - light.kitchen_counter_light
         - light.kitchen_table_light
-        - input_boolean.lighting_manual_living_room_front
-        - input_boolean.lighting_manual_living_room_rear
-        - input_boolean.lighting_manual_kitchen_counter
-        - input_boolean.lighting_manual_kitchen_table
 
         # ========================================
         # SMART PLUGS & APPLIANCES
@@ -287,22 +284,16 @@ homekit:
         name: "Kids Room Door LED Strip"
       light.living_room_light:
         name: "Living Room Light"
-      light.living_room_front:
-        name: "Living Room Front"
-      light.living_room_rear:
-        name: "Living Room Rear"
+      light.living_room_palm_light:
+        name: "Living Room Palm"
+      light.living_room_fireplace_light:
+        name: "Living Room Fireplace"
+      light.living_room_bookshelf_light:
+        name: "Living Room Bookshelf"
       light.kitchen_counter_light:
         name: "Kitchen Counter Light"
       light.kitchen_table_light:
         name: "Kitchen Table Light"
-      input_boolean.lighting_manual_living_room_front:
-        name: "Living Room Front Manual"
-      input_boolean.lighting_manual_living_room_rear:
-        name: "Living Room Rear Manual"
-      input_boolean.lighting_manual_kitchen_counter:
-        name: "Kitchen Counter Manual"
-      input_boolean.lighting_manual_kitchen_table:
-        name: "Kitchen Table Manual"
 
       # ========================================
       # BOILER CONTROL

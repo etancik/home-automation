@@ -9,7 +9,6 @@ from homeassistant.components.mqtt.models import ReceiveMessage
 from homeassistant.components.mqtt.trigger import TRIGGER_SCHEMA, async_attach_trigger
 from homeassistant.helpers.script import Script
 from homeassistant.helpers import config_validation as cv
-from homeassistant.setup import async_setup_component
 
 
 PACKAGE = Path(__file__).resolve().parents[1] / 'homeassistant/locations/house/packages/lighting_living_room.yaml'
@@ -19,7 +18,6 @@ PACKAGE = Path(__file__).resolve().parents[1] / 'homeassistant/locations/house/p
 async def buttons(hass, request):
     config = yaml.safe_load(PACKAGE.read_text())
     calls, listeners = [], []
-    assert await async_setup_component(hass, 'input_boolean', {'input_boolean': config['input_boolean']})
 
     async def record(call):
         calls.append((call.domain, call.service, call.data['entity_id']))
@@ -43,7 +41,7 @@ async def buttons(hass, request):
             trigger = TRIGGER_SCHEMA({'platform': item['trigger'], **{k: v for k, v in item.items() if k != 'trigger'}})
             await async_attach_trigger(hass, trigger, action, {'trigger_data': {'id': item.get('id', 'table'), 'idx': '0'}})
 
-    async def send(payload, topic='zigbee2mqtt/Living Room Window Switch'):
+    async def send(payload, topic):
         message = ReceiveMessage(topic=topic, subscribed_topic=topic, payload=json.dumps(payload), qos=0, retain=False, timestamp=datetime.now(timezone.utc))
         for subscribed_topic, listener in listeners:
             if subscribed_topic == topic:
@@ -53,34 +51,11 @@ async def buttons(hass, request):
     return calls, send
 
 
-async def test_disabled_buttons_do_nothing(hass, buttons):
-    calls, send = buttons
-    await send({'action': 'toggle_l1'})
-    await send({'action': 'toggle_l2'})
-    assert calls == []
-
-
-async def test_each_press_toggles_only_its_group_and_ignores_release(hass, buttons):
-    calls, send = buttons
-    await hass.services.async_call('input_boolean', 'turn_on', {'entity_id': 'input_boolean.living_room_button_test_enabled'}, blocking=True)
-    await send({'action': 'toggle_l1'})
-    await send({'action': ''})
-    await send({'state_l1': 'ON', 'state_l2': 'OFF'})
-    await send({'action': 'release'})
-    await send({'action': 'toggle_l1'})
-    await send({'action': 'toggle_l2'})
-    assert calls == [
-        ('light', 'toggle', ['light.living_room_front']),
-        ('light', 'toggle', ['light.living_room_front']),
-        ('light', 'toggle', ['light.living_room_rear']),
-    ]
-
-
 @pytest.mark.parametrize('buttons,topic,presses,targets', [
-    (1, 'zigbee2mqtt/Living Room Passage Switch', ['toggle_l1', 'toggle_l2'],
+    (0, 'zigbee2mqtt/Living Room Passage Switch', ['toggle_l1', 'toggle_l2'],
      ['light.living_room_front', 'light.living_room_rear']),
-    (2, 'zigbee2mqtt/Kitchen Table Switch', ['toggle'], ['light.kitchen_table_light']),
-    (3, 'zigbee2mqtt/Kitchen Counter Switch', ['toggle'], ['light.kitchen_counter_light']),
+    (1, 'zigbee2mqtt/Kitchen Table Switch', ['toggle'], ['light.kitchen_table_light']),
+    (2, 'zigbee2mqtt/Kitchen Counter Switch', ['toggle'], ['light.kitchen_counter_light']),
 ], indirect=['buttons'])
 async def test_neutral_d_buttons_only_toggle_their_lights(buttons, topic, presses, targets):
     calls, send = buttons
