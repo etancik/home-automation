@@ -80,3 +80,19 @@ automation:
           entity_id: light.kitchen_table_light
     mode: queued
     max: 10
+
+
+  - id: kitchen_counter_switch_toggle
+    alias: Kitchen - counter switch
+    description: Neutral single button at D toggles Kitchen Counter, never its supply relay.
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/Kitchen Counter Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle
+    actions:
+      - action: light.toggle
+        target:
+          entity_id: light.kitchen_counter_light
+    mode: queued
+    max: 10

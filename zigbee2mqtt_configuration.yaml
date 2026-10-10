@@ -263,6 +263,11 @@ devices:
     retain: false
     state_action: false
     description: 'SONOFF ZBMINIR2 with E1GS at D; Kitchen Table button; Hue supply independent of relay'
+  '0x08b95ffffeeb7282':
+    friendly_name: 'Kitchen Counter Switch'
+    retain: false
+    state_action: false
+    description: 'SONOFF ZBMINIR2 with E1GS at D; Kitchen Counter button; Hue supply independent of relay'
   '0x08fd52fffe638df7':
     friendly_name: 'Kids Room Dimmer Switch'
     retain: false
