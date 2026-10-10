@@ -61,7 +61,7 @@ script:
                   entity_id: "{{ selected_lights }}"
                 data:
                   color_temp_kelvin: 4000
-                  brightness_pct: 80
+                  brightness_pct: 100
                   transition: 1
           - conditions: "{{ is_state('sun.sun', 'below_horizon') }}"
             sequence:
