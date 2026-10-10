@@ -253,11 +253,6 @@ devices:
   # ========================================
   # WIRELESS CONTROLS
   # ========================================
-  '0x8c73dafffe26afae':
-    friendly_name: 'Living Room Window Switch'
-    retain: false
-    state_action: false
-    description: 'SONOFF Orb-ZBW2L detached button test; L1 supplies Kitchen Table Light'
   '0xf044d3fffef38e41':
     friendly_name: 'Living Room Passage Switch'
     retain: false
