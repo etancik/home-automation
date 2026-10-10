@@ -80,6 +80,7 @@ async def test_each_press_toggles_only_its_group_and_ignores_release(hass, butto
     (1, 'zigbee2mqtt/Living Room Passage Switch', ['toggle_l1', 'toggle_l2'],
      ['light.living_room_front', 'light.living_room_rear']),
     (2, 'zigbee2mqtt/Kitchen Table Switch', ['toggle'], ['light.kitchen_table_light']),
+    (3, 'zigbee2mqtt/Kitchen Counter Switch', ['toggle'], ['light.kitchen_counter_light']),
 ], indirect=['buttons'])
 async def test_neutral_d_buttons_only_toggle_their_lights(buttons, topic, presses, targets):
     calls, send = buttons
