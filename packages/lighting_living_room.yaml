@@ -1,4 +1,4 @@
-# Detached controls: legacy window pilot and neutral switches at passage D.
+# Neutral detached controls at passage D; groups are internal to HA.
 # Hue supply is independent of the new switches; automations never operate relays.
 light:
   - platform: group
@@ -13,38 +13,7 @@ light:
     entities:
       - light.living_room_bookshelf_light
 
-input_boolean:
-  living_room_button_test_enabled:
-    name: Living Room Button Test
-    icon: mdi:gesture-tap-button
-
 automation:
-  - id: living_room_window_switch_groups
-    alias: Living Room - window switch groups
-    description: Detached button events toggle Hue groups; never operate supply relays.
-    triggers:
-      - trigger: mqtt
-        topic: zigbee2mqtt/Living Room Window Switch
-        value_template: "{{ value_json.action | default('') }}"
-        payload: toggle_l1
-        id: front
-      - trigger: mqtt
-        topic: zigbee2mqtt/Living Room Window Switch
-        value_template: "{{ value_json.action | default('') }}"
-        payload: toggle_l2
-        id: rear
-    conditions:
-      - condition: state
-        entity_id: input_boolean.living_room_button_test_enabled
-        state: 'on'
-    actions:
-      - action: light.toggle
-        target:
-          entity_id: "{{ 'light.living_room_front' if trigger.id == 'front' else 'light.living_room_rear' }}"
-    mode: queued
-    max: 10
-
-
   - id: living_room_passage_switch_groups
     alias: Living Room - passage switch groups
     description: Neutral double button at D; top Front, bottom Rear. No relay commands.
