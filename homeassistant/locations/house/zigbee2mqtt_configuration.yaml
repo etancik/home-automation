@@ -253,6 +253,11 @@ devices:
   # ========================================
   # WIRELESS CONTROLS
   # ========================================
+  '0xf044d3fffef37509':
+    friendly_name: 'Living Room Hallway Switch'
+    retain: false
+    state_action: false
+    description: 'Neutral SONOFF Orb-ZBW2 at A; top Front, bottom Rear'
   '0xf044d3fffef38e41':
     friendly_name: 'Living Room Passage Switch'
     retain: false
