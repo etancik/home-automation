@@ -1,4 +1,4 @@
-# Neutral detached controls at passage D; groups are internal to HA.
+# Neutral detached controls at hallway A and passage D; groups are internal to HA.
 # Hue supply is independent of the new switches; automations never operate relays.
 light:
   - platform: group
@@ -16,7 +16,7 @@ light:
 automation:
   - id: living_room_passage_switch_groups
     alias: Living Room - passage switch groups
-    description: Neutral double button at D; top Front, bottom Rear. No relay commands.
+    description: Neutral double buttons at A and D; top Front, bottom Rear. No relay commands.
     triggers:
       - trigger: mqtt
         topic: zigbee2mqtt/Living Room Passage Switch
@@ -25,6 +25,16 @@ automation:
         id: front
       - trigger: mqtt
         topic: zigbee2mqtt/Living Room Passage Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle_l2
+        id: rear
+      - trigger: mqtt
+        topic: zigbee2mqtt/Living Room Hallway Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle_l1
+        id: front
+      - trigger: mqtt
+        topic: zigbee2mqtt/Living Room Hallway Switch
         value_template: "{{ value_json.action | default('') }}"
         payload: toggle_l2
         id: rear
