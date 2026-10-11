@@ -1,75 +1,143 @@
-# Washing machine status, energy tracking and logging.
+# Persistent cycle tracking; preserve the existing HomeKit contact identity.
+input_boolean:
+  washing_machine_running:
+    name: Washing machine running
+input_number:
+  washing_machine_high_since:
+    name: Washing machine active power since
+    min: 0
+    max: 4102444800
+    step: 1
+    mode: box
+  washing_machine_low_since:
+    name: Washing machine standby power since
+    min: 0
+    max: 4102444800
+    step: 1
+    mode: box
+  washing_machine_zero_since:
+    name: Washing machine near-zero power since
+    min: 0
+    max: 4102444800
+    step: 1
+    mode: box
+
 template:
   - binary_sensor:
-      # Washing Machine Status (HomeKit Contact Sensor)
-      # Closed (OFF) = Running (power >10W, busy)
-      # Open (ON) = Done/Idle (power ≤10W, available)
-      # Data: 29 days correlated with dryer (37 loads). Max mid-cycle gap: 15.8min.
-      # 16min = zero false triggers. Soak pauses are bimodal: <3min or 10-16min.
-      # Setup in HomeKit: Automation → When "Washing Machine" opens → Send notification
-      - name: "Washing Machine"
+      # OFF = confirmed running; ON = done/idle. No startup delay timer.
+      - name: Washing Machine
         unique_id: washing_machine_done
         device_class: opening
-        delay_on:
-          minutes: 16
-        state: >
-          {{ states('sensor.laundry_room_washing_machine_smart_plug_power') | float(0) <= 10 }}
-        availability: >
-          {{ states('sensor.laundry_room_washing_machine_smart_plug_power') not in ['unknown', 'unavailable'] }}
-
-# Energy Tracking for Washing Machine
-# Uses Riemann sum integration to convert power (W) to energy (kWh)
+        state: "{{ is_state('input_boolean.washing_machine_running', 'off') }}"
+        availability: "{{ is_number(states('sensor.laundry_room_washing_machine_smart_plug_power')) and has_value('input_boolean.washing_machine_running') }}"
 sensor:
-  # Washing Machine Energy Tracking
   - platform: integration
     source: sensor.laundry_room_washing_machine_smart_plug_power
-    name: "Washing Machine Energy"
+    name: Washing Machine Energy
     unique_id: washing_machine_energy
     unit_prefix: k
     round: 2
     method: left
 
 automation:
-  # Washing Machine Status Logging
-  # Log when washing machine starts and finishes
-  # Binary sensor automatically updates: closed=running (>10W), open=done/idle (≤10W)
-  - id: 'washing_machine_status_logging'
-    alias: "Washing Machine Status Logging"
-    description: "Log washing machine state changes to logbook"
+  - id: washing_machine_status_logging
+    alias: Washing Machine Status Logging
+    description: Confirm start after 2 min above 10 W; finish after 2 min below 1 W or 16 min at most 10 W, once per cycle.
+    mode: queued
+    max: 10
     triggers:
-      # When washing starts (power stays above 10W for 2 min to avoid mid-cycle oscillation false triggers)
-      - platform: numeric_state
+      - trigger: homeassistant
+        event: start
+      - trigger: state
         entity_id: sensor.laundry_room_washing_machine_smart_plug_power
-        above: 10
-        for:
-          minutes: 2
-        id: "start"
-      # When washing finishes (power drops below 10W for 16 min to avoid mid-cycle false triggers)
-      # Data: 29 days of power data correlated with dryer runs (37 loads = ground truth).
-      # True mid-cycle gaps: max 15.8min (bimodal: <3min or 10-16min soak pauses).
-      # 16min covers 100% of mid-cycle gaps with zero false triggers.
-      - platform: numeric_state
-        entity_id: sensor.laundry_room_washing_machine_smart_plug_power
-        below: 10
-        for:
-          minutes: 16
-        id: "done"
+      - trigger: time_pattern
+        seconds: /15
     actions:
-      - choose:
-          - conditions:
-              - condition: trigger
-                id: "start"
-            sequence:
-              - service: logbook.log
+      - variables:
+          reading: "{{ states('sensor.laundry_room_washing_machine_smart_plug_power') }}"
+          stamp: "{{ as_timestamp(now()) | int }}"
+          high: "{{ states('input_number.washing_machine_high_since') | float(0) }}"
+          low: "{{ states('input_number.washing_machine_low_since') | float(0) }}"
+          zero: "{{ states('input_number.washing_machine_zero_since') | float(0) }}"
+      - if: "{{ not is_number(reading) }}"
+        then:
+          # Missing data never counts as quiet time or completes a cycle.
+          - action: input_number.set_value
+            target:
+              entity_id:
+                - input_number.washing_machine_high_since
+                - input_number.washing_machine_low_since
+                - input_number.washing_machine_zero_since
+            data:
+              value: 0
+        else:
+          - choose:
+              - conditions: "{{ reading | float > 10 }}"
+                sequence:
+                  - action: input_number.set_value
+                    target:
+                      entity_id:
+                        - input_number.washing_machine_low_since
+                        - input_number.washing_machine_zero_since
+                    data:
+                      value: 0
+                  - if: "{{ high <= 0 }}"
+                    then:
+                      - action: input_number.set_value
+                        target:
+                          entity_id: input_number.washing_machine_high_since
+                        data:
+                          value: "{{ stamp }}"
+                    else:
+                      - if: "{{ stamp - high >= 120 and is_state('input_boolean.washing_machine_running', 'off') }}"
+                        then:
+                          - action: input_boolean.turn_on
+                            target:
+                              entity_id: input_boolean.washing_machine_running
+                          - action: logbook.log
+                            data:
+                              name: Washing Machine
+                              entity_id: binary_sensor.washing_machine
+                              message: Washing started - power above 10 W for 2 min
+            default:
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.washing_machine_high_since
                 data:
-                  name: "Washing Machine"
-                  message: "Washing started - power above 10W"
-          - conditions:
-              - condition: trigger
-                id: "done"
-            sequence:
-              - service: logbook.log
-                data:
-                  name: "Washing Machine"
-                  message: "Washing finished - power below 10W for 16 min"
-    mode: restart
+                  value: 0
+              - if: "{{ low <= 0 }}"
+                then:
+                  - action: input_number.set_value
+                    target:
+                      entity_id: input_number.washing_machine_low_since
+                    data:
+                      value: "{{ stamp }}"
+              - if: "{{ reading | float < 1 }}"
+                then:
+                  - if: "{{ zero <= 0 }}"
+                    then:
+                      - action: input_number.set_value
+                        target:
+                          entity_id: input_number.washing_machine_zero_since
+                        data:
+                          value: "{{ stamp }}"
+                else:
+                  - action: input_number.set_value
+                    target:
+                      entity_id: input_number.washing_machine_zero_since
+                    data:
+                      value: 0
+              - if: >-
+                  {{ is_state('input_boolean.washing_machine_running', 'on')
+                     and ((reading | float < 1 and zero > 0 and stamp - zero >= 120)
+                          or (low > 0 and stamp - low >= 960)) }}
+                then:
+                  - action: input_boolean.turn_off
+                    target:
+                      entity_id: input_boolean.washing_machine_running
+                  - action: logbook.log
+                    data:
+                      name: Washing Machine
+                      entity_id: binary_sensor.washing_machine
+                      message: >-
+                        Washing finished - {{ 'power below 1 W for 2 min' if reading | float < 1 and zero > 0 and stamp - zero >= 120 else 'power at most 10 W for 16 min' }}
