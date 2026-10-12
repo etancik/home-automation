@@ -52,6 +52,13 @@ async def shading(hass: HomeAssistant):
         hass, "automation", {"automation": package["automation"]}
     )
     await hass.async_block_till_done()
+    # Script tests explicitly choose the contact to reconcile. Avoid wall-clock
+    # dependent extra night reconciliations when a fixture changes contacts.
+    await hass.services.async_call(
+        'automation', 'turn_off',
+        {'entity_id': 'automation.shading_v1_night_positions', 'stop_actions': True},
+        blocking=True,
+    )
     yield package, calls
     await hass.services.async_call(
         "automation",
@@ -97,7 +104,7 @@ async def test_night_positions_and_passage_protection(hass, shading):
     await run_script(hass, "shading_apply_night_positions")
 
     assert calls == [
-        ("set_cover_position", COVERS[0], 0),
+        ("set_cover_position", COVERS[0], 20),
         ("set_cover_position", COVERS[1], 20),
         ("set_cover_position", COVERS[3], 0),
     ]
@@ -138,11 +145,13 @@ async def test_bedroom_window_open_and_close_never_move_shutter(hass, shading):
     assert calls == []
 
 
-async def test_bedroom_still_participates_in_sunset_positions(hass, shading):
+@pytest.mark.parametrize('window', ['on', 'off', 'unavailable'])
+async def test_bedroom_sunset_leaves_ventilation_gap(hass, shading, window):
     _, calls = shading
     await enable(hass)
+    hass.states.async_set(CONTACTS['bedroom'], window)
     await run_script(hass, "shading_apply_night_positions")
-    assert ("set_cover_position", COVERS[0], 0) in calls
+    assert ("set_cover_position", COVERS[0], 20) in calls
 
 
 async def test_opening_living_room_passage_stops_closing_shutter(hass, shading):

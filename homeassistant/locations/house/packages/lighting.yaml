@@ -61,7 +61,7 @@ automation:
   # LED Strip Schedule Control with Color Transitions
   - id: 'led_strips_evening_schedule'
     alias: "LED Strips Evening Schedule"
-    description: "Yellow from sundown (if before 6:30 PM), red at 6:30 PM, off at 6:30 AM"
+    description: "Yellow from sundown (if before 6:30 PM), red at 6:30 PM, off at sunrise"
     triggers:
       # Turn on yellow at sunset (only if before 7 PM)
       - platform: sun
@@ -72,9 +72,9 @@ automation:
       - platform: time
         at: "18:30:00"
         id: "red_on"
-      # Turn off at 6:30 AM
-      - platform: time
-        at: "06:30:00"
+      # Turn off at sunrise
+      - platform: sun
+        event: sunrise
         id: "turn_off"
     conditions: []
     actions:
@@ -110,7 +110,7 @@ automation:
                   brightness_pct: 15
                   rgb_color: [255, 0, 0]  # Red
 
-          # Turn off at 6:30 AM
+          # Turn off at sunrise
           - conditions:
               - condition: trigger
                 id: "turn_off"
