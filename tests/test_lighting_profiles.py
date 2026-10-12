@@ -1,8 +1,11 @@
 from pathlib import Path
+from datetime import timedelta
 
 import pytest
 import yaml
 from homeassistant.setup import async_setup_component
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 PACKAGE = Path(__file__).resolve().parents[1] / 'homeassistant/locations/house/packages/lighting_profiles.yaml'
 FRONT = 'light.living_room_front'
@@ -61,4 +64,28 @@ async def test_unavailable_or_off_zone_is_not_turned_on(hass, profiles):
     await hass.async_block_till_done()
     await hass.services.async_call('automation', 'trigger', {'entity_id': 'automation.lighting_refresh_time_profiles'}, blocking=True)
     await hass.async_block_till_done()
+    assert profiles == []
+
+
+async def test_switch_on_updates_only_that_zone(hass, profiles):
+    hass.states.async_set('light.kitchen_table_light', 'on')
+    await hass.async_block_till_done()
+    assert profiles == [{'entity_id': ['light.kitchen_table_light'], 'color_temp_kelvin': 2237,
+                         'brightness_pct': 50, 'transition': 1}]
+
+
+async def test_sun_transition_updates_lit_zones(hass, profiles):
+    hass.states.async_set('sun.sun', 'above_horizon')
+    await hass.async_block_till_done()
+    assert profiles == [{'entity_id': [FIREPLACE], 'color_temp_kelvin': 4000,
+                         'brightness_pct': 100, 'transition': 1}]
+
+
+async def test_manual_brightness_is_not_reapplied_on_five_minute_tick(hass, profiles):
+    hass.states.async_set(FIREPLACE, 'on', {'brightness': 25})
+    await hass.async_block_till_done()
+    now = dt_util.utcnow().replace(second=0, microsecond=0)
+    for minute in range(1, 11):
+        async_fire_time_changed(hass, now + timedelta(minutes=minute))
+        await hass.async_block_till_done()
     assert profiles == []

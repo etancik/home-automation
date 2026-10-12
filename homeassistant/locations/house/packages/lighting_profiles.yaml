@@ -80,11 +80,9 @@ script:
 automation:
   - id: lighting_refresh_time_profiles
     alias: Lighting - refresh time profiles
-    description: Update lit automatic zones at sunrise/sunset and every five minutes.
+    description: Apply profiles to the zone switched on, or all lit automatic zones at sunrise/sunset.
     mode: restart
     triggers:
-      - trigger: time_pattern
-        minutes: '/5'
       - trigger: state
         entity_id: sun.sun
         to:
@@ -110,7 +108,10 @@ automation:
             - light: light.kitchen_table_light
               manual: input_boolean.lighting_manual_kitchen_table
           sequence:
-            - if: "{{ is_state(repeat.item.light, 'on') and is_state(repeat.item.manual, 'off') }}"
+            - if: >-
+                {{ is_state(repeat.item.light, 'on') and is_state(repeat.item.manual, 'off')
+                   and (trigger is not defined or trigger.entity_id is not defined
+                        or trigger.entity_id == 'sun.sun' or trigger.entity_id == repeat.item.light) }}
               then:
                 - action: script.lighting_turn_on_with_time_profile
                   data:
