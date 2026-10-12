@@ -27,6 +27,7 @@ script:
               contact: binary_sensor.bedroom_window_sensor_contact
               passage: false
               follow_window: false
+              night_position: 20
             - cover: cover.kids_room_roller_shutter
               contact: binary_sensor.kids_room_window_sensor_contact
               passage: false
@@ -48,6 +49,13 @@ script:
                        has_value(repeat.item.cover) }}
               then:
                 - choose:
+                    - conditions: "{{ repeat.item.get('night_position') is not none }}"
+                      sequence:
+                        - action: cover.set_cover_position
+                          target:
+                            entity_id: "{{ repeat.item.cover }}"
+                          data:
+                            position: "{{ repeat.item.night_position }}"
                     - conditions: "{{ is_state(repeat.item.contact, 'off') }}"
                       sequence:
                         - action: cover.set_cover_position

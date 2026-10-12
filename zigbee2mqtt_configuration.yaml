@@ -54,9 +54,9 @@ devices:
     retain: false
     description: 'SONOFF SNZB-02LD IP65 probe temperature sensor for attic monitoring'
   '0xa4c138093692ffff':
-    friendly_name: 'Indoor Plants Pre-Grow Temperature Sensor'
+    friendly_name: 'Water Shaft Temperature Sensor'
     retain: false
-    description: 'SONOFF SNZB-02LD IP65 probe temperature sensor for indoor plants pre-grow area'
+    description: 'SONOFF SNZB-02LD IP65 probe monitoring temperature in the water shaft for frost and future storage'
   '0xa4c138090930ffff':
     friendly_name: 'Outdoor Plants Temperature Sensor'
     retain: false

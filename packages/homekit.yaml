@@ -31,8 +31,8 @@ homekit:
         - sensor.entrance_temperature_sensor_temperature
         - sensor.entrance_temperature_sensor_humidity
         - sensor.entrance_temperature_sensor_battery
-        - sensor.indoor_plants_pre_grow_temperature_sensor_temperature
-        - sensor.indoor_plants_pre_grow_temperature_sensor_battery
+        - sensor.water_shaft_temperature_sensor_temperature
+        - sensor.water_shaft_temperature_sensor_battery
         - sensor.kids_room_temperature_sensor_temperature
         - sensor.kids_room_temperature_sensor_humidity
         - sensor.kids_room_temperature_sensor_battery
@@ -182,8 +182,8 @@ homekit:
         name: "Downstairs Bathroom Temperature"
       sensor.entrance_temperature_sensor_temperature:
         name: "Entrance Temperature"
-      sensor.indoor_plants_pre_grow_temperature_sensor_temperature:
-        name: "Indoor Plants Pre-Grow Temperature"
+      sensor.water_shaft_temperature_sensor_temperature:
+        name: "Water Shaft Temperature"
       sensor.kids_room_temperature_sensor_temperature:
         name: "Kids Room Temperature"
       sensor.living_room_temperature_sensor_temperature:
