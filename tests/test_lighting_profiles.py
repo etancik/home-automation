@@ -89,3 +89,11 @@ async def test_manual_brightness_is_not_reapplied_on_five_minute_tick(hass, prof
         async_fire_time_changed(hass, now + timedelta(minutes=minute))
         await hass.async_block_till_done()
     assert profiles == []
+
+
+@pytest.mark.parametrize('guard', ['cinema_active', 'cinema_applying'])
+async def test_cinema_blocks_living_room_time_profiles(hass, profiles, guard):
+    hass.states.async_set('input_boolean.' + guard, 'on')
+    hass.states.async_set('sun.sun', 'above_horizon')
+    await hass.async_block_till_done()
+    assert profiles == []

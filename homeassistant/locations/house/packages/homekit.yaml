@@ -114,6 +114,7 @@ homekit:
 
         # Washing Machine (notifies when done)
         - binary_sensor.washing_machine
+        - input_boolean.cinema_enabled
 
         # ========================================
         # BOILER CONTROL
@@ -141,6 +142,8 @@ homekit:
         - cover.kitchen_roller_shutter
         - cover.living_room_roller_shutter
     entity_config:
+      input_boolean.cinema_enabled:
+        name: "Cinema Automation"
       # ========================================
       # ENVIRONMENTAL SENSORS
       # ========================================

@@ -36,6 +36,11 @@ script:
           {{ light_entity in ['light.living_room_front', 'light.living_room_rear',
                               'light.kitchen_counter_light', 'light.kitchen_table_light']
              and has_value(light_entity) }}
+      - condition: template
+        value_template: >-
+          {{ light_entity not in ['light.living_room_front', 'light.living_room_rear']
+             or (not is_state('input_boolean.cinema_active', 'on')
+                 and not is_state('input_boolean.cinema_applying', 'on')) }}
       - variables:
           selected_lights: >-
             {{ expand(state_attr(light_entity, 'entity_id') or [light_entity]) | selectattr('state', 'eq', 'on')

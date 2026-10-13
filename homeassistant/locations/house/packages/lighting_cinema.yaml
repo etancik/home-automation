@@ -1,0 +1,209 @@
+# Apple TV is a playback signal, not proof that the projector is powered on.
+input_boolean:
+  cinema_enabled:
+    name: Cinema Automation
+    icon: mdi:movie-open
+  cinema_active:
+    name: Cinema Active
+    initial: false
+  cinema_applying:
+    name: Cinema Applying Lights
+    initial: false
+  cinema_override_front:
+    name: Cinema Front Override
+    initial: false
+  cinema_override_rear:
+    name: Cinema Rear Override
+    initial: false
+
+script:
+  cinema_lighting:
+    alias: Cinema - reconcile Apple TV lighting
+    mode: queued
+    max: 20
+    fields:
+      intent:
+        required: true
+        selector:
+          text:
+    sequence:
+      - variables:
+          player: media_player.living_room_apple_tv
+          video_apps: ['YouTube', 'TV', 'Netflix', 'Disney+', 'HBO Max', 'Prime Video', 'Crunchyroll', 'iVysílání', 'Oneplay']
+          finish: >-
+            {{ (intent == 'end' and states(player) in ['off', 'idle'])
+               or not is_state('input_boolean.cinema_enabled', 'on')
+               or (states(player) in ['playing', 'paused', 'idle']
+                   and state_attr(player, 'app_name') is not none
+                   and state_attr(player, 'app_name') not in video_apps) }}
+      - choose:
+          - conditions: "{{ finish and is_state('input_boolean.cinema_active', 'on') }}"
+            sequence:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.cinema_applying
+              - repeat:
+                  for_each: ['front', 'rear']
+                  sequence:
+                    - if: >-
+                        {{ is_state('input_boolean.cinema_override_' ~ repeat.item, 'off')
+                           and states('scene.cinema_before_' ~ repeat.item) not in ['unknown', 'unavailable'] }}
+                      then:
+                        - action: scene.turn_on
+                          target:
+                            entity_id: "{{ 'scene.cinema_before_' ~ repeat.item }}"
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.cinema_active
+              - delay: 2
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.cinema_applying
+          - conditions: >-
+              {{ not finish and is_state(player, 'playing')
+                 and state_attr(player, 'app_name') in video_apps
+                 and (is_state('input_boolean.cinema_active', 'on')
+                      or (states('light.living_room_front') in ['on', 'off']
+                          and states('light.living_room_rear') in ['on', 'off']
+                          and expand('light.living_room_front', 'light.living_room_rear')
+                              | rejectattr('state', 'in', ['on', 'off']) | list | count == 0)) }}
+            sequence:
+              - if: "{{ is_state('input_boolean.cinema_active', 'off') }}"
+                then:
+                  - repeat:
+                      for_each: ['front', 'rear']
+                      sequence:
+                        - action: scene.create
+                          data:
+                            scene_id: "{{ 'cinema_before_' ~ repeat.item }}"
+                            snapshot_entities: >-
+                              {{ state_attr('light.living_room_' ~ repeat.item, 'entity_id') or [] }}
+                        - action: >-
+                            {{ 'input_boolean.turn_off'
+                               if is_state('input_boolean.lighting_manual_living_room_' ~ repeat.item, 'off')
+                               else 'input_boolean.turn_on' }}
+                          target:
+                            entity_id: "{{ 'input_boolean.cinema_override_' ~ repeat.item }}"
+                  - action: input_boolean.turn_on
+                    target:
+                      entity_id: input_boolean.cinema_active
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.cinema_applying
+              - if: "{{ is_state('input_boolean.cinema_override_front', 'off') }}"
+                then:
+                  - action: light.turn_off
+                    target:
+                      entity_id: light.living_room_front
+              - if: "{{ is_state('input_boolean.cinema_override_rear', 'off') }}"
+                then:
+                  - action: light.turn_on
+                    target:
+                      entity_id: light.living_room_rear
+                    data:
+                      brightness_pct: 10
+                      color_temp_kelvin: 2237
+                      transition: 1
+              - delay: 2
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.cinema_applying
+          - conditions: >-
+              {{ not finish and intent == 'pause' and is_state(player, 'paused')
+                 and is_state('input_boolean.cinema_active', 'on')
+                 and is_state('input_boolean.cinema_override_rear', 'off') }}
+            sequence:
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.cinema_applying
+              - action: light.turn_on
+                target:
+                  entity_id: light.living_room_rear
+                data:
+                  brightness_pct: 30
+                  color_temp_kelvin: 2237
+                  transition: 1
+              - delay: 2
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.cinema_applying
+
+automation:
+  - id: cinema_apple_tv_lighting
+    alias: Cinema - Apple TV playback
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id: media_player.living_room_apple_tv
+        to: playing
+        id: play
+      - trigger: state
+        entity_id: media_player.living_room_apple_tv
+        attribute: app_name
+        id: app
+      - trigger: state
+        entity_id: media_player.living_room_apple_tv
+        to: paused
+        for: '00:00:05'
+        id: pause
+      - trigger: state
+        entity_id: media_player.living_room_apple_tv
+        to: 'off'
+        for: '00:00:03'
+        id: end
+      - trigger: state
+        entity_id: media_player.living_room_apple_tv
+        to: idle
+        for: '00:00:30'
+        id: end
+      - trigger: state
+        entity_id: input_boolean.cinema_enabled
+        to: 'off'
+        id: end
+      - trigger: state
+        entity_id: input_boolean.cinema_enabled
+        to: 'on'
+        id: play
+      - trigger: state
+        entity_id:
+          - light.living_room_front
+          - light.living_room_rear
+        to:
+          - 'on'
+          - 'off'
+        id: ready
+    conditions:
+      - condition: template
+        value_template: "{{ trigger.id != 'ready' or is_state('input_boolean.cinema_active', 'off') }}"
+    actions:
+      - action: script.cinema_lighting
+        data:
+          intent: "{{ trigger.id }}"
+
+  - id: cinema_manual_light_override
+    alias: Cinema - respect external light changes
+    mode: queued
+    triggers:
+      - trigger: state
+        entity_id:
+          - light.living_room_fireplace_light
+          - light.living_room_palm_light
+        id: front
+      - trigger: state
+        entity_id: light.living_room_bookshelf_light
+        id: rear
+    conditions:
+      - condition: template
+        value_template: >-
+          {{ is_state('input_boolean.cinema_active', 'on')
+             and is_state('input_boolean.cinema_applying', 'off')
+             and trigger.from_state is not none and trigger.to_state is not none
+             and trigger.from_state.state in ['on', 'off'] and trigger.to_state.state in ['on', 'off']
+             and (trigger.from_state.state != trigger.to_state.state
+                  or trigger.from_state.attributes.get('brightness') != trigger.to_state.attributes.get('brightness')
+                  or trigger.from_state.attributes.get('color_temp_kelvin') != trigger.to_state.attributes.get('color_temp_kelvin')
+                  or trigger.from_state.attributes.get('hs_color') != trigger.to_state.attributes.get('hs_color')) }}
+    actions:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: "{{ 'input_boolean.cinema_override_' ~ trigger.id }}"

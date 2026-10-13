@@ -22,7 +22,7 @@ async def buttons(hass, request):
     async def record(call):
         calls.append((call.domain, call.service, call.data['entity_id']))
 
-    for domain in ('light', 'switch'):
+    for domain in ('light', 'switch', 'input_boolean'):
         for service in ('toggle', 'turn_on', 'turn_off'):
             hass.services.async_register(domain, service, record)
 
@@ -69,3 +69,13 @@ async def test_neutral_buttons_only_toggle_their_lights(buttons, topic, presses,
     await send({'state': 'ON', 'state_l1': 'ON'}, topic)
     await send({'action': presses[0]}, 'zigbee2mqtt/Unrelated Switch')
     assert calls == [('light', 'toggle', [entity]) for entity in targets]
+
+
+async def test_button_protects_cinema_zone_before_toggle(hass, buttons):
+    calls, send = buttons
+    hass.states.async_set('input_boolean.cinema_active', 'on')
+    await send({'action': 'toggle_l2'}, 'zigbee2mqtt/Living Room Passage Switch')
+    assert calls == [
+        ('input_boolean', 'turn_on', ['input_boolean.cinema_override_rear']),
+        ('light', 'toggle', ['light.living_room_rear']),
+    ]
