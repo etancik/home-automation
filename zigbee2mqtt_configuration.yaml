@@ -184,10 +184,10 @@ devices:
   # ========================================
   # LIGHTS
   # ========================================
-  '0x001788010f71788a':
+  '0x001788010fa3183d':
     friendly_name: 'Kitchen Counter Light'
     retain: false
-    description: 'Hue Essential bulb above the kitchen counter'
+    description: 'Hue LTA016 bulb above the kitchen counter'
   '0x001788010f70df06':
     friendly_name: 'Kitchen Table Light'
     retain: false
@@ -210,6 +210,10 @@ devices:
     description: 'Hue Essential bulb with no assigned location yet'
   '0x001788010f7273f2':
     friendly_name: 'Spare Hue Light 2'
+    retain: false
+    description: 'Hue Essential bulb with no assigned location yet'
+  '0x001788010f71788a':
+    friendly_name: 'Spare Hue Light 3'
     retain: false
     description: 'Hue Essential bulb with no assigned location yet'
   '0x84fd27fffe92fa7c':
