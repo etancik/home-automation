@@ -1,0 +1,30 @@
+# Hue remains permanently powered; the detached wall button only sends actions.
+automation:
+  - id: outdoor_light_switch_toggle
+    alias: Outdoor - light switch
+    description: Toggle the outdoor Hue; each turn-on uses warm white at full brightness.
+    triggers:
+      - trigger: mqtt
+        topic: zigbee2mqtt/Outdoor Light Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle
+    actions:
+      - choose:
+          - conditions: "{{ is_state('light.outdoor_light', 'off') }}"
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: light.outdoor_light
+                data:
+                  color_temp_kelvin: 2700
+                  brightness_pct: 100
+                  transition: 0.5
+          - conditions: "{{ is_state('light.outdoor_light', 'on') }}"
+            sequence:
+              - action: light.turn_off
+                target:
+                  entity_id: light.outdoor_light
+                data:
+                  transition: 0.5
+    mode: queued
+    max: 10

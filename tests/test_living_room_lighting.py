@@ -16,7 +16,9 @@ PACKAGE = Path(__file__).resolve().parents[1] / 'homeassistant/locations/house/p
 
 @pytest.fixture
 async def buttons(hass, request):
-    config = yaml.safe_load(PACKAGE.read_text())
+    selected = getattr(request, 'param', 0)
+    package = PACKAGE.with_name('lighting_outdoor.yaml') if selected == 'outdoor' else PACKAGE
+    config = yaml.safe_load(package.read_text())
     calls, listeners = [], []
 
     async def record(call):
@@ -26,7 +28,7 @@ async def buttons(hass, request):
         for service in ('toggle', 'turn_on', 'turn_off'):
             hass.services.async_register(domain, service, record)
 
-    automation = config['automation'][getattr(request, 'param', 0)]
+    automation = config['automation'][0 if selected == 'outdoor' else selected]
     script = Script(hass, cv.SCRIPT_SCHEMA(automation.get('conditions', []) + automation['actions']), 'Button test', 'automation')
 
     async def action(variables, context=None):
@@ -79,3 +81,17 @@ async def test_button_protects_cinema_zone_before_toggle(hass, buttons):
         ('input_boolean', 'turn_on', ['input_boolean.cinema_override_rear']),
         ('light', 'toggle', ['light.living_room_rear']),
     ]
+
+
+@pytest.mark.parametrize('buttons', ['outdoor'], indirect=True)
+async def test_outdoor_button_targets_hue_and_ignores_relay_reports(hass, buttons):
+    calls, send = buttons
+    hass.states.async_set('light.outdoor_light', 'off')
+    await send({'action': 'toggle'}, 'zigbee2mqtt/Outdoor Light Switch')
+    hass.states.async_set('light.outdoor_light', 'on')
+    await send({'action': 'toggle'}, 'zigbee2mqtt/Outdoor Light Switch')
+    await send({'state': 'OFF'}, 'zigbee2mqtt/Outdoor Light Switch')
+    hass.states.async_set('light.outdoor_light', 'unavailable')
+    await send({'action': 'toggle'}, 'zigbee2mqtt/Outdoor Light Switch')
+    assert calls == [('light', 'turn_on', ['light.outdoor_light']),
+                     ('light', 'turn_off', ['light.outdoor_light'])]
