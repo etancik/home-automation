@@ -209,9 +209,9 @@ devices:
     retain: false
     description: 'Hue Essential bulb with no assigned location yet'
   '0x001788010f7273f2':
-    friendly_name: 'Spare Hue Light 2'
+    friendly_name: 'Outdoor Light'
     retain: false
-    description: 'Hue Essential bulb with no assigned location yet'
+    description: 'Hue Essential bulb in the outdoor light; permanently powered'
   '0x001788010f71788a':
     friendly_name: 'Spare Hue Light 3'
     retain: false
@@ -282,6 +282,11 @@ devices:
     retain: false
     state_action: false
     description: 'SONOFF ZBMINIR2 with E1GS at D; Kitchen Counter button; Hue supply independent of relay'
+  '0x94b216fffe8c236c':
+    friendly_name: 'Outdoor Light Switch'
+    retain: false
+    state_action: false
+    description: 'SONOFF ZBMINIR2 with detached momentary button for Outdoor Light; Hue supply independent of relay'
   '0x08fd52fffe638df7':
     friendly_name: 'Kids Room Dimmer Switch'
     retain: false
