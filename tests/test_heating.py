@@ -54,6 +54,33 @@ async def test_summer_disable_stops_and_blocks(rig):
     await rig.settle()
     assert rig.hass.states.is_state(BOILER,'off')
 
+@pytest.mark.parametrize('temp', [21, 21.2])
+async def test_stale_heating_action_cannot_keep_satisfied_zone_running(rig, temp):
+    await rig.enabled()
+    rig.room(temp=19.9)
+    await rig.settle()
+    assert rig.hass.states.is_state(BOILER, 'on')
+    rig.room(temp=temp, action='heating')
+    await rig.settle()
+    assert rig.hass.states.is_state(BOILER, 'off')
+    assert rig.hass.states.get('input_datetime.heating_boiler_deadline').attributes['timestamp'] == 0
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+
+async def test_warm_entrance_with_stale_demand_does_not_extend_other_room_run(rig):
+    await rig.enabled()
+    rig.room('entrance', temp=16.8, target=15, action='heating')
+    await rig.settle()
+    assert not rig.calls
+    rig.room('workshop', temp=19.8, target=21)
+    await rig.settle()
+    assert rig.hass.states.is_state(BOILER, 'on')
+    rig.room('workshop', temp=20.8, target=21)
+    await rig.settle()
+    assert rig.hass.states.is_state(BOILER, 'on')
+    rig.room('workshop', temp=21, target=21, action='idle')
+    await rig.settle()
+    assert rig.calls == [(BOILER, 'on'), (BOILER, 'off')]
+
 @pytest.mark.parametrize('value',['unknown','unavailable','bad-data'])
 async def test_invalid_temperature_stops_lone_demand(rig,value):
     await rig.enabled()

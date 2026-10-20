@@ -163,7 +163,8 @@ automation:
                     and is_number(states(z.sensor)) and is_number(target) %}
                 {% set emitter = is_state(z.relay, 'on') if z.relay is defined
                       else state_attr(z.climate, 'hvac_action') == 'heating' %}
-                {% if emitter %}
+                {# A stale valve heating report must not keep a satisfied zone running. #}
+                {% if emitter and states(z.sensor) | float < target | float %}
                   {% set ns.keep = true %}
                   {% if states(z.sensor) | float < target | float - 1.0 %}
                     {% set ns.start = true %}
