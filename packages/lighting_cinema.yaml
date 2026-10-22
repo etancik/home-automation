@@ -121,9 +121,9 @@ script:
                     target:
                       entity_id: light.living_room_front
                     data:
-                      brightness_pct: 20
+                      brightness_pct: 10
                       color_temp_kelvin: 2237
-                      transition: 2
+                      transition: 3
               - if: "{{ is_state('input_boolean.cinema_override_rear', 'off') }}"
                 then:
                   - action: light.turn_on
@@ -132,9 +132,9 @@ script:
                     data:
                       brightness_pct: 50
                       color_temp_kelvin: 2237
-                      transition: 2
+                      transition: 3
               # Keep own transition updates out of manual override detection.
-              - delay: 3
+              - delay: 4
               - action: input_boolean.turn_off
                 target:
                   entity_id: input_boolean.cinema_applying
@@ -155,6 +155,7 @@ automation:
       - trigger: state
         entity_id: media_player.living_room_apple_tv
         to: paused
+        for: '00:00:02'
         id: pause
       - trigger: state
         entity_id: media_player.living_room_apple_tv
