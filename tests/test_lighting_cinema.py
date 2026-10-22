@@ -82,18 +82,20 @@ async def test_music_does_not_start_cinema(hass, cinema, app):
     assert hass.states.get('input_boolean.cinema_active').state == 'off'
 
 
-async def test_pause_waits_five_seconds_and_resume_preserves_snapshot(hass, cinema):
+async def test_pause_immediately_fades_both_zones_and_resume_preserves_snapshot(hass, cinema):
     await play(hass)
     cinema.clear()
     hass.states.async_set(PLAYER, 'paused', {'app_name': 'YouTube'})
     await hass.async_block_till_done()
-    assert cinema == []
-    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=6))
-    await hass.async_block_till_done()
-    assert light_calls(cinema)[0][2]['brightness_pct'] == 30
+    assert light_calls(cinema) == [
+        ('light', 'turn_on', {'entity_id': [FRONT], 'brightness_pct': 20, 'color_temp_kelvin': 2237, 'transition': 2}),
+        ('light', 'turn_on', {'entity_id': [REAR], 'brightness_pct': 50, 'color_temp_kelvin': 2237, 'transition': 2}),
+    ]
+    assert not any(c[:2] == ('scene', 'create') for c in cinema)
     cinema.clear()
     await play(hass)
     assert not any(c[:2] == ('scene', 'create') for c in cinema)
+    assert light_calls(cinema)[0] == ('light', 'turn_off', {'entity_id': [FRONT]})
     assert light_calls(cinema)[1][2]['brightness_pct'] == 10
 
 
@@ -156,15 +158,21 @@ async def test_disabled_cinema_does_not_start(hass, cinema):
     assert cinema == []
 
 
-async def test_brief_pause_does_not_brighten(hass, cinema):
+@pytest.mark.parametrize('side, entity, expected', [
+    ('front', FIREPLACE, REAR),
+    ('rear', BOOKSHELF, FRONT),
+])
+async def test_pause_respects_each_zone_override_independently(hass, cinema, side, entity, expected):
     await play(hass)
+    hass.states.async_set(entity, 'on', {'brightness': 90})
+    await hass.async_block_till_done()
+    assert hass.states.get('input_boolean.cinema_override_' + side).state == 'on'
     cinema.clear()
     hass.states.async_set(PLAYER, 'paused', {'app_name': 'YouTube'})
     await hass.async_block_till_done()
-    await play(hass)
-    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=6))
-    await hass.async_block_till_done()
-    assert all(c[2].get('brightness_pct') != 30 for c in light_calls(cinema))
+    assert len(light_calls(cinema)) == 1
+    assert light_calls(cinema)[0][2]['entity_id'] == [expected]
+    assert light_calls(cinema)[0][2]['transition'] == 2
 
 
 async def test_start_waits_for_available_lights(hass, cinema):
