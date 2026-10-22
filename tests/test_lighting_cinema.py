@@ -82,14 +82,20 @@ async def test_music_does_not_start_cinema(hass, cinema, app):
     assert hass.states.get('input_boolean.cinema_active').state == 'off'
 
 
-async def test_pause_immediately_fades_both_zones_and_resume_preserves_snapshot(hass, cinema):
+async def test_pause_waits_two_seconds_then_fades_and_resume_preserves_snapshot(hass, cinema):
     await play(hass)
     cinema.clear()
     hass.states.async_set(PLAYER, 'paused', {'app_name': 'YouTube'})
     await hass.async_block_till_done()
+    assert light_calls(cinema) == []
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
+    await hass.async_block_till_done()
+    assert light_calls(cinema) == []
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=3))
+    await hass.async_block_till_done()
     assert light_calls(cinema) == [
-        ('light', 'turn_on', {'entity_id': [FRONT], 'brightness_pct': 20, 'color_temp_kelvin': 2237, 'transition': 2}),
-        ('light', 'turn_on', {'entity_id': [REAR], 'brightness_pct': 50, 'color_temp_kelvin': 2237, 'transition': 2}),
+        ('light', 'turn_on', {'entity_id': [FRONT], 'brightness_pct': 10, 'color_temp_kelvin': 2237, 'transition': 3}),
+        ('light', 'turn_on', {'entity_id': [REAR], 'brightness_pct': 50, 'color_temp_kelvin': 2237, 'transition': 3}),
     ]
     assert not any(c[:2] == ('scene', 'create') for c in cinema)
     cinema.clear()
@@ -170,9 +176,15 @@ async def test_pause_respects_each_zone_override_independently(hass, cinema, sid
     cinema.clear()
     hass.states.async_set(PLAYER, 'paused', {'app_name': 'YouTube'})
     await hass.async_block_till_done()
+    assert light_calls(cinema) == []
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=1))
+    await hass.async_block_till_done()
+    assert light_calls(cinema) == []
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=3))
+    await hass.async_block_till_done()
     assert len(light_calls(cinema)) == 1
     assert light_calls(cinema)[0][2]['entity_id'] == [expected]
-    assert light_calls(cinema)[0][2]['transition'] == 2
+    assert light_calls(cinema)[0][2]['transition'] == 3
 
 
 async def test_start_waits_for_available_lights(hass, cinema):
@@ -183,3 +195,16 @@ async def test_start_waits_for_available_lights(hass, cinema):
     hass.states.async_set(REAR, 'on', {'entity_id': [BOOKSHELF]})
     await hass.async_block_till_done()
     assert hass.states.get('input_boolean.cinema_active').state == 'on'
+
+
+async def test_pause_shorter_than_two_seconds_does_not_brighten(hass, cinema):
+    await play(hass)
+    cinema.clear()
+    hass.states.async_set(PLAYER, 'paused', {'app_name': 'YouTube'})
+    await hass.async_block_till_done()
+    assert light_calls(cinema) == []
+    await play(hass)
+    cinema.clear()
+    async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=3))
+    await hass.async_block_till_done()
+    assert light_calls(cinema) == []
