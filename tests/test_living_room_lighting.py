@@ -55,11 +55,11 @@ async def buttons(hass, request):
 
 @pytest.mark.parametrize('buttons,topic,presses,targets', [
     (0, 'zigbee2mqtt/Living Room Passage Switch', ['toggle_l1', 'toggle_l2'],
-     ['light.living_room_front', 'light.living_room_rear']),
+     ['light.living_room_rear', 'light.living_room_front']),
     (0, 'zigbee2mqtt/Living Room Hallway Switch', ['toggle_l1', 'toggle_l2'],
-     ['light.living_room_front', 'light.living_room_rear']),
+     ['light.living_room_rear', 'light.living_room_front']),
     (0, 'zigbee2mqtt/Living Room Garden Switch', ['toggle_l1', 'toggle_l2'],
-     ['light.living_room_front', 'light.living_room_rear']),
+     ['light.living_room_rear', 'light.living_room_front']),
     (1, 'zigbee2mqtt/Kitchen Table Switch', ['toggle'], ['light.kitchen_table_light']),
     (2, 'zigbee2mqtt/Kitchen Counter Switch', ['toggle'], ['light.kitchen_counter_light']),
 ], indirect=['buttons'])
@@ -76,7 +76,7 @@ async def test_neutral_buttons_only_toggle_their_lights(buttons, topic, presses,
 async def test_button_protects_cinema_zone_before_toggle(hass, buttons):
     calls, send = buttons
     hass.states.async_set('input_boolean.cinema_active', 'on')
-    await send({'action': 'toggle_l2'}, 'zigbee2mqtt/Living Room Passage Switch')
+    await send({'action': 'toggle_l1'}, 'zigbee2mqtt/Living Room Passage Switch')
     assert calls == [
         ('input_boolean', 'turn_on', ['input_boolean.cinema_override_rear']),
         ('light', 'toggle', ['light.living_room_rear']),

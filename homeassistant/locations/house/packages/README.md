@@ -10,10 +10,11 @@ files again from another configuration section.
 | `heating_boiler.yaml` | Boiler demand, relay control and safety watchdog |
 | `heating_floor.yaml` | Floor heating thermostats |
 | `heating_sensor_sync.yaml` | External temperature synchronization with radiator valves |
+| `heating_schedule.yaml` | Daily 06:00-07:00 bedroom/kids 22 C and 17:00-19:00 upstairs bathroom 24 C; restores prior mode/target |
 | `heating_windows.yaml` | Window handling and restoration of heating mode |
 | `washing_machine.yaml` | Running/done sensor, energy integration and status logging |
 | `lighting.yaml` | Kids room dimmer and evening LED strip schedule |
-| `lighting_living_room.yaml` | Front/rear Hue groups and detached window-switch test |
+| `lighting_living_room.yaml` | Front/rear Hue groups; three detached switches, top Rear / bottom Front |
 | `lighting_profiles.yaml` | Day/evening Hue profiles and per-zone manual override |
 | `shading_v1.yaml` | Disabled-by-default sunset, night-window and morning shutter logic |
 | `garage.yaml` | Garage cover and position feedback |
