@@ -74,6 +74,48 @@ async def test_switch_on_updates_only_that_zone(hass, profiles):
                          'brightness_pct': 50, 'transition': 1}]
 
 
+@pytest.mark.parametrize('first,late', [(PALM, FIREPLACE), (FIREPLACE, PALM)])
+async def test_late_member_receives_day_profile_after_group_is_already_on(hass, profiles, first, late):
+    hass.states.async_set(FIREPLACE, 'off')
+    hass.states.async_set(PALM, 'off')
+    hass.states.async_set(FRONT, 'off', {'entity_id': [FIREPLACE, PALM]})
+    hass.states.async_set('sun.sun', 'above_horizon')
+    await hass.async_block_till_done()
+    profiles.clear()
+    hass.states.async_set(first, 'on')
+    hass.states.async_set(FRONT, 'on', {'entity_id': [FIREPLACE, PALM]})
+    await hass.async_block_till_done()
+    assert profiles
+    assert all(call['entity_id'] == [first] for call in profiles)
+    profiles.clear()
+    # The group remains on; the second bulb reports its state later.
+    hass.states.async_set(late, 'on', {'brightness': 51, 'color_temp_kelvin': 2237})
+    await hass.async_block_till_done()
+    assert profiles
+    assert any(late in call['entity_id'] for call in profiles)
+    assert all(call['color_temp_kelvin'] == 4000 and call['brightness_pct'] == 100 for call in profiles)
+
+
+@pytest.mark.parametrize('guard', [MANUAL, 'input_boolean.cinema_active', 'input_boolean.cinema_applying'])
+async def test_member_switch_on_respects_manual_and_cinema(hass, profiles, guard):
+    hass.states.async_set(guard, 'on')
+    hass.states.async_set(PALM, 'on')
+    await hass.async_block_till_done()
+    assert profiles == []
+
+
+async def test_rear_member_switch_on_refreshes_only_rear(hass, profiles):
+    rear = 'light.living_room_bookshelf_light'
+    hass.states.async_set(rear, 'off')
+    hass.states.async_set('light.living_room_rear', 'on', {'entity_id': [rear]})
+    await hass.async_block_till_done()
+    profiles.clear()
+    hass.states.async_set(rear, 'on')
+    await hass.async_block_till_done()
+    assert profiles == [{'entity_id': [rear], 'color_temp_kelvin': 2237,
+                         'brightness_pct': 50, 'transition': 1}]
+
+
 async def test_sun_transition_updates_lit_zones(hass, profiles):
     hass.states.async_set('sun.sun', 'above_horizon')
     await hass.async_block_till_done()

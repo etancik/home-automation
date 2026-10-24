@@ -85,8 +85,9 @@ script:
 automation:
   - id: lighting_refresh_time_profiles
     alias: Lighting - refresh time profiles
-    description: Apply profiles to the zone switched on, or all lit automatic zones at sunrise/sunset.
-    mode: restart
+    description: Apply profiles when a zone or its individual bulbs turn on, or at sunrise/sunset.
+    mode: queued
+    max: 20
     triggers:
       - trigger: state
         entity_id: sun.sun
@@ -97,6 +98,10 @@ automation:
         entity_id:
           - light.living_room_front
           - light.living_room_rear
+          # Group state turns on with the first bulb; later reports need their own refresh.
+          - light.living_room_fireplace_light
+          - light.living_room_palm_light
+          - light.living_room_bookshelf_light
           - light.kitchen_counter_light
           - light.kitchen_table_light
         from: 'off'
@@ -116,7 +121,8 @@ automation:
             - if: >-
                 {{ is_state(repeat.item.light, 'on') and is_state(repeat.item.manual, 'off')
                    and (trigger is not defined or trigger.entity_id is not defined
-                        or trigger.entity_id == 'sun.sun' or trigger.entity_id == repeat.item.light) }}
+                        or trigger.entity_id == 'sun.sun' or trigger.entity_id == repeat.item.light
+                        or trigger.entity_id in (state_attr(repeat.item.light, 'entity_id') or [])) }}
               then:
                 - action: script.lighting_turn_on_with_time_profile
                   data:
