@@ -1,0 +1,161 @@
+# Local daily boosts. Persist the original mode/target and expiry across HA restarts.
+input_text:
+  heating_boost_saved_bedroom:
+    name: Bedroom heating before morning boost
+    max: 255
+  heating_boost_saved_kids_room:
+    name: Kids room heating before morning boost
+    max: 255
+  heating_boost_saved_upstairs_bathroom:
+    name: Upstairs bathroom heating before bathing boost
+    max: 255
+
+script:
+  heating_reconcile_daily_boost:
+    alias: Heating - reconcile daily room boost
+    mode: queued
+    max: 10
+    fields:
+      room:
+        required: true
+      start_time:
+        required: true
+      end_time:
+        required: true
+      target_temperature:
+        required: true
+    sequence:
+      - condition: template
+        value_template: "{{ room in ['bedroom', 'kids_room', 'upstairs_bathroom'] }}"
+      - variables:
+          valve: "{{ 'climate.' ~ room ~ '_radiator_heat_valve' }}"
+          backup: "{{ 'input_text.heating_boost_saved_' ~ room }}"
+          window_block: "{{ 'input_boolean.heating_window_' ~ room }}"
+          window_saved: "{{ 'input_select.heating_saved_' ~ room }}"
+          contact: "{{ 'binary_sensor.' ~ room ~ '_window_sensor_contact' }}"
+          has_window: "{{ room in ['bedroom', 'kids_room'] }}"
+      - condition: template
+        value_template: >-
+          {{ states[backup] is not none and not is_state(backup, 'unavailable')
+             and states(valve) in ['heat', 'auto', 'off']
+             and is_number(state_attr(valve, 'temperature')) }}
+      - variables:
+          saved: "{{ states(backup) | from_json({}) }}"
+          in_window: "{{ today_at(start_time) <= now() < today_at(end_time) }}"
+          allowed: >-
+            {{ is_state('input_boolean.heating_enabled', 'on')
+               and is_state('input_boolean.heating_safety_lock', 'off') }}
+          blocked: >-
+            {{ has_window and (not is_state(contact, 'off') or not is_state(window_block, 'off')) }}
+      - choose:
+          # Restore an expired boost even when HA missed its end or the valve was offline.
+          - conditions: >-
+              {{ saved is mapping and saved.mode is defined and saved.temperature is defined
+                 and (not in_window or not allowed or now().timestamp() >= saved.until | float(0)) }}
+            sequence:
+              - if: "{{ blocked }}"
+                then:
+                  # Preserve the window interlock; its own controller restores the saved mode.
+                  - action: input_select.select_option
+                    target:
+                      entity_id: "{{ window_saved }}"
+                    data:
+                      option: "{{ saved.mode }}"
+                  - action: input_boolean.turn_on
+                    target:
+                      entity_id: "{{ window_block }}"
+                  - if: "{{ not is_state(valve, 'off') }}"
+                    then:
+                      - action: climate.set_hvac_mode
+                        target:
+                          entity_id: "{{ valve }}"
+                        data:
+                          hvac_mode: 'off'
+                else:
+                  - action: climate.set_hvac_mode
+                    target:
+                      entity_id: "{{ valve }}"
+                    data:
+                      hvac_mode: "{{ saved.mode }}"
+              # Apply after switching mode: TRVs may keep distinct heat/auto setpoints.
+              - action: climate.set_temperature
+                target:
+                  entity_id: "{{ valve }}"
+                data:
+                  temperature: "{{ saved.temperature }}"
+              # Keep the backup until the window closes: a TRV mode change can
+              # recall another setpoint, so restore mode + temperature again then.
+              - if: "{{ not blocked }}"
+                then:
+                  - action: input_text.set_value
+                    target:
+                      entity_id: "{{ backup }}"
+                    data:
+                      value: '{}'
+          - conditions: "{{ in_window and allowed and not blocked }}"
+            sequence:
+              - if: "{{ not (saved is mapping and saved.mode is defined) }}"
+                then:
+                  - action: input_text.set_value
+                    target:
+                      entity_id: "{{ backup }}"
+                    data:
+                      value: >-
+                        {{ {'mode': states(valve), 'temperature': state_attr(valve, 'temperature'),
+                            'until': today_at(end_time).timestamp()} | to_json }}
+              - if: "{{ not is_state(valve, 'heat') }}"
+                then:
+                  - action: climate.set_hvac_mode
+                    target:
+                      entity_id: "{{ valve }}"
+                    data:
+                      hvac_mode: heat
+              - if: "{{ state_attr(valve, 'temperature') | float != target_temperature | float }}"
+                then:
+                  - action: climate.set_temperature
+                    target:
+                      entity_id: "{{ valve }}"
+                    data:
+                      temperature: "{{ target_temperature }}"
+
+automation:
+  - id: heating_daily_room_boosts
+    alias: Heating - morning rooms and evening bathing
+    description: Daily local-time boosts, with persistent restoration and existing window/boiler guards.
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: time
+        at: ['06:00:00', '07:00:00', '17:00:00', '19:00:00']
+      - trigger: homeassistant
+        event: start
+      # Recover missed boundaries or unavailable valves without a long-running delay.
+      - trigger: time_pattern
+        minutes: /1
+      - trigger: state
+        entity_id:
+          - input_boolean.heating_enabled
+          - input_boolean.heating_safety_lock
+    actions:
+      - repeat:
+          for_each:
+            - room: bedroom
+              start: '06:00:00'
+              end: '07:00:00'
+              temperature: 22
+            - room: kids_room
+              start: '06:00:00'
+              end: '07:00:00'
+              temperature: 22
+            - room: upstairs_bathroom
+              start: '17:00:00'
+              end: '19:00:00'
+              temperature: 24
+          sequence:
+            - action: script.heating_reconcile_daily_boost
+              continue_on_error: true
+              data:
+                room: "{{ repeat.item.room }}"
+                start_time: "{{ repeat.item.start }}"
+                end_time: "{{ repeat.item.end }}"
+                target_temperature: "{{ repeat.item.temperature }}"

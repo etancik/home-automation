@@ -16,38 +16,38 @@ light:
 automation:
   - id: living_room_passage_switch_groups
     alias: Living Room - passage switch groups
-    description: Neutral double buttons at A, B and D; top Front, bottom Rear. No relay commands.
+    description: Neutral double buttons at A, B and D; top Rear, bottom Front. No relay commands.
     triggers:
       - trigger: mqtt
         topic: zigbee2mqtt/Living Room Passage Switch
         value_template: "{{ value_json.action | default('') }}"
         payload: toggle_l1
-        id: front
+        id: rear
       - trigger: mqtt
         topic: zigbee2mqtt/Living Room Passage Switch
         value_template: "{{ value_json.action | default('') }}"
         payload: toggle_l2
-        id: rear
-      - trigger: mqtt
-        topic: zigbee2mqtt/Living Room Hallway Switch
-        value_template: "{{ value_json.action | default('') }}"
-        payload: toggle_l1
         id: front
       - trigger: mqtt
         topic: zigbee2mqtt/Living Room Hallway Switch
         value_template: "{{ value_json.action | default('') }}"
-        payload: toggle_l2
+        payload: toggle_l1
         id: rear
       - trigger: mqtt
-        topic: zigbee2mqtt/Living Room Garden Switch
+        topic: zigbee2mqtt/Living Room Hallway Switch
         value_template: "{{ value_json.action | default('') }}"
-        payload: toggle_l1
+        payload: toggle_l2
         id: front
       - trigger: mqtt
         topic: zigbee2mqtt/Living Room Garden Switch
         value_template: "{{ value_json.action | default('') }}"
-        payload: toggle_l2
+        payload: toggle_l1
         id: rear
+      - trigger: mqtt
+        topic: zigbee2mqtt/Living Room Garden Switch
+        value_template: "{{ value_json.action | default('') }}"
+        payload: toggle_l2
+        id: front
     actions:
       - if: "{{ is_state('input_boolean.cinema_active', 'on') }}"
         then:
