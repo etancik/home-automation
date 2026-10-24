@@ -98,12 +98,13 @@ script:
 automation:
   - id: shading_v1_night_positions
     alias: Shading V1 - night positions
-    description: Close at sunset; re-evaluate ordinary windows except bedroom during the night.
+    description: Close 10 minutes before sunset; re-evaluate ordinary windows except bedroom during the night.
     mode: queued
     max: 10
     triggers:
       - trigger: sun
         event: sunset
+        offset: "-00:10:00"
         id: sunset
       - trigger: state
         entity_id:
@@ -121,6 +122,7 @@ automation:
             id: sunset
           - condition: sun
             after: sunset
+            after_offset: "-00:10:00"
             before: sunrise
             before_offset: "-00:30:00"
     actions:
