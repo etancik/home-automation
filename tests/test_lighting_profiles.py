@@ -39,7 +39,7 @@ async def profiles(hass):
     }, blocking=True)
 
 
-@pytest.mark.parametrize('sun,kelvin,brightness', [('above_horizon', 4000, 100), ('below_horizon', 2237, 50)])
+@pytest.mark.parametrize('sun,kelvin,brightness', [('above_horizon', 4000, 100), ('below_horizon', 2237, 75)])
 async def test_refresh_uses_profile_without_turning_on_unlit_members(hass, profiles, sun, kelvin, brightness):
     hass.states.async_set('sun.sun', sun)
     await hass.async_block_till_done()
@@ -71,7 +71,7 @@ async def test_switch_on_updates_only_that_zone(hass, profiles):
     hass.states.async_set('light.kitchen_table_light', 'on')
     await hass.async_block_till_done()
     assert profiles == [{'entity_id': ['light.kitchen_table_light'], 'color_temp_kelvin': 2237,
-                         'brightness_pct': 50, 'transition': 1}]
+                         'brightness_pct': 75, 'transition': 1}]
 
 
 @pytest.mark.parametrize('first,late', [(PALM, FIREPLACE), (FIREPLACE, PALM)])
@@ -113,7 +113,7 @@ async def test_rear_member_switch_on_refreshes_only_rear(hass, profiles):
     hass.states.async_set(rear, 'on')
     await hass.async_block_till_done()
     assert profiles == [{'entity_id': [rear], 'color_temp_kelvin': 2237,
-                         'brightness_pct': 50, 'transition': 1}]
+                         'brightness_pct': 75, 'transition': 1}]
 
 
 async def test_sun_transition_updates_lit_zones(hass, profiles):

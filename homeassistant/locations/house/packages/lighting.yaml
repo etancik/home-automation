@@ -61,7 +61,7 @@ automation:
   # LED Strip Schedule Control with Color Transitions
   - id: 'led_strips_evening_schedule'
     alias: "LED Strips Evening Schedule"
-    description: "Yellow from sundown (if before 6:30 PM), red at 6:30 PM, off at sunrise"
+    description: "Yellow from sundown (if before 6:30 PM), red at 6:30 PM; kids off 30 minutes before sunrise, bedroom off at sunrise"
     triggers:
       # Turn on yellow at sunset (only if before 7 PM)
       - platform: sun
@@ -72,7 +72,12 @@ automation:
       - platform: time
         at: "18:30:00"
         id: "red_on"
-      # Turn off at sunrise
+      # Kids light follows the morning shutter opening time.
+      - platform: sun
+        event: sunrise
+        offset: "-00:30:00"
+        id: "kids_turn_off"
+      # Bedroom strip keeps its sunrise switch-off.
       - platform: sun
         event: sunrise
         id: "turn_off"
@@ -110,14 +115,20 @@ automation:
                   brightness_pct: 15
                   rgb_color: [255, 0, 0]  # Red
 
-          # Turn off at sunrise
+          - conditions:
+              - condition: trigger
+                id: "kids_turn_off"
+            sequence:
+              - service: light.turn_off
+                target:
+                  entity_id: light.kids_room_door_led_strip
+
+          # Bedroom strip off at sunrise
           - conditions:
               - condition: trigger
                 id: "turn_off"
             sequence:
               - service: light.turn_off
                 target:
-                  entity_id:
-                    - light.bedroom_led_strip
-                    - light.kids_room_door_led_strip
+                  entity_id: light.bedroom_led_strip
     mode: single
