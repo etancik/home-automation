@@ -32,6 +32,10 @@ The `house-debug` YAML dashboard is a quick diagnostic entry point, with heating
 attention, energy and concise events together. It does not replace HomeKit or
 change boiler/charger control. It replaces the separate EV dashboard in navigation;
 the legacy Overview is hidden through HA's dashboard settings after deployment.
+The user's sidebar also hides Energy, History and Media without disabling their
+integrations. Daily/year-to-date consumption and the monthly 365-day overview use
+the existing Energy source `sensor.grid_energy_consumed` and its `change`
+statistics, preserving existing history and native energy units.
 The 100 most recent observed events survive HA restarts; unavailable/recovery and
 measurement-only changes are excluded. Mode and target changes are included.
 The scrolling native journal uses Recorder history (72 hours), not that buffer.

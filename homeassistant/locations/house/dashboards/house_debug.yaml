@@ -107,6 +107,28 @@ views:
         type: "grid"
         cards:
           -
+            type: "statistic"
+            entity: "sensor.grid_energy_consumed"
+            name: "Dům včetně auta · dnes"
+            stat_type: "change"
+            period:
+              calendar:
+                period: "day"
+            grid_options:
+              columns: 6
+              rows: 2
+          -
+            type: "statistic"
+            entity: "sensor.grid_energy_consumed"
+            name: "Dům včetně auta · letos"
+            stat_type: "change"
+            period:
+              calendar:
+                period: "year"
+            grid_options:
+              columns: 6
+              rows: 2
+          -
             type: "markdown"
             title: "Auto · nabíjení"
             content: |-
@@ -207,6 +229,30 @@ views:
             grid_options:
               columns: 12
               rows: 5
+      -
+        type: "grid"
+        cards:
+          -
+            type: "statistics-graph"
+            title: "Spotřeba domu · posledních 12 měsíců"
+            chart_type: "bar"
+            period: "month"
+            days_to_show: 365
+            stat_types:
+              - "change"
+            entities:
+              - entity: "sensor.grid_energy_consumed"
+                name: "Dům včetně auta"
+            grid_options:
+              columns: 12
+              rows: 6
+          -
+            type: "markdown"
+            content: |-
+              Odběr ze sítě, včetně nabíjení auta. Stejný zdroj a dlouhodobé statistiky jako v původním Energy. Starší období bez měření zůstanou prázdná.
+            grid_options:
+              columns: 12
+              rows: "auto"
   -
     title: "Historie a detaily"
     path: "heating"
