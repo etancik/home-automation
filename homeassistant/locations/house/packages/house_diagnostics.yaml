@@ -4,7 +4,8 @@ template:
   -
     sensor:
       -
-        name: "Heating debug bedroom"
+        name: "Ložnice"
+        default_entity_id: "sensor.heating_debug_bedroom"
         unique_id: "heating_debug_bedroom"
         icon: "mdi:radiator"
         state: |-
@@ -30,7 +31,7 @@ template:
           {% else %}Čeká na pokles o 1 °C
           {% endif %}
         attributes:
-          friendly_name: "Ložnice"
+          room_name: "Ložnice"
           climate_entity: "climate.bedroom_radiator_heat_valve"
           temperature_entity: "sensor.bedroom_temperature_sensor_temperature"
           measured: "{{ states('sensor.bedroom_temperature_sensor_temperature') | float(none) }}"
@@ -60,7 +61,8 @@ template:
             {% set emitter = state_attr('climate.bedroom_radiator_heat_valve', 'hvac_action') == 'heating' %}
             {{ states(climate) in ['heat', 'auto'] and ns.closed and is_number(measured) and is_number(target) and emitter and measured | float < target | float }}
       -
-        name: "Heating debug kids_room"
+        name: "Dětský pokoj"
+        default_entity_id: "sensor.heating_debug_kids_room"
         unique_id: "heating_debug_kids_room"
         icon: "mdi:radiator"
         state: |-
@@ -86,7 +88,7 @@ template:
           {% else %}Čeká na pokles o 1 °C
           {% endif %}
         attributes:
-          friendly_name: "Dětský pokoj"
+          room_name: "Dětský pokoj"
           climate_entity: "climate.kids_room_radiator_heat_valve"
           temperature_entity: "sensor.kids_room_temperature_sensor_temperature"
           measured: "{{ states('sensor.kids_room_temperature_sensor_temperature') | float(none) }}"
@@ -116,7 +118,8 @@ template:
             {% set emitter = state_attr('climate.kids_room_radiator_heat_valve', 'hvac_action') == 'heating' %}
             {{ states(climate) in ['heat', 'auto'] and ns.closed and is_number(measured) and is_number(target) and emitter and measured | float < target | float }}
       -
-        name: "Heating debug workshop"
+        name: "Pracovna"
+        default_entity_id: "sensor.heating_debug_workshop"
         unique_id: "heating_debug_workshop"
         icon: "mdi:radiator"
         state: |-
@@ -142,7 +145,7 @@ template:
           {% else %}Čeká na pokles o 1 °C
           {% endif %}
         attributes:
-          friendly_name: "Pracovna"
+          room_name: "Pracovna"
           climate_entity: "climate.workshop_radiator_heat_valve"
           temperature_entity: "sensor.workshop_temperature_sensor_temperature"
           measured: "{{ states('sensor.workshop_temperature_sensor_temperature') | float(none) }}"
@@ -172,7 +175,8 @@ template:
             {% set emitter = state_attr('climate.workshop_radiator_heat_valve', 'hvac_action') == 'heating' %}
             {{ states(climate) in ['heat', 'auto'] and ns.closed and is_number(measured) and is_number(target) and emitter and measured | float < target | float }}
       -
-        name: "Heating debug entrance"
+        name: "Chodba"
+        default_entity_id: "sensor.heating_debug_entrance"
         unique_id: "heating_debug_entrance"
         icon: "mdi:radiator"
         state: |-
@@ -198,7 +202,7 @@ template:
           {% else %}Čeká na pokles o 1 °C
           {% endif %}
         attributes:
-          friendly_name: "Chodba"
+          room_name: "Chodba"
           climate_entity: "climate.entrance_radiator_heat_valve"
           temperature_entity: "sensor.entrance_temperature_sensor_temperature"
           measured: "{{ states('sensor.entrance_temperature_sensor_temperature') | float(none) }}"
@@ -228,7 +232,8 @@ template:
             {% set emitter = state_attr('climate.entrance_radiator_heat_valve', 'hvac_action') == 'heating' %}
             {{ states(climate) in ['heat', 'auto'] and ns.closed and is_number(measured) and is_number(target) and emitter and measured | float < target | float }}
       -
-        name: "Heating debug downstairs_bathroom"
+        name: "Koupelna dole · radiátor"
+        default_entity_id: "sensor.heating_debug_downstairs_bathroom"
         unique_id: "heating_debug_downstairs_bathroom"
         icon: "mdi:radiator"
         state: |-
@@ -254,7 +259,7 @@ template:
           {% else %}Čeká na pokles o 1 °C
           {% endif %}
         attributes:
-          friendly_name: "Koupelna dole · radiátor"
+          room_name: "Koupelna dole · radiátor"
           climate_entity: "climate.downstairs_bathroom_radiator_heat_valve"
           temperature_entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
           measured: "{{ states('sensor.downstairs_bathroom_temperature_sensor_temperature') | float(none) }}"
@@ -284,7 +289,8 @@ template:
             {% set emitter = state_attr('climate.downstairs_bathroom_radiator_heat_valve', 'hvac_action') == 'heating' %}
             {{ states(climate) in ['heat', 'auto'] and ns.closed and is_number(measured) and is_number(target) and emitter and measured | float < target | float }}
       -
-        name: "Heating debug upstairs_bathroom"
+        name: "Koupelna nahoře"
+        default_entity_id: "sensor.heating_debug_upstairs_bathroom"
         unique_id: "heating_debug_upstairs_bathroom"
         icon: "mdi:radiator"
         state: |-
@@ -310,7 +316,7 @@ template:
           {% else %}Čeká na pokles o 1 °C
           {% endif %}
         attributes:
-          friendly_name: "Koupelna nahoře"
+          room_name: "Koupelna nahoře"
           climate_entity: "climate.upstairs_bathroom_radiator_heat_valve"
           temperature_entity: "sensor.upstairs_bathroom_temperature_sensor_temperature"
           measured: "{{ states('sensor.upstairs_bathroom_temperature_sensor_temperature') | float(none) }}"
@@ -340,7 +346,8 @@ template:
             {% set emitter = state_attr('climate.upstairs_bathroom_radiator_heat_valve', 'hvac_action') == 'heating' %}
             {{ states(climate) in ['heat', 'auto'] and ns.closed and is_number(measured) and is_number(target) and emitter and measured | float < target | float }}
       -
-        name: "Heating debug living_room"
+        name: "Obývák · podlaha"
+        default_entity_id: "sensor.heating_debug_living_room"
         unique_id: "heating_debug_living_room"
         icon: "mdi:radiator"
         state: |-
@@ -366,7 +373,7 @@ template:
           {% else %}Čeká na pokles o 1 °C
           {% endif %}
         attributes:
-          friendly_name: "Obývák · podlaha"
+          room_name: "Obývák · podlaha"
           climate_entity: "climate.living_room_floor_heating"
           temperature_entity: "sensor.living_room_temperature_sensor_temperature"
           measured: "{{ states('sensor.living_room_temperature_sensor_temperature') | float(none) }}"
@@ -396,7 +403,8 @@ template:
             {% set emitter = is_state('switch.floor_heating_controller_l1', 'on') %}
             {{ states(climate) in ['heat', 'auto'] and ns.closed and is_number(measured) and is_number(target) and emitter and measured | float < target | float }}
       -
-        name: "Heating debug downstairs_bathroom_floor"
+        name: "Koupelna dole · podlaha"
+        default_entity_id: "sensor.heating_debug_downstairs_bathroom_floor"
         unique_id: "heating_debug_downstairs_bathroom_floor"
         icon: "mdi:radiator"
         state: |-
@@ -422,7 +430,7 @@ template:
           {% else %}Čeká na pokles o 1 °C
           {% endif %}
         attributes:
-          friendly_name: "Koupelna dole · podlaha"
+          room_name: "Koupelna dole · podlaha"
           climate_entity: "climate.downstairs_bathroom_floor_heating"
           temperature_entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
           measured: "{{ states('sensor.downstairs_bathroom_temperature_sensor_temperature') | float(none) }}"
@@ -459,8 +467,8 @@ template:
         attributes:
           reason: |-
             {% set zones = expand(['sensor.heating_debug_bedroom', 'sensor.heating_debug_kids_room', 'sensor.heating_debug_workshop', 'sensor.heating_debug_entrance', 'sensor.heating_debug_downstairs_bathroom', 'sensor.heating_debug_upstairs_bathroom', 'sensor.heating_debug_living_room', 'sensor.heating_debug_downstairs_bathroom_floor']) | list %}
-            {% set starters = zones | selectattr('attributes.start_requested', 'eq', true) | map(attribute='attributes.friendly_name') | list %}
-            {% set keepers = zones | selectattr('attributes.keep_requested', 'eq', true) | map(attribute='attributes.friendly_name') | list %}
+            {% set starters = zones | selectattr('attributes.start_requested', 'eq', true) | map(attribute='attributes.room_name') | list %}
+            {% set keepers = zones | selectattr('attributes.keep_requested', 'eq', true) | map(attribute='attributes.room_name') | list %}
             {% if not has_value('switch.laundry_room_boiler_controller_l2') %}Chybí potvrzení řídicího relé kotle.
             {% elif not is_state('input_boolean.heating_controller_ready', 'on') %}Řízení po startu čeká na vstupy.
             {% elif is_state('input_boolean.heating_safety_lock', 'on') %}Bezpečnostní zámek blokuje topení. Otevři detail upozornění.
@@ -471,7 +479,7 @@ template:
             {% elif keepers %}Místnosti jsou pod cílem, ale ještě nedosáhly prahu pro start (více než 1 °C pod cílem).
             {% else %}Žádná místnost nyní nesplňuje podmínky pro sepnutí kotle.
             {% endif %}
-          requesting_rooms: "{{ expand(['sensor.heating_debug_bedroom', 'sensor.heating_debug_kids_room', 'sensor.heating_debug_workshop', 'sensor.heating_debug_entrance', 'sensor.heating_debug_downstairs_bathroom', 'sensor.heating_debug_upstairs_bathroom', 'sensor.heating_debug_living_room', 'sensor.heating_debug_downstairs_bathroom_floor']) | selectattr('attributes.start_requested', 'eq', true) | map(attribute='attributes.friendly_name') | list }}"
+          requesting_rooms: "{{ expand(['sensor.heating_debug_bedroom', 'sensor.heating_debug_kids_room', 'sensor.heating_debug_workshop', 'sensor.heating_debug_entrance', 'sensor.heating_debug_downstairs_bathroom', 'sensor.heating_debug_upstairs_bathroom', 'sensor.heating_debug_living_room', 'sensor.heating_debug_downstairs_bathroom_floor']) | selectattr('attributes.start_requested', 'eq', true) | map(attribute='attributes.room_name') | list }}"
   -
     triggers:
       -
@@ -584,7 +592,7 @@ template:
             {% set climate = state_attr(entity, 'climate_entity') %}
             {% set target = state_attr(entity, 'target') %}
             {% if states(climate) in ['heat','auto'] and is_number(target) and target | float <= 8 %}
-              {% set ns.items = ns.items + [dict(entity=climate, title=state_attr(entity, 'friendly_name'), reason='Nízký cíl ' ~ target ~ ' °C při zapnutém režimu')] %}
+              {% set ns.items = ns.items + [dict(entity=climate, title=state_attr(entity, 'room_name'), reason='Nízký cíl ' ~ target ~ ' °C při zapnutém režimu')] %}
             {% endif %}
           {% endfor %}
           {% for entity in ['sensor.living_room_smoke_detector_battery', 'sensor.shellyplussmoke_28562fcca298_battery', 'sensor.food_storage_sensor_battery', 'sensor.downstairs_bathroom_leak_sensor_battery', 'sensor.upstairs_bathroom_leak_sensor_battery', 'sensor.laundry_room_leak_sensor_battery', 'sensor.kitchen_sink_leak_sensor_battery', 'sensor.kitchen_window_sensor_battery', 'sensor.living_room_door_sensor_battery', 'sensor.workshop_window_sensor_battery', 'sensor.kids_room_window_sensor_battery', 'sensor.bedroom_window_sensor_battery', 'sensor.bedroom_temperature_sensor_battery', 'sensor.bedroom_radiator_heat_valve_battery', 'sensor.kids_room_radiator_heat_valve_battery', 'sensor.kids_room_temperature_sensor_battery', 'sensor.workshop_radiator_heat_valve_battery', 'sensor.workshop_temperature_sensor_battery', 'sensor.downstairs_bathroom_radiator_heat_valve_battery', 'sensor.upstairs_bathroom_radiator_heat_valve_battery', 'sensor.entrance_radiator_heat_valve_battery', 'sensor.entrance_temperature_sensor_battery', 'sensor.living_room_temperature_sensor_battery', 'sensor.kids_room_dimmer_switch_battery', 'sensor.entrance_door_sensor_battery', 'sensor.attic_temperature_sensor_battery', 'sensor.outdoor_plants_temperature_sensor_battery', 'sensor.upstairs_bathroom_temperature_sensor_battery', 'sensor.downstairs_bathroom_temperature_sensor_battery', 'sensor.water_shaft_temperature_sensor_battery'] %}
@@ -630,7 +638,7 @@ template:
               {% set climate = state_attr(entity, 'climate_entity') %}
               {% set target = state_attr(entity, 'target') %}
               {% if states(climate) in ['heat','auto'] and is_number(target) and target | float <= 8 %}
-                {% set ns.items = ns.items + [dict(entity=climate, title=state_attr(entity, 'friendly_name'), reason='Nízký cíl ' ~ target ~ ' °C při zapnutém režimu')] %}
+                {% set ns.items = ns.items + [dict(entity=climate, title=state_attr(entity, 'room_name'), reason='Nízký cíl ' ~ target ~ ' °C při zapnutém režimu')] %}
               {% endif %}
             {% endfor %}
             {% for entity in ['sensor.living_room_smoke_detector_battery', 'sensor.shellyplussmoke_28562fcca298_battery', 'sensor.food_storage_sensor_battery', 'sensor.downstairs_bathroom_leak_sensor_battery', 'sensor.upstairs_bathroom_leak_sensor_battery', 'sensor.laundry_room_leak_sensor_battery', 'sensor.kitchen_sink_leak_sensor_battery', 'sensor.kitchen_window_sensor_battery', 'sensor.living_room_door_sensor_battery', 'sensor.workshop_window_sensor_battery', 'sensor.kids_room_window_sensor_battery', 'sensor.bedroom_window_sensor_battery', 'sensor.bedroom_temperature_sensor_battery', 'sensor.bedroom_radiator_heat_valve_battery', 'sensor.kids_room_radiator_heat_valve_battery', 'sensor.kids_room_temperature_sensor_battery', 'sensor.workshop_radiator_heat_valve_battery', 'sensor.workshop_temperature_sensor_battery', 'sensor.downstairs_bathroom_radiator_heat_valve_battery', 'sensor.upstairs_bathroom_radiator_heat_valve_battery', 'sensor.entrance_radiator_heat_valve_battery', 'sensor.entrance_temperature_sensor_battery', 'sensor.living_room_temperature_sensor_battery', 'sensor.kids_room_dimmer_switch_battery', 'sensor.entrance_door_sensor_battery', 'sensor.attic_temperature_sensor_battery', 'sensor.outdoor_plants_temperature_sensor_battery', 'sensor.upstairs_bathroom_temperature_sensor_battery', 'sensor.downstairs_bathroom_temperature_sensor_battery', 'sensor.water_shaft_temperature_sensor_battery'] %}
@@ -670,11 +678,12 @@ template:
           - "binary_sensor.upstairs_bathroom_leak_sensor_water_leak"
           - "binary_sensor.laundry_room_leak_sensor_water_leak"
           - "binary_sensor.kitchen_sink_leak_sensor_water_leak"
-          - "input_boolean.heating_window_bedroom"
-          - "input_boolean.heating_window_kids_room"
-          - "input_boolean.heating_window_workshop"
-          - "input_boolean.heating_window_entrance"
-          - "input_boolean.heating_window_living_room"
+          - "binary_sensor.bedroom_window_sensor_contact"
+          - "binary_sensor.kids_room_window_sensor_contact"
+          - "binary_sensor.workshop_window_sensor_contact"
+          - "binary_sensor.entrance_door_sensor_contact"
+          - "binary_sensor.kitchen_window_sensor_contact"
+          - "binary_sensor.living_room_door_sensor_contact"
     conditions:
       -
         condition: "template"
@@ -683,12 +692,12 @@ template:
       -
         variables:
           message: |-
-            {% set names = {'switch.laundry_room_boiler_controller_l2': 'Kotel', 'input_boolean.heating_enabled': 'Povolení topení', 'input_boolean.heating_safety_lock': 'Bezpečnostní zámek', 'input_boolean.ev_dynamic_load_balancing_enabled': 'Load balancing', 'sensor.go_echarger_600187_car_state': 'Nabíjení', 'input_boolean.washing_machine_running': 'Pračka', 'binary_sensor.living_room_smoke_detector_smoke': 'Kouř v obýváku', 'binary_sensor.shellyplussmoke_28562fcca298_smoke': 'Kouř · Shelly', 'binary_sensor.downstairs_bathroom_leak_sensor_water_leak': 'Únik vody · koupelna dole', 'binary_sensor.upstairs_bathroom_leak_sensor_water_leak': 'Únik vody · koupelna nahoře', 'binary_sensor.laundry_room_leak_sensor_water_leak': 'Únik vody · prádelna', 'binary_sensor.kitchen_sink_leak_sensor_water_leak': 'Únik vody · kuchyň', 'input_boolean.heating_window_bedroom': 'Ložnice · blokace oknem', 'input_boolean.heating_window_kids_room': 'Dětský pokoj · blokace oknem', 'input_boolean.heating_window_workshop': 'Pracovna · blokace oknem', 'input_boolean.heating_window_entrance': 'Chodba · blokace oknem', 'input_boolean.heating_window_living_room': 'Obývák · podlaha · blokace oknem'} %}
+            {% set names = {'switch.laundry_room_boiler_controller_l2': 'Kotel', 'input_boolean.heating_enabled': 'Povolení topení', 'input_boolean.heating_safety_lock': 'Bezpečnostní zámek', 'input_boolean.ev_dynamic_load_balancing_enabled': 'Load balancing', 'sensor.go_echarger_600187_car_state': 'Nabíjení', 'input_boolean.washing_machine_running': 'Pračka', 'binary_sensor.living_room_smoke_detector_smoke': 'Kouř v obýváku', 'binary_sensor.shellyplussmoke_28562fcca298_smoke': 'Kouř · Shelly', 'binary_sensor.downstairs_bathroom_leak_sensor_water_leak': 'Únik vody · koupelna dole', 'binary_sensor.upstairs_bathroom_leak_sensor_water_leak': 'Únik vody · koupelna nahoře', 'binary_sensor.laundry_room_leak_sensor_water_leak': 'Únik vody · prádelna', 'binary_sensor.kitchen_sink_leak_sensor_water_leak': 'Únik vody · kuchyň', 'binary_sensor.bedroom_window_sensor_contact': 'Okno · ložnice', 'binary_sensor.kids_room_window_sensor_contact': 'Okno · dětský pokoj', 'binary_sensor.workshop_window_sensor_contact': 'Okno · pracovna', 'binary_sensor.entrance_door_sensor_contact': 'Vchodové dveře', 'binary_sensor.kitchen_window_sensor_contact': 'Okno · kuchyň', 'binary_sensor.living_room_door_sensor_contact': 'Zahradní dveře'} %}
             {% set entity = trigger.entity_id %}
             {% set value = trigger.to_state.state %}
             {% if entity == 'switch.laundry_room_boiler_controller_l2' %}
               {% set zones = expand(['sensor.heating_debug_bedroom', 'sensor.heating_debug_kids_room', 'sensor.heating_debug_workshop', 'sensor.heating_debug_entrance', 'sensor.heating_debug_downstairs_bathroom', 'sensor.heating_debug_upstairs_bathroom', 'sensor.heating_debug_living_room', 'sensor.heating_debug_downstairs_bathroom_floor']) | list %}
-              {% set requesters = zones | selectattr('attributes.keep_requested', 'eq', true) | map(attribute='attributes.friendly_name') | list %}
+              {% set requesters = zones | selectattr('attributes.keep_requested', 'eq', true) | map(attribute='attributes.room_name') | list %}
               {% if value == 'on' %}Kotel: povel zapnut · {{ requesters | join(', ') if requesters else 'bez platného požadavku zón' }}
               {% elif is_state('input_boolean.heating_safety_lock','on') %}Kotel: povel vypnut · bezpečnostní zámek
               {% elif is_state('input_boolean.heating_enabled','off') %}Kotel: povel vypnut · topení zakázáno
@@ -699,6 +708,8 @@ template:
               {% if value in ['Complete','Idle'] and is_number(states('sensor.go_echarger_600187_energy_charged')) %} · {{ (states('sensor.go_echarger_600187_energy_charged') | float / 1000) | round(2) }} kWh{% endif %}
             {% elif entity == 'input_boolean.washing_machine_running' %}
               Pračka: {{ 'cyklus zahájen' if value == 'on' else 'cyklus ukončen podle příkonu' }}
+            {% elif entity in ['binary_sensor.bedroom_window_sensor_contact', 'binary_sensor.kids_room_window_sensor_contact', 'binary_sensor.workshop_window_sensor_contact', 'binary_sensor.entrance_door_sensor_contact', 'binary_sensor.kitchen_window_sensor_contact', 'binary_sensor.living_room_door_sensor_contact'] %}
+              {{ names[entity] }}: {{ 'otevřeno' if value == 'on' else 'zavřeno' }}
             {% else %}
               {{ names[entity] }}: {{ 'zapnuto' if value == 'on' else 'vypnuto' }}
             {% endif %}
@@ -709,7 +720,7 @@ template:
         icon: "mdi:timeline-text-outline"
         state: "{{ message | trim | truncate(250, true) }}"
         attributes:
-          events: "{{ ([dict(at=now().isoformat(), message=message | trim, entity=trigger.entity_id)] + (this.attributes.get('events') or []))[:16] }}"
+          events: "{{ ([dict(at=now().isoformat(), message=message | trim, entity=trigger.entity_id)] + ((this.attributes.get('events') or []) | rejectattr('entity','match','input_boolean.heating_window_') | list))[:16] }}"
 sensor:
   -
     platform: "history_stats"
