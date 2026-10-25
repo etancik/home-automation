@@ -81,7 +81,7 @@ views:
               {%- set ns=namespace(rows=[]) -%}
               {%- for entity in ['sensor.heating_debug_bedroom', 'sensor.heating_debug_kids_room', 'sensor.heating_debug_workshop', 'sensor.heating_debug_entrance', 'sensor.heating_debug_downstairs_bathroom', 'sensor.heating_debug_upstairs_bathroom', 'sensor.heating_debug_living_room', 'sensor.heating_debug_downstairs_bathroom_floor'] -%}
               {%- set m=state_attr(entity,'measured') -%}{%- set t=state_attr(entity,'target') -%}
-              {%- set ns.rows=ns.rows + ['| ' ~ state_attr(entity,'friendly_name') ~ ' | ' ~ (m if m is not none else '—') ~ ' → ' ~ (t if t is not none else '—') ~ ' °C | ' ~ states(entity) ~ ' |'] -%}
+              {%- set ns.rows=ns.rows + ['| ' ~ state_attr(entity,'room_name') ~ ' | ' ~ (m if m is not none else '—') ~ ' → ' ~ (t if t is not none else '—') ~ ' °C | ' ~ states(entity) ~ ' |'] -%}
               {%- endfor -%}
               | Místnost | Teď → cíl | Stav |
               | :-- | --: | :-- |
@@ -142,7 +142,7 @@ views:
             content: |-
               {% set ns=namespace(count=0) %}
               {% for event in state_attr('sensor.house_debug_events','events') or [] %}
-              {% if as_timestamp(now()) - as_timestamp(event.at) < 86400 and ns.count < 8 %}
+              {% if as_timestamp(now()) - as_timestamp(event.at) < 86400 and ns.count < 8 and not event.entity.startswith('input_boolean.heating_window_') %}
               {% set ns.count=ns.count+1 %}
               **{{ as_timestamp(event.at) | timestamp_custom('%H:%M') }}** · {{ event.message }}
               
@@ -630,10 +630,15 @@ views:
             type: "markdown"
             title: "Zachycené události · posledních 16"
             content: |-
+              {% set ns=namespace(count=0) %}
               {% for event in state_attr('sensor.house_debug_events','events') or [] %}
+              {% if not event.entity.startswith('input_boolean.heating_window_') %}
+              {% set ns.count=ns.count+1 %}
               **{{ as_timestamp(event.at) | timestamp_custom('%d. %m. %H:%M') }}** · {{ event.message }}
               
-              {% else %}Výpis se plní od nasazení. Přechody při nedostupnosti a startu nejsou považované za fyzické události.{% endfor %}
+              {% endif %}
+              {% endfor %}
+              {% if ns.count == 0 %}Výpis se plní od nasazení. Přechody při nedostupnosti nejsou považované za fyzické události.{% endif %}
             grid_options:
               columns: 12
               rows: "auto"
