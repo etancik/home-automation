@@ -63,17 +63,22 @@ async def rig(hass: HomeAssistant):
         for target in targets:
             mode = call.data['hvac_mode']
             r.state(target, mode, hvac_action='idle' if mode == 'off' else 'heating')
+    async def temperature(call):
+        for target in call.data['entity_id']:
+            r.state(target, r.hass.states.get(target).state, temperature=call.data['temperature'])
     assert await async_setup_component(hass, 'homeassistant', {})
     assert await async_setup_component(hass, 'persistent_notification', {})
     for service in ['turn_on','turn_off']:
         hass.services.async_register('switch', service, relay)
     hass.services.async_register('climate','set_hvac_mode',climate)
+    hass.services.async_register('climate','set_temperature',temperature)
     config = package('boiler')
     windows = package('windows')
     config['input_boolean'].update(windows['input_boolean'])
     config['input_select'] = windows['input_select']
+    config['input_text'] = windows['input_text']
     config['automation'] += windows['automation']
-    for domain in ['input_boolean', 'input_select', 'input_datetime', 'script']:
+    for domain in ['input_boolean', 'input_select', 'input_text', 'input_datetime', 'script']:
         assert await async_setup_component(hass, domain, {domain: config[domain]})
     await hass.services.async_call('input_datetime', 'set_datetime',
         {'entity_id':'input_datetime.heating_boiler_deadline','timestamp':0},blocking=True)

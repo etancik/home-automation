@@ -12,7 +12,7 @@ files again from another configuration section.
 | `heating_sensor_sync.yaml` | External temperature synchronization with radiator valves |
 | `heating_schedule.yaml` | Daily 17:00-19:00 upstairs bathroom 23 C; restores prior mode/target |
 | `house_diagnostics.yaml` | Read-only room eligibility, boiler explanation, attention list, daily relay statistics and bounded event snapshots |
-| `heating_windows.yaml` | Window handling and restoration of heating mode |
+| `heating_windows.yaml` | Window handling with persistent mode/target backup and acknowledged restoration |
 | `washing_machine.yaml` | Running/done sensor, energy integration and status logging |
 | `lighting.yaml` | Kids room dimmer and evening LED strip schedule |
 | `lighting_living_room.yaml` | Front/rear Hue groups; three detached switches, top Rear / bottom Front |
@@ -50,6 +50,14 @@ The main configuration retains installation settings, frontend/dashboard setup,
 Recorder, logging and includes. `automations.yaml` remains an empty list available
 to the UI editor; repository-managed automation belongs in the relevant package.
 Device naming inventory remains in `customize.yaml`.
+
+Window protection retains the original mode/target throughout reopening and delayed
+TRV replies. It observes OFF before restoration, restores the mode before its
+mode-specific target, and releases the backup after five seconds of confirmed
+matching state (checked on subsequent state events or the minute reconciliation).
+Unavailable valves and unknown/open contacts cannot complete restoration.
+Intentionally OFF zones stay OFF. Existing mode-only blocks migrate without
+inventing a target from the device's frost setting.
 
 Preserve automation IDs and entity unique IDs when moving existing definitions.
 This split changes organization only, not thresholds, triggers or actions.
