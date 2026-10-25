@@ -48,12 +48,12 @@ async def boosts(hass, freezer):
     calls.clear()
     yield calls
     await hass.services.async_call('automation', 'turn_off', {
-        'entity_id': 'automation.heating_morning_rooms_and_evening_bathing', 'stop_actions': True}, blocking=True)
+        'entity_id': 'automation.heating_evening_bathing', 'stop_actions': True}, blocking=True)
 
 
 async def reconcile(hass):
     await hass.services.async_call('automation', 'trigger', {
-        'entity_id': 'automation.heating_morning_rooms_and_evening_bathing'}, blocking=True)
+        'entity_id': 'automation.heating_evening_bathing'}, blocking=True)
     await hass.async_block_till_done()
 
 
@@ -66,10 +66,9 @@ def saved(hass, room):
 
 
 @pytest.mark.parametrize('start,end,rooms,target', [
-    ('2026-10-24T04:00:00Z', '2026-10-24T05:00:00Z', ['bedroom', 'kids_room'], 22),
     ('2026-10-24T15:00:00Z', '2026-10-24T17:00:00Z', ['upstairs_bathroom'], 24),
-    # After the DST switch, the same local morning starts an hour later in UTC.
-    ('2026-10-25T05:00:00Z', '2026-10-25T06:00:00Z', ['bedroom', 'kids_room'], 22),
+    # After the DST switch, the same local evening starts an hour later in UTC.
+    ('2026-10-25T16:00:00Z', '2026-10-25T18:00:00Z', ['upstairs_bathroom'], 24),
 ])
 async def test_daily_boost_and_restore_original_targets(hass, boosts, freezer, start, end, rooms, target):
     freezer.move_to(start)
@@ -92,15 +91,15 @@ async def test_daily_boost_and_restore_original_targets(hass, boosts, freezer, s
 
 @pytest.mark.parametrize('mode,temp', [('off', 7), ('auto', 19.5)])
 async def test_restore_original_mode_and_mode_specific_target(hass, boosts, freezer, mode, temp):
-    hass.states.async_set('climate.bedroom_radiator_heat_valve', mode, {'temperature': temp})
-    freezer.move_to('2026-10-24T04:30:00Z')
+    hass.states.async_set('climate.upstairs_bathroom_radiator_heat_valve', mode, {'temperature': temp})
+    freezer.move_to('2026-10-24T15:30:00Z')
     await reconcile(hass)
-    assert valve(hass, 'bedroom').state == 'heat'
-    assert valve(hass, 'bedroom').attributes['temperature'] == 22
-    freezer.move_to('2026-10-24T05:00:00Z')
+    assert valve(hass, 'upstairs_bathroom').state == 'heat'
+    assert valve(hass, 'upstairs_bathroom').attributes['temperature'] == 24
+    freezer.move_to('2026-10-24T17:00:00Z')
     await reconcile(hass)
-    assert valve(hass, 'bedroom').state == mode
-    assert valve(hass, 'bedroom').attributes['temperature'] == temp
+    assert valve(hass, 'upstairs_bathroom').state == mode
+    assert valve(hass, 'upstairs_bathroom').attributes['temperature'] == temp
 
 
 @pytest.mark.parametrize('guard,value', [('heating_enabled', 'off'), ('heating_safety_lock', 'on')])
@@ -112,32 +111,17 @@ async def test_boost_respects_global_heating_guards(hass, boosts, freezer, guard
     assert boosts == []
 
 
-async def test_open_window_delays_start_and_restores_safely_at_end(hass, boosts, freezer):
-    contact = 'binary_sensor.bedroom_window_sensor_contact'
-    block = 'input_boolean.heating_window_bedroom'
-    hass.states.async_set(contact, 'on')
-    freezer.move_to('2026-10-24T04:00:00Z')
-    await reconcile(hass)
-    assert valve(hass, 'bedroom').attributes['temperature'] == 21
-    hass.states.async_set(contact, 'off')
-    await reconcile(hass)
-    assert valve(hass, 'bedroom').attributes['temperature'] == 22
-    # Model the window controller turning the radiator off during the boost.
-    hass.states.async_set(contact, 'on')
-    hass.states.async_set(block, 'on')
+@pytest.mark.parametrize('when', ['2026-10-24T04:00:00Z', '2026-10-25T05:00:00Z'])
+async def test_removed_morning_boost_leaves_room_modes_and_targets_untouched(hass, boosts, freezer, when):
     hass.states.async_set('climate.bedroom_radiator_heat_valve', 'off', {'temperature': 7})
-    freezer.move_to('2026-10-24T05:00:00Z')
+    hass.states.async_set('climate.kids_room_radiator_heat_valve', 'auto', {'temperature': 19.5})
+    freezer.move_to(when)
     await reconcile(hass)
     assert valve(hass, 'bedroom').state == 'off'
-    assert hass.states.get('input_select.heating_saved_bedroom').state == 'heat'
-    assert saved(hass, 'bedroom')['temperature'] == 21
-    # The window controller later restores heat, potentially recalling the boost target.
-    hass.states.async_set(contact, 'off')
-    hass.states.async_set(block, 'off')
-    hass.states.async_set('climate.bedroom_radiator_heat_valve', 'heat', {'temperature': 22})
-    await reconcile(hass)
-    assert valve(hass, 'bedroom').attributes['temperature'] == 21
-    assert saved(hass, 'bedroom') == {}
+    assert valve(hass, 'bedroom').attributes['temperature'] == 7
+    assert valve(hass, 'kids_room').state == 'auto'
+    assert valve(hass, 'kids_room').attributes['temperature'] == 19.5
+    assert boosts == []
 
 
 async def test_expired_backup_recovers_after_offline_end_even_next_day(hass, boosts, freezer):
