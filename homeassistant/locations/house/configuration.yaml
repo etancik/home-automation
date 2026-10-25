@@ -37,6 +37,12 @@ lovelace:
   mode: storage  # Main dashboard via UI
   # Additional YAML dashboards
   dashboards:
+    house-debug:
+      mode: yaml
+      title: "Dům – diagnostika"
+      icon: mdi:home-search
+      show_in_sidebar: true
+      filename: dashboards/house_debug.yaml
     ev-power-monitor:
       mode: yaml
       title: EV Power Monitor
