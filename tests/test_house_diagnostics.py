@@ -123,12 +123,12 @@ async def test_active_water_alarm_is_first_attention_item(hass, diagnostics):
     assert issues[0]['reason'] == 'Aktivní alarm'
 
 
-async def test_event_snapshots_ignore_attributes_recovery_and_keep_only_16(hass, diagnostics):
-    for i in range(20):
+async def test_event_snapshots_ignore_attributes_recovery_and_keep_only_100(hass, diagnostics):
+    for i in range(104):
         hass.states.async_set('input_boolean.ev_dynamic_load_balancing_enabled','off' if i % 2 == 0 else 'on')
         await hass.async_block_till_done()
     result=hass.states.get('sensor.house_debug_events')
-    assert len(result.attributes['events']) == 16
+    assert len(result.attributes['events']) == 100
     before=result.attributes['events']
     hass.states.async_set('input_boolean.ev_dynamic_load_balancing_enabled','on',{'friendly_name':'New name'})
     hass.states.async_set('input_boolean.ev_dynamic_load_balancing_enabled','unavailable')
@@ -138,8 +138,34 @@ async def test_event_snapshots_ignore_attributes_recovery_and_keep_only_16(hass,
     assert hass.states.get('sensor.house_debug_events').attributes['events'] == before
 
 
+async def test_attention_explains_frost_target_while_window_is_open(hass, diagnostics):
+    hass.states.async_set('binary_sensor.bedroom_window_sensor_contact','on')
+    hass.states.async_set('climate.bedroom_radiator_heat_valve','off',{'temperature':7,'hvac_action':'idle'})
+    await hass.async_block_till_done()
+    items=hass.states.get('sensor.house_debug_attention').attributes['issues']
+    item=next(i for i in items if i['entity']=='climate.bedroom_radiator_heat_valve')
+    assert 'Okno je otevřené' in item['reason']
+    assert 'protimrazový' in item['reason']
+
+
+async def test_journal_tracks_target_changes_but_ignores_measured_temperature(hass, diagnostics):
+    climate='climate.kids_room_radiator_heat_valve'
+    hass.states.async_set(climate,'heat',{'temperature':22,'current_temperature':20,'hvac_action':'idle'})
+    await hass.async_block_till_done()
+    result=hass.states.get('sensor.house_debug_events')
+    assert '22' in result.state
+    before=result.attributes['events']
+    hass.states.async_set(climate,'heat',{'temperature':22,'current_temperature':20.1,'hvac_action':'heating'})
+    await hass.async_block_till_done()
+    assert hass.states.get('sensor.house_debug_events').attributes['events']==before
+
+
 async def test_dashboard_templates_render_without_errors(hass, diagnostics):
     config=yaml.safe_load((ROOT/'homeassistant/locations/house/dashboards/house_debug.yaml').read_text())
+    assert len(config['views']) == 2
+    controls=config['views'][1]['sections'][2]['cards'][0]['entities']
+    ids=[r['entity'] for r in controls]
+    assert ids.index('climate.downstairs_bathroom_floor_heating') == ids.index('climate.downstairs_bathroom_radiator_heat_valve')+1
     def walk(value):
         if isinstance(value,dict):
             if value.get('type') == 'markdown':

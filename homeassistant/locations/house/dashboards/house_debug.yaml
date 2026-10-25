@@ -16,14 +16,14 @@ views:
             content: |-
               ## {{ states('sensor.house_boiler_reason') }}
               {{ state_attr('sensor.house_boiler_reason','reason') or 'Čeká se na diagnostiku.' }}
-              
+
               {% set runtime = states('sensor.house_boiler_on_today') %}
               {% if is_number(runtime) %}Dnes **{{ (runtime | float * 60) | round(0) | int }} min** sepnutí · **{{ states('sensor.house_boiler_cycles_today') }} běhů** (včetně běhu přes půlnoc).{% endif %}
               {% if is_state('switch.laundry_room_boiler_controller_l2','on') %}
               {% set deadline=state_attr('input_datetime.heating_boiler_deadline','timestamp') | float(0) %}
               {% if deadline > 0 %}Do bezpečnostního limitu zbývá **{{ ([0, (deadline-as_timestamp(now())) / 60] | max) | int }} min**.{% endif %}
               {% endif %}
-              
+
               <small>Stav řídicího relé, nikoli měření hořáku. [Detail topení](/house-debug/heating)</small>
             grid_options:
               columns: 12
@@ -50,7 +50,19 @@ views:
               -
                 type: "simple-entity"
                 entity: "input_boolean.heating_safety_lock"
-                name: "Bezpečnostní zámek"
+                name: "Nouzové zastavení kotle"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "markdown"
+            title: "Ochrana kotle"
+            content: |-
+              {% if is_state('input_boolean.heating_safety_lock','on') %}
+              <ha-alert alert-type="warning">Topení je nouzově zastavené. Nejdřív zkontroluj příčinu, potom lze ochranu ručně odblokovat.</ha-alert>
+              {% else %}**Ochrana je připravená, topení neblokuje.**{% endif %}
+
+              Při běhu delším než 4 hodiny, chybě potvrzení povelu nebo nejasném běhu po restartu systém zastaví topení a zabrání dalšímu sepnutí. Vyžaduje kontrolu a ruční odblokování.
             grid_options:
               columns: 12
               rows: "auto"
@@ -69,8 +81,8 @@ views:
               - **{{ issue.title }}** — {{ issue.reason }}
               {% endfor %}
               {% endif %}
-              
-              [Otevřít dotčené entity](/house-debug/attention)
+
+              [Otevřít dotčené entity](/house-debug/heating)
             grid_options:
               columns: 12
               rows: "auto"
@@ -79,14 +91,14 @@ views:
             title: "Místnosti · proč topí / netopí"
             content: |-
               {%- set ns=namespace(rows=[]) -%}
-              {%- for entity in ['sensor.heating_debug_bedroom', 'sensor.heating_debug_kids_room', 'sensor.heating_debug_workshop', 'sensor.heating_debug_entrance', 'sensor.heating_debug_downstairs_bathroom', 'sensor.heating_debug_upstairs_bathroom', 'sensor.heating_debug_living_room', 'sensor.heating_debug_downstairs_bathroom_floor'] -%}
+              {%- for entity in ['sensor.heating_debug_bedroom', 'sensor.heating_debug_kids_room', 'sensor.heating_debug_workshop', 'sensor.heating_debug_entrance', 'sensor.heating_debug_downstairs_bathroom', 'sensor.heating_debug_downstairs_bathroom_floor', 'sensor.heating_debug_upstairs_bathroom', 'sensor.heating_debug_living_room'] -%}
               {%- set m=state_attr(entity,'measured') -%}{%- set t=state_attr(entity,'target') -%}
               {%- set ns.rows=ns.rows + ['| ' ~ state_attr(entity,'room_name') ~ ' | ' ~ (m if m is not none else '—') ~ ' → ' ~ (t if t is not none else '—') ~ ' °C | ' ~ states(entity) ~ ' |'] -%}
               {%- endfor -%}
               | Místnost | Teď → cíl | Stav |
               | :-- | --: | :-- |
               {{ ns.rows | join('\n') }}
-              
+
               [Teploty, cíle a okna v čase](/house-debug/heating)
             grid_options:
               columns: 12
@@ -104,9 +116,9 @@ views:
               {% if is_number(energy) %}
               {{ 'Aktuální relace' if car == 'Charging' else 'Poslední / probíhající relace' }}: **{{ (energy | float / 1000) | round(2) }} kWh**
               {% else %}Energie relace není dostupná.{% endif %}
-              
+
               Limit nabíječky **{{ states('sensor.go_echarger_600187_allowed_charge_current') }} A** · dostupné **{{ states('sensor.ev_available_charging_current') }} A**.
-              
+
               <small>Energie je údaj relace z nabíječky; při další relaci se může resetovat.</small>
             grid_options:
               columns: 12
@@ -145,316 +157,61 @@ views:
               {% if as_timestamp(now()) - as_timestamp(event.at) < 86400 and ns.count < 8 and not event.entity.startswith('input_boolean.heating_window_') %}
               {% set ns.count=ns.count+1 %}
               **{{ as_timestamp(event.at) | timestamp_custom('%H:%M') }}** · {{ event.message }}
-              
+
               {% endif %}
               {% endfor %}
               {% if ns.count == 0 %}Zatím bez zachycených změn. Výpis se plní od nasazení.{% endif %}
-              
-              [Delší výpis a historie](/house-debug/events)
+
+              [Delší výpis a historie](/house-debug/heating)
             grid_options:
               columns: 12
               rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
+            type: "markdown"
+            title: "Vodní šachta · skladování"
+            content: |-
+              {% set t=states('sensor.water_shaft_temperature_sensor_temperature') %}
+              {% if is_number(t) %}
+              **Teď {{ t }} °C** · {% if t|float < 1 %}**blízko mrazu — zkontroluj uložené plodiny**{% elif t|float < 3 %}**chladno — sleduj další pokles**{% else %}bez aktuálního upozornění na přílišný chlad{% endif %}.
+              {% else %}Čidlo teď nemá dostupnou teplotu.{% endif %}
+
+              Graf ukazuje denní minimum, průměr a maximum za 30 dní.
+
+              <details><summary>Jablka a brambory · co z teploty poznám?</summary>
+
+              Jablkům vyhovuje přibližně 0–4 °C, bramborám podle použití asi 4–10 °C. Pro brambory je důležitá tma; oba druhy potřebují vhodnou vlhkost a větrání. Nedávej je těsně k sobě kvůli ethylenu z jablek. Vlhkost v šachtě tímto čidlem neměříme.
+
+              [Podmínky skladování](https://extension.umn.edu/agriculture/specialty-crops/commercial-fruit-production/postharvest-handling-of-fruit-and-vegetable-crops-in-minnesota) · [Brambory a jablka](https://extension.sdstate.edu/harvesting-and-storing-root-vegetables)
+
+              </details>
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "statistics-graph"
+            title: "Vodní šachta · 30 dní"
+            entities:
+              -
+                entity: "sensor.water_shaft_temperature_sensor_temperature"
+                name: "Teplota v šachtě"
+            days_to_show: 30
+            period: "day"
+            stat_types:
+              - "min"
+              - "mean"
+              - "max"
+            chart_type: "line"
+            grid_options:
+              columns: 12
+              rows: 5
   -
-    title: "Topení v čase"
+    title: "Historie a detaily"
     path: "heating"
     type: "sections"
     max_columns: 3
-    sections:
-      -
-        type: "grid"
-        cards:
-          -
-            type: "entities"
-            title: "Ložnice"
-            show_header_toggle: false
-            entities:
-              -
-                entity: "sensor.heating_debug_bedroom"
-                name: "Vyhodnocení"
-              -
-                entity: "climate.bedroom_radiator_heat_valve"
-                name: "Režim a cíl"
-              -
-                entity: "sensor.bedroom_temperature_sensor_temperature"
-                name: "Pokojové čidlo"
-              -
-                entity: "binary_sensor.bedroom_window_sensor_contact"
-                name: "Okno / dveře"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Teplota a nastavení · 24 h"
-            hours_to_show: 24
-            entities:
-              -
-                entity: "sensor.bedroom_temperature_sensor_temperature"
-                name: "Pokoj"
-              -
-                entity: "climate.bedroom_radiator_heat_valve"
-                name: "Termostat"
-            grid_options:
-              columns: 12
-              rows: "auto"
-      -
-        type: "grid"
-        cards:
-          -
-            type: "entities"
-            title: "Dětský pokoj"
-            show_header_toggle: false
-            entities:
-              -
-                entity: "sensor.heating_debug_kids_room"
-                name: "Vyhodnocení"
-              -
-                entity: "climate.kids_room_radiator_heat_valve"
-                name: "Režim a cíl"
-              -
-                entity: "sensor.kids_room_temperature_sensor_temperature"
-                name: "Pokojové čidlo"
-              -
-                entity: "binary_sensor.kids_room_window_sensor_contact"
-                name: "Okno / dveře"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Teplota a nastavení · 24 h"
-            hours_to_show: 24
-            entities:
-              -
-                entity: "sensor.kids_room_temperature_sensor_temperature"
-                name: "Pokoj"
-              -
-                entity: "climate.kids_room_radiator_heat_valve"
-                name: "Termostat"
-            grid_options:
-              columns: 12
-              rows: "auto"
-      -
-        type: "grid"
-        cards:
-          -
-            type: "entities"
-            title: "Pracovna"
-            show_header_toggle: false
-            entities:
-              -
-                entity: "sensor.heating_debug_workshop"
-                name: "Vyhodnocení"
-              -
-                entity: "climate.workshop_radiator_heat_valve"
-                name: "Režim a cíl"
-              -
-                entity: "sensor.workshop_temperature_sensor_temperature"
-                name: "Pokojové čidlo"
-              -
-                entity: "binary_sensor.workshop_window_sensor_contact"
-                name: "Okno / dveře"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Teplota a nastavení · 24 h"
-            hours_to_show: 24
-            entities:
-              -
-                entity: "sensor.workshop_temperature_sensor_temperature"
-                name: "Pokoj"
-              -
-                entity: "climate.workshop_radiator_heat_valve"
-                name: "Termostat"
-            grid_options:
-              columns: 12
-              rows: "auto"
-      -
-        type: "grid"
-        cards:
-          -
-            type: "entities"
-            title: "Chodba"
-            show_header_toggle: false
-            entities:
-              -
-                entity: "sensor.heating_debug_entrance"
-                name: "Vyhodnocení"
-              -
-                entity: "climate.entrance_radiator_heat_valve"
-                name: "Režim a cíl"
-              -
-                entity: "sensor.entrance_temperature_sensor_temperature"
-                name: "Pokojové čidlo"
-              -
-                entity: "binary_sensor.entrance_door_sensor_contact"
-                name: "Okno / dveře"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Teplota a nastavení · 24 h"
-            hours_to_show: 24
-            entities:
-              -
-                entity: "sensor.entrance_temperature_sensor_temperature"
-                name: "Pokoj"
-              -
-                entity: "climate.entrance_radiator_heat_valve"
-                name: "Termostat"
-            grid_options:
-              columns: 12
-              rows: "auto"
-      -
-        type: "grid"
-        cards:
-          -
-            type: "entities"
-            title: "Koupelna dole · radiátor"
-            show_header_toggle: false
-            entities:
-              -
-                entity: "sensor.heating_debug_downstairs_bathroom"
-                name: "Vyhodnocení"
-              -
-                entity: "climate.downstairs_bathroom_radiator_heat_valve"
-                name: "Režim a cíl"
-              -
-                entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
-                name: "Pokojové čidlo"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Teplota a nastavení · 24 h"
-            hours_to_show: 24
-            entities:
-              -
-                entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
-                name: "Pokoj"
-              -
-                entity: "climate.downstairs_bathroom_radiator_heat_valve"
-                name: "Termostat"
-            grid_options:
-              columns: 12
-              rows: "auto"
-      -
-        type: "grid"
-        cards:
-          -
-            type: "entities"
-            title: "Koupelna nahoře"
-            show_header_toggle: false
-            entities:
-              -
-                entity: "sensor.heating_debug_upstairs_bathroom"
-                name: "Vyhodnocení"
-              -
-                entity: "climate.upstairs_bathroom_radiator_heat_valve"
-                name: "Režim a cíl"
-              -
-                entity: "sensor.upstairs_bathroom_temperature_sensor_temperature"
-                name: "Pokojové čidlo"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Teplota a nastavení · 24 h"
-            hours_to_show: 24
-            entities:
-              -
-                entity: "sensor.upstairs_bathroom_temperature_sensor_temperature"
-                name: "Pokoj"
-              -
-                entity: "climate.upstairs_bathroom_radiator_heat_valve"
-                name: "Termostat"
-            grid_options:
-              columns: 12
-              rows: "auto"
-      -
-        type: "grid"
-        cards:
-          -
-            type: "entities"
-            title: "Obývák · podlaha"
-            show_header_toggle: false
-            entities:
-              -
-                entity: "sensor.heating_debug_living_room"
-                name: "Vyhodnocení"
-              -
-                entity: "climate.living_room_floor_heating"
-                name: "Režim a cíl"
-              -
-                entity: "sensor.living_room_temperature_sensor_temperature"
-                name: "Pokojové čidlo"
-              -
-                entity: "binary_sensor.kitchen_window_sensor_contact"
-                name: "Okno / dveře"
-              -
-                entity: "binary_sensor.living_room_door_sensor_contact"
-                name: "Okno / dveře"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Teplota a nastavení · 24 h"
-            hours_to_show: 24
-            entities:
-              -
-                entity: "sensor.living_room_temperature_sensor_temperature"
-                name: "Pokoj"
-              -
-                entity: "climate.living_room_floor_heating"
-                name: "Termostat"
-            grid_options:
-              columns: 12
-              rows: "auto"
-      -
-        type: "grid"
-        cards:
-          -
-            type: "entities"
-            title: "Koupelna dole · podlaha"
-            show_header_toggle: false
-            entities:
-              -
-                entity: "sensor.heating_debug_downstairs_bathroom_floor"
-                name: "Vyhodnocení"
-              -
-                entity: "climate.downstairs_bathroom_floor_heating"
-                name: "Režim a cíl"
-              -
-                entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
-                name: "Pokojové čidlo"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Teplota a nastavení · 24 h"
-            hours_to_show: 24
-            entities:
-              -
-                entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
-                name: "Pokoj"
-              -
-                entity: "climate.downstairs_bathroom_floor_heating"
-                name: "Termostat"
-            grid_options:
-              columns: 12
-              rows: "auto"
-  -
-    title: "Pozornost"
-    path: "attention"
-    type: "sections"
-    max_columns: 2
     sections:
       -
         type: "grid"
@@ -471,8 +228,8 @@ views:
               - **{{ issue.title }}** — {{ issue.reason }}
               {% endfor %}
               {% endif %}
-              
-              [Otevřít dotčené entity](/house-debug/attention)
+
+              [Otevřít dotčené entity](/house-debug/heating)
             grid_options:
               columns: 12
               rows: "auto"
@@ -488,9 +245,9 @@ views:
               - "climate.workshop_radiator_heat_valve"
               - "climate.entrance_radiator_heat_valve"
               - "climate.downstairs_bathroom_radiator_heat_valve"
+              - "climate.downstairs_bathroom_floor_heating"
               - "climate.upstairs_bathroom_radiator_heat_valve"
               - "climate.living_room_floor_heating"
-              - "climate.downstairs_bathroom_floor_heating"
               - "sensor.bedroom_temperature_sensor_temperature"
               - "sensor.kids_room_temperature_sensor_temperature"
               - "sensor.workshop_temperature_sensor_temperature"
@@ -521,6 +278,25 @@ views:
         type: "grid"
         cards:
           -
+            type: "logbook"
+            title: "Důležité změny · 3 dny"
+            entities:
+              - "sensor.house_debug_events"
+            hours_to_show: 72
+            grid_options:
+              columns: 12
+              rows: 8
+          -
+            type: "markdown"
+            title: "Co je v deníku"
+            content: "Deník vybírá změny povelu kotli, oken, cílových teplot a režimů, ochrany topení, nabíjení a pračky. Počet závisí na zaznamenaných událostech; není omezený na 16. Starší záznamy otevře šipka v záhlaví."
+            grid_options:
+              columns: 12
+              rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
             type: "entities"
             title: "Místnosti · otevři pro kontrolu cíle"
             show_header_toggle: false
@@ -541,14 +317,14 @@ views:
                 entity: "climate.downstairs_bathroom_radiator_heat_valve"
                 name: "Koupelna dole · radiátor"
               -
+                entity: "climate.downstairs_bathroom_floor_heating"
+                name: "Koupelna dole · podlaha"
+              -
                 entity: "climate.upstairs_bathroom_radiator_heat_valve"
                 name: "Koupelna nahoře"
               -
                 entity: "climate.living_room_floor_heating"
                 name: "Obývák · podlaha"
-              -
-                entity: "climate.downstairs_bathroom_floor_heating"
-                name: "Koupelna dole · podlaha"
             grid_options:
               columns: 12
               rows: "auto"
@@ -604,7 +380,7 @@ views:
               -
                 type: "simple-entity"
                 entity: "input_boolean.heating_safety_lock"
-                name: "Bezpečnostní zámek"
+                name: "Nouzové zastavení kotle"
               -
                 entity: "input_boolean.ev_dynamic_load_balancing_enabled"
                 name: "Load balancing"
@@ -617,74 +393,341 @@ views:
             grid_options:
               columns: 12
               rows: "auto"
-  -
-    title: "Události"
-    path: "events"
-    type: "sections"
-    max_columns: 2
-    sections:
       -
         type: "grid"
         cards:
           -
-            type: "markdown"
-            title: "Zachycené události · posledních 16"
-            content: |-
-              {% set ns=namespace(count=0) %}
-              {% for event in state_attr('sensor.house_debug_events','events') or [] %}
-              {% if not event.entity.startswith('input_boolean.heating_window_') %}
-              {% set ns.count=ns.count+1 %}
-              **{{ as_timestamp(event.at) | timestamp_custom('%d. %m. %H:%M') }}** · {{ event.message }}
-              
-              {% endif %}
-              {% endfor %}
-              {% if ns.count == 0 %}Výpis se plní od nasazení. Přechody při nedostupnosti nejsou považované za fyzické události.{% endif %}
-            grid_options:
-              columns: 12
-              rows: "auto"
-      -
-        type: "grid"
-        cards:
-          -
-            type: "history-graph"
-            title: "Povel a blokace · 24 h"
-            hours_to_show: 24
+            type: "entities"
+            title: "Ložnice"
+            show_header_toggle: false
             entities:
               -
-                entity: "switch.laundry_room_boiler_controller_l2"
-                name: "Povel kotli"
+                entity: "sensor.heating_debug_bedroom"
+                name: "Vyhodnocení"
               -
-                entity: "input_boolean.heating_enabled"
-                name: "Topení povoleno"
+                entity: "climate.bedroom_radiator_heat_valve"
+                name: "Režim a cíl"
               -
-                entity: "input_boolean.heating_safety_lock"
-                name: "Bezpečnostní zámek"
-            grid_options:
-              columns: 12
-              rows: "auto"
-          -
-            type: "history-graph"
-            title: "Okna a dveře · 24 h"
-            hours_to_show: 24
-            entities:
+                entity: "sensor.bedroom_temperature_sensor_temperature"
+                name: "Pokojové čidlo"
               -
                 entity: "binary_sensor.bedroom_window_sensor_contact"
-                name: "bedroom window"
+                name: "Okno / dveře"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "history-graph"
+            title: "Teplota, cíl a topení · 24 h"
+            hours_to_show: 24
+            entities:
+              -
+                entity: "sensor.bedroom_temperature_sensor_temperature"
+                name: "Pokoj"
+              -
+                entity: "climate.bedroom_radiator_heat_valve"
+                name: "Termostat"
+              -
+                entity: "switch.laundry_room_boiler_controller_l2"
+                name: "Kotel · povel"
+              -
+                entity: "sensor.heating_debug_bedroom"
+                name: "Zóna · požadavek a blokace"
+            grid_options:
+              columns: 12
+              rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
+            type: "entities"
+            title: "Dětský pokoj"
+            show_header_toggle: false
+            entities:
+              -
+                entity: "sensor.heating_debug_kids_room"
+                name: "Vyhodnocení"
+              -
+                entity: "climate.kids_room_radiator_heat_valve"
+                name: "Režim a cíl"
+              -
+                entity: "sensor.kids_room_temperature_sensor_temperature"
+                name: "Pokojové čidlo"
               -
                 entity: "binary_sensor.kids_room_window_sensor_contact"
-                name: "kids room window"
+                name: "Okno / dveře"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "history-graph"
+            title: "Teplota, cíl a topení · 24 h"
+            hours_to_show: 24
+            entities:
+              -
+                entity: "sensor.kids_room_temperature_sensor_temperature"
+                name: "Pokoj"
+              -
+                entity: "climate.kids_room_radiator_heat_valve"
+                name: "Termostat"
+              -
+                entity: "switch.laundry_room_boiler_controller_l2"
+                name: "Kotel · povel"
+              -
+                entity: "sensor.heating_debug_kids_room"
+                name: "Zóna · požadavek a blokace"
+            grid_options:
+              columns: 12
+              rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
+            type: "entities"
+            title: "Pracovna"
+            show_header_toggle: false
+            entities:
+              -
+                entity: "sensor.heating_debug_workshop"
+                name: "Vyhodnocení"
+              -
+                entity: "climate.workshop_radiator_heat_valve"
+                name: "Režim a cíl"
+              -
+                entity: "sensor.workshop_temperature_sensor_temperature"
+                name: "Pokojové čidlo"
               -
                 entity: "binary_sensor.workshop_window_sensor_contact"
-                name: "workshop window"
+                name: "Okno / dveře"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "history-graph"
+            title: "Teplota, cíl a topení · 24 h"
+            hours_to_show: 24
+            entities:
+              -
+                entity: "sensor.workshop_temperature_sensor_temperature"
+                name: "Pokoj"
+              -
+                entity: "climate.workshop_radiator_heat_valve"
+                name: "Termostat"
+              -
+                entity: "switch.laundry_room_boiler_controller_l2"
+                name: "Kotel · povel"
+              -
+                entity: "sensor.heating_debug_workshop"
+                name: "Zóna · požadavek a blokace"
+            grid_options:
+              columns: 12
+              rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
+            type: "entities"
+            title: "Chodba"
+            show_header_toggle: false
+            entities:
+              -
+                entity: "sensor.heating_debug_entrance"
+                name: "Vyhodnocení"
+              -
+                entity: "climate.entrance_radiator_heat_valve"
+                name: "Režim a cíl"
+              -
+                entity: "sensor.entrance_temperature_sensor_temperature"
+                name: "Pokojové čidlo"
               -
                 entity: "binary_sensor.entrance_door_sensor_contact"
-                name: "entrance door"
+                name: "Okno / dveře"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "history-graph"
+            title: "Teplota, cíl a topení · 24 h"
+            hours_to_show: 24
+            entities:
+              -
+                entity: "sensor.entrance_temperature_sensor_temperature"
+                name: "Pokoj"
+              -
+                entity: "climate.entrance_radiator_heat_valve"
+                name: "Termostat"
+              -
+                entity: "switch.laundry_room_boiler_controller_l2"
+                name: "Kotel · povel"
+              -
+                entity: "sensor.heating_debug_entrance"
+                name: "Zóna · požadavek a blokace"
+            grid_options:
+              columns: 12
+              rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
+            type: "entities"
+            title: "Koupelna dole · radiátor"
+            show_header_toggle: false
+            entities:
+              -
+                entity: "sensor.heating_debug_downstairs_bathroom"
+                name: "Vyhodnocení"
+              -
+                entity: "climate.downstairs_bathroom_radiator_heat_valve"
+                name: "Režim a cíl"
+              -
+                entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
+                name: "Pokojové čidlo"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "history-graph"
+            title: "Teplota, cíl a topení · 24 h"
+            hours_to_show: 24
+            entities:
+              -
+                entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
+                name: "Pokoj"
+              -
+                entity: "climate.downstairs_bathroom_radiator_heat_valve"
+                name: "Termostat"
+              -
+                entity: "switch.laundry_room_boiler_controller_l2"
+                name: "Kotel · povel"
+              -
+                entity: "sensor.heating_debug_downstairs_bathroom"
+                name: "Zóna · požadavek a blokace"
+            grid_options:
+              columns: 12
+              rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
+            type: "entities"
+            title: "Koupelna dole · podlaha"
+            show_header_toggle: false
+            entities:
+              -
+                entity: "sensor.heating_debug_downstairs_bathroom_floor"
+                name: "Vyhodnocení"
+              -
+                entity: "climate.downstairs_bathroom_floor_heating"
+                name: "Režim a cíl"
+              -
+                entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
+                name: "Pokojové čidlo"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "history-graph"
+            title: "Teplota, cíl a topení · 24 h"
+            hours_to_show: 24
+            entities:
+              -
+                entity: "sensor.downstairs_bathroom_temperature_sensor_temperature"
+                name: "Pokoj"
+              -
+                entity: "climate.downstairs_bathroom_floor_heating"
+                name: "Termostat"
+              -
+                entity: "switch.laundry_room_boiler_controller_l2"
+                name: "Kotel · povel"
+              -
+                entity: "sensor.heating_debug_downstairs_bathroom_floor"
+                name: "Zóna · požadavek a blokace"
+            grid_options:
+              columns: 12
+              rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
+            type: "entities"
+            title: "Koupelna nahoře"
+            show_header_toggle: false
+            entities:
+              -
+                entity: "sensor.heating_debug_upstairs_bathroom"
+                name: "Vyhodnocení"
+              -
+                entity: "climate.upstairs_bathroom_radiator_heat_valve"
+                name: "Režim a cíl"
+              -
+                entity: "sensor.upstairs_bathroom_temperature_sensor_temperature"
+                name: "Pokojové čidlo"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "history-graph"
+            title: "Teplota, cíl a topení · 24 h"
+            hours_to_show: 24
+            entities:
+              -
+                entity: "sensor.upstairs_bathroom_temperature_sensor_temperature"
+                name: "Pokoj"
+              -
+                entity: "climate.upstairs_bathroom_radiator_heat_valve"
+                name: "Termostat"
+              -
+                entity: "switch.laundry_room_boiler_controller_l2"
+                name: "Kotel · povel"
+              -
+                entity: "sensor.heating_debug_upstairs_bathroom"
+                name: "Zóna · požadavek a blokace"
+            grid_options:
+              columns: 12
+              rows: "auto"
+      -
+        type: "grid"
+        cards:
+          -
+            type: "entities"
+            title: "Obývák · podlaha"
+            show_header_toggle: false
+            entities:
+              -
+                entity: "sensor.heating_debug_living_room"
+                name: "Vyhodnocení"
+              -
+                entity: "climate.living_room_floor_heating"
+                name: "Režim a cíl"
+              -
+                entity: "sensor.living_room_temperature_sensor_temperature"
+                name: "Pokojové čidlo"
               -
                 entity: "binary_sensor.kitchen_window_sensor_contact"
-                name: "kitchen window"
+                name: "Okno / dveře"
               -
                 entity: "binary_sensor.living_room_door_sensor_contact"
-                name: "living room door"
+                name: "Okno / dveře"
+            grid_options:
+              columns: 12
+              rows: "auto"
+          -
+            type: "history-graph"
+            title: "Teplota, cíl a topení · 24 h"
+            hours_to_show: 24
+            entities:
+              -
+                entity: "sensor.living_room_temperature_sensor_temperature"
+                name: "Pokoj"
+              -
+                entity: "climate.living_room_floor_heating"
+                name: "Termostat"
+              -
+                entity: "switch.laundry_room_boiler_controller_l2"
+                name: "Kotel · povel"
+              -
+                entity: "sensor.heating_debug_living_room"
+                name: "Zóna · požadavek a blokace"
             grid_options:
               columns: 12
               rows: "auto"

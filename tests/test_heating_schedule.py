@@ -66,9 +66,9 @@ def saved(hass, room):
 
 
 @pytest.mark.parametrize('start,end,rooms,target', [
-    ('2026-10-24T15:00:00Z', '2026-10-24T17:00:00Z', ['upstairs_bathroom'], 24),
+    ('2026-10-24T15:00:00Z', '2026-10-24T17:00:00Z', ['upstairs_bathroom'], 23),
     # After the DST switch, the same local evening starts an hour later in UTC.
-    ('2026-10-25T16:00:00Z', '2026-10-25T18:00:00Z', ['upstairs_bathroom'], 24),
+    ('2026-10-25T16:00:00Z', '2026-10-25T18:00:00Z', ['upstairs_bathroom'], 23),
 ])
 async def test_daily_boost_and_restore_original_targets(hass, boosts, freezer, start, end, rooms, target):
     freezer.move_to(start)
@@ -95,7 +95,7 @@ async def test_restore_original_mode_and_mode_specific_target(hass, boosts, free
     freezer.move_to('2026-10-24T15:30:00Z')
     await reconcile(hass)
     assert valve(hass, 'upstairs_bathroom').state == 'heat'
-    assert valve(hass, 'upstairs_bathroom').attributes['temperature'] == 24
+    assert valve(hass, 'upstairs_bathroom').attributes['temperature'] == 23
     freezer.move_to('2026-10-24T17:00:00Z')
     await reconcile(hass)
     assert valve(hass, 'upstairs_bathroom').state == mode
@@ -143,4 +143,4 @@ async def test_expired_backup_recovers_after_offline_end_even_next_day(hass, boo
     ]
     await reconcile(hass)
     assert saved(hass, 'upstairs_bathroom')['temperature'] == 19.5
-    assert valve(hass, 'upstairs_bathroom').attributes['temperature'] == 24
+    assert valve(hass, 'upstairs_bathroom').attributes['temperature'] == 23

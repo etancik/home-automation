@@ -107,7 +107,7 @@ automation:
             - room: upstairs_bathroom
               start: '17:00:00'
               end: '19:00:00'
-              temperature: 24
+              temperature: 23
           sequence:
             - action: script.heating_reconcile_daily_boost
               continue_on_error: true
