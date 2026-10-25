@@ -40,6 +40,22 @@ input_select:
     - 'off'
     - heat
     - auto
+input_text:
+  heating_window_backup_bedroom:
+    name: bedroom heating before window block
+    max: 255
+  heating_window_backup_kids_room:
+    name: kids_room heating before window block
+    max: 255
+  heating_window_backup_workshop:
+    name: workshop heating before window block
+    max: 255
+  heating_window_backup_entrance:
+    name: entrance heating before window block
+    max: 255
+  heating_window_backup_living_room:
+    name: living_room heating before window block
+    max: 255
 automation:
 - id: heating_window_control
   alias: Heating - reconcile window blocks
@@ -71,63 +87,167 @@ automation:
         - binary_sensor.bedroom_window_sensor_contact
         blocked: input_boolean.heating_window_bedroom
         saved: input_select.heating_saved_bedroom
+        backup: input_text.heating_window_backup_bedroom
       - climate: climate.kids_room_radiator_heat_valve
         contacts:
         - binary_sensor.kids_room_window_sensor_contact
         blocked: input_boolean.heating_window_kids_room
         saved: input_select.heating_saved_kids_room
+        backup: input_text.heating_window_backup_kids_room
       - climate: climate.workshop_radiator_heat_valve
         contacts:
         - binary_sensor.workshop_window_sensor_contact
         blocked: input_boolean.heating_window_workshop
         saved: input_select.heating_saved_workshop
+        backup: input_text.heating_window_backup_workshop
       - climate: climate.entrance_radiator_heat_valve
         contacts:
         - binary_sensor.entrance_door_sensor_contact
         blocked: input_boolean.heating_window_entrance
         saved: input_select.heating_saved_entrance
+        backup: input_text.heating_window_backup_entrance
       - climate: climate.living_room_floor_heating
         contacts:
         - binary_sensor.kitchen_window_sensor_contact
         - binary_sensor.living_room_door_sensor_contact
         blocked: input_boolean.heating_window_living_room
         saved: input_select.heating_saved_living_room
+        backup: input_text.heating_window_backup_living_room
       sequence:
       - variables:
-          z: '{{ repeat.item }}'
-          closed: "{% set ns = namespace(ok=true) %} {% for contact in repeat.item.contacts\
-            \ %}\n  {% if not is_state(contact, 'off') %}{% set ns.ok = false %}{%\
-            \ endif %}\n{% endfor %} {{ ns.ok }}"
-      - if: '{{ states(z.climate) in [''off'', ''heat'', ''auto''] }}'
+          z: "{{ repeat.item }}"
+          closed: >-
+            {{ expand(repeat.item.contacts) | selectattr('state','eq','off') | list | count
+               == repeat.item.contacts | count }}
+      - if: "{{ states(z.climate) in ['off','heat','auto'] }}"
         then:
-        - if: '{{ not closed }}'
+        # Capture once; the block remains latched throughout restoration.
+        - if: "{{ not closed and not is_state(z.blocked,'on') }}"
           then:
-          - if: '{{ not is_state(z.blocked, ''on'') }}'
+          - action: input_text.set_value
+            target:
+              entity_id: "{{ z.backup }}"
+            data:
+              value: >-
+                {{ dict(mode=states(z.climate), temperature=state_attr(z.climate,'temperature'),
+                        off_confirmed=is_state(z.climate,'off'), restored_since=0) | to_json }}
+          - action: input_select.select_option
+            target:
+              entity_id: "{{ z.saved }}"
+            data:
+              option: "{{ states(z.climate) }}"
+          - action: input_boolean.turn_on
+            target:
+              entity_id: "{{ z.blocked }}"
+        - if: "{{ is_state(z.blocked,'on') }}"
+          then:
+          - variables:
+              backup: "{{ states(z.backup) | from_json({}) }}"
+          # A missing backup is possible during migration from mode-only guards.
+          # Preserve that stored mode; never invent a temperature from frost mode.
+          - if: "{{ backup is not mapping or backup.mode is not defined }}"
             then:
-            - action: input_select.select_option
+            - action: input_text.set_value
               target:
-                entity_id: '{{ z.saved }}'
+                entity_id: "{{ z.backup }}"
               data:
-                option: '{{ states(z.climate) }}'
-            - action: input_boolean.turn_on
-              target:
-                entity_id: '{{ z.blocked }}'
-          - if: '{{ not is_state(z.climate, ''off'') }}'
+                value: >-
+                  {{ dict(mode=states(z.saved) if states(z.saved) in ['off','heat','auto'] else 'off',
+                          temperature=none, off_confirmed=is_state(z.climate,'off'),
+                          restored_since=0) | to_json }}
+          - variables:
+              backup: "{{ states(z.backup) | from_json({}) }}"
+          - if: "{{ is_state(z.climate,'off') and not backup.get('off_confirmed',false) }}"
             then:
-            - action: climate.set_hvac_mode
+            - action: input_text.set_value
               target:
-                entity_id: '{{ z.climate }}'
+                entity_id: "{{ z.backup }}"
               data:
-                hvac_mode: 'off'
-          else:
-          - if: '{{ is_state(z.blocked, ''on'') }}'
-            then:
-            - action: climate.set_hvac_mode
-              target:
-                entity_id: '{{ z.climate }}'
-              data:
-                hvac_mode: '{{ states(z.saved) if states(z.saved) in [''off'',''heat'',''auto'']
-                  else ''off'' }}'
-            - action: input_boolean.turn_off
-              target:
-                entity_id: '{{ z.blocked }}'
+                value: "{{ dict(backup, off_confirmed=true) | to_json }}"
+          - choose:
+            # Reopening during a pending restore must not replace the baseline.
+            - conditions: "{{ not closed }}"
+              sequence:
+              - if: "{{ not is_state(z.climate,'off') }}"
+                then:
+                - action: input_text.set_value
+                  target:
+                    entity_id: "{{ z.backup }}"
+                  data:
+                    value: >-
+                      {{ dict(states(z.backup) | from_json({}), off_confirmed=false,
+                              restored_since=0) | to_json }}
+                - action: climate.set_hvac_mode
+                  target:
+                    entity_id: "{{ z.climate }}"
+                  data:
+                    hvac_mode: 'off'
+              - if: "{{ is_state(z.climate,'off') }}"
+                then:
+                - action: input_text.set_value
+                  target:
+                    entity_id: "{{ z.backup }}"
+                  data:
+                    value: "{{ dict(states(z.backup) | from_json({}), restored_since=0) | to_json }}"
+            default:
+            - variables:
+                backup: "{{ states(z.backup) | from_json({}) }}"
+                mode: "{{ backup.mode if backup.mode in ['off','heat','auto'] else 'off' }}"
+                target: "{{ backup.get('temperature') }}"
+            - choose:
+              # A fast close can precede the acknowledgement of the OFF command.
+              # Require that OFF acknowledgement before finishing restoration.
+              - conditions: "{{ not backup.get('off_confirmed',false) }}"
+                sequence:
+                - action: climate.set_hvac_mode
+                  target:
+                    entity_id: "{{ z.climate }}"
+                  data:
+                    hvac_mode: 'off'
+              - conditions: "{{ not is_state(z.climate,mode) }}"
+                sequence:
+                - action: input_text.set_value
+                  target:
+                    entity_id: "{{ z.backup }}"
+                  data:
+                    value: "{{ dict(backup, restored_since=0) | to_json }}"
+                - action: climate.set_hvac_mode
+                  target:
+                    entity_id: "{{ z.climate }}"
+                  data:
+                    hvac_mode: "{{ mode }}"
+              # Mode-specific targets are applied only after mode acknowledgement.
+              # An intentionally OFF zone must never be activated by setting a target.
+              - conditions: >-
+                  {{ mode in ['heat','auto'] and is_number(target)
+                     and state_attr(z.climate,'temperature') != target }}
+                sequence:
+                - action: input_text.set_value
+                  target:
+                    entity_id: "{{ z.backup }}"
+                  data:
+                    value: "{{ dict(backup, restored_since=0) | to_json }}"
+                - action: climate.set_temperature
+                  target:
+                    entity_id: "{{ z.climate }}"
+                  data:
+                    temperature: "{{ target }}"
+              - conditions: "{{ backup.get('restored_since',0) | float(0) <= 0 }}"
+                sequence:
+                - action: input_text.set_value
+                  target:
+                    entity_id: "{{ z.backup }}"
+                  data:
+                    value: "{{ dict(backup, restored_since=as_timestamp(now())) | to_json }}"
+              - conditions: >-
+                  {{ as_timestamp(now()) - backup.get('restored_since',0) | float(0) >= 5
+                     and expand(z.contacts) | selectattr('state','eq','off') | list | count == z.contacts | count }}
+                sequence:
+                - action: input_text.set_value
+                  target:
+                    entity_id: "{{ z.backup }}"
+                  data:
+                    value: '{}'
+                - action: input_boolean.turn_off
+                  target:
+                    entity_id: "{{ z.blocked }}"
