@@ -1,3 +1,36 @@
+# Remember the nearest sun event through its +15 minute half and HA restarts.
+template:
+  - triggers:
+      - trigger: time_pattern
+        minutes: '/1'
+      - trigger: homeassistant
+        event: start
+      - trigger: state
+        entity_id: sun.sun
+    sensor:
+      - name: Lighting Sun Transition
+        unique_id: lighting_sun_transition
+        state: >-
+          {% set old = this.state | float(0) %}
+          {% set rising = as_timestamp(state_attr('sun.sun', 'next_rising'), 0) %}
+          {% set setting = as_timestamp(state_attr('sun.sun', 'next_setting'), 0) %}
+          {% if old > 0 and old + 960 > as_timestamp(now()) %}
+            {{ old }}
+          {% elif rising > 0 and setting > 0 %}
+            {{ [rising, setting] | min }}
+          {% else %}
+            {{ old }}
+          {% endif %}
+        attributes:
+          rising: >-
+            {% set old = this.state | float(0) %}
+            {% if old > 0 and old + 960 > as_timestamp(now()) %}
+              {{ this.attributes.get('rising', false) }}
+            {% else %}
+              {{ as_timestamp(state_attr('sun.sun', 'next_rising'), 0)
+                 < as_timestamp(state_attr('sun.sun', 'next_setting'), 0) }}
+            {% endif %}
+
 # Automatic profiles apply only to lit zones outside manual mode.
 input_boolean:
   lighting_manual_living_room_front:
@@ -19,6 +52,13 @@ script:
     mode: queued
     max: 10
     fields:
+      profile_transition:
+        name: Profile transition in seconds
+        default: 1
+        selector:
+          number:
+            min: 0
+            max: 60
       only_lit:
         name: Update only lights already on
         default: false
@@ -59,24 +99,24 @@ script:
               - action: light.turn_on
                 target:
                   entity_id: "{{ selected_lights }}"
-          - conditions: "{{ is_state('sun.sun', 'above_horizon') }}"
+          - conditions: "{{ states('sun.sun') in ['above_horizon', 'below_horizon'] }}"
             sequence:
+              - variables:
+                  daylight: >-
+                    {% set event = states('sensor.lighting_sun_transition') | float(0) %}
+                    {% set progress = (as_timestamp(now()) - event + 900) / 1800 %}
+                    {% if event > 0 and 0 <= progress <= 1 %}
+                      {{ progress if state_attr('sensor.lighting_sun_transition', 'rising') else 1 - progress }}
+                    {% else %}
+                      {{ 1 if is_state('sun.sun', 'above_horizon') else 0 }}
+                    {% endif %}
               - action: light.turn_on
                 target:
                   entity_id: "{{ selected_lights }}"
                 data:
-                  color_temp_kelvin: 4000
-                  brightness_pct: 100
-                  transition: 1
-          - conditions: "{{ is_state('sun.sun', 'below_horizon') }}"
-            sequence:
-              - action: light.turn_on
-                target:
-                  entity_id: "{{ selected_lights }}"
-                data:
-                  color_temp_kelvin: 2237
-                  brightness_pct: 75
-                  transition: 1
+                  color_temp_kelvin: "{{ (2237 + 1763 * daylight | float) | round(0) | int }}"
+                  brightness_pct: "{{ (75 + 25 * daylight | float) | round(0) | int }}"
+                  transition: "{{ profile_transition | default(1) }}"
         default:
           - action: light.turn_on
             target:
@@ -85,10 +125,13 @@ script:
 automation:
   - id: lighting_refresh_time_profiles
     alias: Lighting - refresh time profiles
-    description: Apply profiles when a zone or its individual bulbs turn on, or at sunrise/sunset.
+    description: Apply profiles on switch-on and gradually from 15 minutes before to 15 minutes after sunrise/sunset.
     mode: queued
     max: 20
     triggers:
+      - trigger: time_pattern
+        minutes: '/1'
+        id: gradual
       - trigger: state
         entity_id: sun.sun
         to:
@@ -107,6 +150,10 @@ automation:
         from: 'off'
         to: 'on'
     actions:
+      - condition: template
+        value_template: >-
+          {{ trigger is not defined or trigger.id | default('') != 'gradual'
+             or (states('sensor.lighting_sun_transition') | float(0) - as_timestamp(now())) | abs <= 960 }}
       - repeat:
           for_each:
             - light: light.living_room_front
@@ -128,6 +175,7 @@ automation:
                   data:
                     light_entity: "{{ repeat.item.light }}"
                     only_lit: true
+                    profile_transition: "{{ 60 if trigger is defined and trigger.id | default('') == 'gradual' else 1 }}"
 
   - id: lighting_reset_manual_when_off
     alias: Lighting - reset manual mode when off

@@ -139,3 +139,21 @@ async def test_cinema_blocks_living_room_time_profiles(hass, profiles, guard):
     hass.states.async_set('sun.sun', 'above_horizon')
     await hass.async_block_till_done()
     assert profiles == []
+
+@pytest.mark.parametrize('rising', [True, False])
+@pytest.mark.parametrize('offset', [-900, -450, 0, 450, 900])
+async def test_gradual_profile_at_sun_window(hass, profiles, freezer, rising, offset):
+    now = dt_util.utcnow().replace(second=0, microsecond=0)
+    freezer.move_to(now)
+    event = (now - timedelta(seconds=offset)).timestamp()
+    hass.states.async_set('sensor.lighting_sun_transition', str(event), {'rising': rising})
+    progress = (offset + 900) / 1800
+    daylight = progress if rising else 1 - progress
+    await hass.services.async_call('script', 'lighting_turn_on_with_time_profile', {
+        'light_entity': FRONT, 'only_lit': True, 'profile_transition': 60,
+    }, blocking=True)
+    await hass.async_block_till_done()
+    assert profiles[-1] == {
+        'entity_id': [FIREPLACE], 'color_temp_kelvin': round(2237 + 1763 * daylight),
+        'brightness_pct': round(75 + 25 * daylight), 'transition': 60,
+    }
