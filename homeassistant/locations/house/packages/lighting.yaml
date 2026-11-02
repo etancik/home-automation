@@ -61,13 +61,13 @@ automation:
   # LED Strip Schedule Control with Color Transitions
   - id: 'led_strips_evening_schedule'
     alias: "LED Strips Evening Schedule"
-    description: "Yellow from sundown (if before 6:30 PM), red at 6:30 PM; kids off 30 minutes before sunrise, bedroom off at sunrise"
+    description: "Start with shutters 10 minutes before sunset: yellow before 18:30, red afterwards; switch to red at 18:30 only after the evening start. Kids off 30 minutes before sunrise, bedroom off at sunrise."
     triggers:
-      # Turn on yellow at sunset (only if before 7 PM)
+      # Use the same evening start time as shading_v1_night_positions.
       - platform: sun
         event: sunset
-        offset: "00:00:00"
-        id: "yellow_on"
+        offset: "-00:10:00"
+        id: "evening_on"
       # Switch to red at 6:30 PM
       - platform: time
         at: "18:30:00"
@@ -84,11 +84,10 @@ automation:
     conditions: []
     actions:
       - choose:
-          # Yellow light at sunset (only if sunset is before 7 PM)
+          # Start yellow while the early-evening colour window is active.
           - conditions:
               - condition: trigger
-                id: "yellow_on"
-              # Only turn on yellow if sunset is before 6:30 PM (short winter days)
+                id: "evening_on"
               - condition: time
                 before: "18:30:00"
             sequence:
@@ -101,10 +100,20 @@ automation:
                   brightness_pct: 10
                   rgb_color: [255, 137, 14]  # Warm Orange-Yellow
 
-          # Red night light at 6:30 PM
+          # In summer start directly in red when shutters close after 18:30.
+          # The 18:30 trigger must never switch lights on before that start.
           - conditions:
-              - condition: trigger
-                id: "red_on"
+              - condition: or
+                conditions:
+                  - condition: trigger
+                    id: "evening_on"
+                  - condition: and
+                    conditions:
+                      - condition: trigger
+                        id: "red_on"
+                      - condition: sun
+                        after: sunset
+                        after_offset: "-00:10:00"
             sequence:
               - service: light.turn_on
                 target:
@@ -123,7 +132,7 @@ automation:
                 target:
                   entity_id: light.kids_room_door_led_strip
 
-          # Bedroom strip off at sunrise
+          # Bedroom strip off at sunrise.
           - conditions:
               - condition: trigger
                 id: "turn_off"

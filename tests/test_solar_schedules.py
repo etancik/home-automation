@@ -12,8 +12,8 @@ PACKAGES = Path(__file__).resolve().parents[1] / 'homeassistant/locations/house/
 
 
 @pytest.fixture
-async def solar(hass, freezer):
-    freezer.move_to('2026-10-24T00:00:00Z')
+async def solar(hass, freezer, request):
+    freezer.move_to(getattr(request, 'param', '2026-10-24T00:00:00Z'))
     await hass.config.async_set_time_zone('Europe/Prague')
     hass.config.latitude = 50
     hass.config.longitude = 14
@@ -75,10 +75,41 @@ async def test_shutters_close_early_and_follow_windows_before_sunset(hass, solar
     await advance(hass, freezer, sunset - timedelta(minutes=11))
     solar.clear()
     await advance(hass, freezer, sunset - timedelta(minutes=10) + timedelta(seconds=1))
-    assert len(solar) == 5
+    assert len([call for call in solar if call[0] == 'cover']) == 5
+    assert [call for call in solar if call[0] == 'light'] == [
+        ('light', 'turn_on', {'entity_id': ['light.bedroom_led_strip', 'light.kids_room_door_led_strip'],
+                              'brightness_pct': 10, 'rgb_color': [255, 137, 14]})]
     assert ('cover', 'set_cover_position', {'entity_id': ['cover.kids_room_roller_shutter'], 'position': 0}) in solar
     solar.clear()
     await advance(hass, freezer, sunset - timedelta(minutes=5))
     hass.states.async_set('binary_sensor.kids_room_window_sensor_contact', 'on')
     await hass.async_block_till_done()
     assert solar == [('cover', 'set_cover_position', {'entity_id': ['cover.kids_room_roller_shutter'], 'position': 20})]
+
+
+@pytest.mark.parametrize('solar', ['2026-10-24T00:00:00Z', '2026-06-24T00:00:00Z'], indirect=True)
+async def test_evening_colours_start_with_shutters_in_winter_and_summer(hass, solar, freezer):
+    sunset = get_astral_event_date(hass, 'sunset', dt_util.now().date())
+    red_time = dt_util.as_utc(dt_util.now().replace(hour=18, minute=30, second=0, microsecond=0))
+    start = sunset - timedelta(minutes=10)
+    targets = ['light.bedroom_led_strip', 'light.kids_room_door_led_strip']
+    # Jump past morning events, then exercise the actual solar/time listeners.
+    await advance(hass, freezer, min(start, red_time) - timedelta(minutes=1))
+    solar.clear()
+    if start < red_time:
+        await advance(hass, freezer, start + timedelta(seconds=1))
+        assert [c for c in solar if c[0] == 'light'] == [
+            ('light', 'turn_on', {'entity_id': targets, 'brightness_pct': 10, 'rgb_color': [255, 137, 14]})]
+        solar.clear()
+        await advance(hass, freezer, red_time + timedelta(seconds=1))
+    else:
+        await advance(hass, freezer, red_time + timedelta(seconds=1))
+        assert [c for c in solar if c[0] == 'light'] == []
+        solar.clear()
+        await advance(hass, freezer, start + timedelta(seconds=1))
+        assert len([c for c in solar if c[0] == 'cover']) == 5
+    assert [c for c in solar if c[0] == 'light'] == [
+        ('light', 'turn_on', {'entity_id': targets, 'brightness_pct': 15, 'rgb_color': [255, 0, 0]})]
+    solar.clear()
+    await advance(hass, freezer, sunset + timedelta(seconds=1))
+    assert [c for c in solar if c[0] == 'light'] == []
