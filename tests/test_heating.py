@@ -142,16 +142,49 @@ async def test_relay_command_failure_latches(rig):
     assert rig.hass.states.is_state('input_boolean.heating_safety_lock','on')
     assert rig.hass.states.is_state(BOILER,'off')
 
-async def test_relay_disconnect_during_run_latches(rig):
+async def test_short_relay_disconnect_preserves_run(rig, freezer):
+    await rig.enabled()
+    rig.room()
+    await rig.settle()
+    deadline = rig.hass.states.get('input_datetime.heating_boiler_deadline').state
+    rig.state(BOILER, 'unavailable')
+    await rig.settle()
+    await advance(rig, freezer, 6)
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+    rig.state(BOILER, 'on')
+    await rig.settle()
+    await advance(rig, freezer, 30)
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+    assert rig.hass.states.get('input_datetime.heating_boiler_deadline').state == deadline
+    assert rig.calls == [(BOILER, 'on')]
+
+
+async def test_relay_disconnect_during_run_latches(rig, freezer):
     await rig.enabled()
     rig.room()
     await rig.settle()
     rig.state(BOILER,'unavailable')
     await rig.settle()
+    await advance(rig, freezer, 15)
     assert rig.hass.states.is_state('input_boolean.heating_safety_lock','on')
     rig.state(BOILER,'on')
     await rig.settle()
     assert rig.hass.states.is_state(BOILER,'off')
+
+async def test_deadline_expires_during_short_relay_disconnect(rig, freezer):
+    await rig.enabled()
+    rig.room()
+    await rig.settle()
+    await advance(rig, freezer, 4 * 3600 - 4)
+    rig.state(BOILER, 'unavailable')
+    await rig.settle()
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+    await advance(rig, freezer, 5)
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'on')
+    rig.state(BOILER, 'on')
+    await rig.settle()
+    assert rig.calls == [(BOILER, 'on'), (BOILER, 'off')]
+
 
 @pytest.mark.parametrize('initial',['off','heat','auto'])
 async def test_window_restores_user_mode(rig,initial):
