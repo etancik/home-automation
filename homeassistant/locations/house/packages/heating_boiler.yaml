@@ -82,10 +82,6 @@ automation:
       - trigger: time_pattern
         seconds: "/30"
         id: reconcile
-      - trigger: template
-        value_template: "{{ not has_value('switch.laundry_room_boiler_controller_l2') }}"
-        for: "00:00:15"
-        id: relay_unavailable
       - trigger: state
         entity_id: input_datetime.heating_boiler_deadline
         id: deadline_changed
@@ -195,23 +191,9 @@ automation:
       - choose:
           - conditions: "{{ not has_value('switch.laundry_room_boiler_controller_l2') }}"
             sequence:
-              # Brief reporting gaps leave the current deadline in force. The periodic
-              # check also covers automations loaded while the relay is already missing.
-              - if: >-
-                  {{ deadline > 0 and not is_state('input_boolean.heating_safety_lock', 'on')
-                     and (as_timestamp(now()) >= deadline
-                          or (trigger is defined and trigger.id | default('') == 'relay_unavailable')
-                          or as_timestamp(now()) - as_timestamp(states.switch.laundry_room_boiler_controller_l2.last_changed, as_timestamp(now())) >= 15) }}
-                then:
-                  - action: input_boolean.turn_on
-                    target:
-                      entity_id: input_boolean.heating_safety_lock
-                  - action: persistent_notification.create
-                    data:
-                      notification_id: heating_fault
-                      title: Heating safety shutoff
-                      message: Boiler relay status could not be verified during an active run. Inspect before acknowledging.
-              - stop: Boiler unavailable; preserve the run deadline.
+              # Preserve the deadline so recovery can verify the reported relay state
+              # against the original run limit before allowing heating.
+              - stop: Boiler unavailable; wait for its state before reconciling.
           - conditions: >-
               {{ not is_state('input_boolean.heating_enabled', 'on')
                  or is_state('input_boolean.heating_safety_lock', 'on') or not demand.keep }}

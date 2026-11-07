@@ -142,48 +142,65 @@ async def test_relay_command_failure_latches(rig):
     assert rig.hass.states.is_state('input_boolean.heating_safety_lock','on')
     assert rig.hass.states.is_state(BOILER,'off')
 
-async def test_short_relay_disconnect_preserves_run(rig, freezer):
+@pytest.mark.parametrize('outage_seconds', [6, 60, 3600])
+async def test_relay_disconnect_preserves_run(rig, freezer, outage_seconds):
     await rig.enabled()
     rig.room()
     await rig.settle()
     deadline = rig.hass.states.get('input_datetime.heating_boiler_deadline').state
     rig.state(BOILER, 'unavailable')
     await rig.settle()
-    await advance(rig, freezer, 6)
+    await advance(rig, freezer, outage_seconds)
     assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+    assert rig.hass.states.get('input_datetime.heating_boiler_deadline').state == deadline
+    assert rig.calls == [(BOILER, 'on')]
+
     rig.state(BOILER, 'on')
     await rig.settle()
-    await advance(rig, freezer, 30)
     assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
     assert rig.hass.states.get('input_datetime.heating_boiler_deadline').state == deadline
     assert rig.calls == [(BOILER, 'on')]
 
 
-async def test_relay_disconnect_during_run_latches(rig, freezer):
+async def test_relay_recovery_rechecks_heating_demand(rig, freezer):
     await rig.enabled()
     rig.room()
     await rig.settle()
-    rig.state(BOILER,'unavailable')
-    await rig.settle()
-    await advance(rig, freezer, 15)
-    assert rig.hass.states.is_state('input_boolean.heating_safety_lock','on')
-    rig.state(BOILER,'on')
-    await rig.settle()
-    assert rig.hass.states.is_state(BOILER,'off')
-
-async def test_deadline_expires_during_short_relay_disconnect(rig, freezer):
-    await rig.enabled()
-    rig.room()
-    await rig.settle()
-    await advance(rig, freezer, 4 * 3600 - 4)
     rig.state(BOILER, 'unavailable')
+    rig.room(temp=21, action='idle')
     await rig.settle()
-    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
-    await advance(rig, freezer, 5)
-    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'on')
+    await advance(rig, freezer, 60)
+    assert rig.calls == [(BOILER, 'on')]
+
     rig.state(BOILER, 'on')
     await rig.settle()
     assert rig.calls == [(BOILER, 'on'), (BOILER, 'off')]
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+    assert rig.hass.states.get('input_datetime.heating_boiler_deadline').attributes['timestamp'] == 0
+
+
+@pytest.mark.parametrize('recovered_state', ['on', 'off'])
+async def test_relay_recovers_after_deadline(rig, freezer, recovered_state):
+    await rig.enabled()
+    rig.room()
+    await rig.settle()
+    deadline = rig.hass.states.get('input_datetime.heating_boiler_deadline').attributes['timestamp']
+    rig.state(BOILER, 'unavailable')
+    await rig.settle()
+    await advance(rig, freezer, 4 * 3600 + 1)
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+    assert rig.hass.states.get('input_datetime.heating_boiler_deadline').attributes['timestamp'] == deadline
+    assert rig.calls == [(BOILER, 'on')]
+
+    rig.state(BOILER, recovered_state)
+    await rig.settle()
+    if recovered_state == 'on':
+        assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'on')
+        assert rig.calls == [(BOILER, 'on'), (BOILER, 'off')]
+    else:
+        assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+        assert rig.hass.states.get('input_datetime.heating_boiler_deadline').attributes['timestamp'] > deadline
+        assert rig.calls == [(BOILER, 'on'), (BOILER, 'on')]
 
 
 @pytest.mark.parametrize('initial',['off','heat','auto'])
