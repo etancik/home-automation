@@ -29,6 +29,15 @@ script:
     sequence:
       - variables:
           player: media_player.living_room_apple_tv
+          lamp: light.living_room_lamp
+          warm_kelvin: 2237
+          lamp_saved: "{{ lamp in (state_attr('scene.cinema_before_lamp', 'entity_id') or []) }}"
+          front_managed: >-
+            {{ is_state('input_boolean.cinema_active', 'on')
+               and is_state('input_boolean.cinema_override_front', 'off') }}
+          front_targets: >-
+            {{ ['light.living_room_front'] + ([lamp] if has_value(lamp)
+               and (lamp_saved or is_state('input_boolean.cinema_active', 'off')) else []) }}
           video_apps: ['YouTube', 'TV', 'Netflix', 'Disney+', 'HBO Max', 'Prime Video', 'Crunchyroll', 'iVysílání', 'Oneplay']
           finish: >-
             {{ (intent == 'end' and states(player) in ['off', 'idle'])
@@ -37,6 +46,53 @@ script:
                    and state_attr(player, 'app_name') is not none
                    and state_attr(player, 'app_name') not in video_apps) }}
       - choose:
+          - conditions: "{{ intent in ['lamp_on', 'lamp_off'] }}"
+            sequence:
+              # Update the lamp's restore state without changing the front bulbs' snapshot.
+              - if: "{{ intent == 'lamp_on' and front_managed }}"
+                then:
+                  - action: scene.create
+                    data:
+                      scene_id: cinema_before_lamp
+                      entities:
+                        light.living_room_lamp:
+                          state: 'on'
+                          brightness: 255
+                          color_mode: color_temp
+                          color_temp_kelvin: "{{ warm_kelvin }}"
+                  - if: "{{ not is_state(player, 'paused') }}"
+                    then:
+                      - stop: Restore the scheduled lamp setting when cinema ends
+              - if: "{{ intent == 'lamp_off' and lamp_saved }}"
+                then:
+                  - action: scene.delete
+                    target:
+                      entity_id: scene.cinema_before_lamp
+              - condition: template
+                value_template: "{{ has_value(lamp) }}"
+              - if: "{{ front_managed }}"
+                then:
+                  - action: input_boolean.turn_on
+                    target:
+                      entity_id: input_boolean.cinema_applying
+              - if: "{{ intent == 'lamp_on' }}"
+                then:
+                  - action: light.turn_on
+                    target:
+                      entity_id: "{{ lamp }}"
+                    data:
+                      brightness_pct: "{{ 10 if front_managed else 100 }}"
+                      color_temp_kelvin: "{{ warm_kelvin }}"
+                else:
+                  - action: light.turn_off
+                    target:
+                      entity_id: "{{ lamp }}"
+              - if: "{{ front_managed }}"
+                then:
+                  - delay: 2
+                  - action: input_boolean.turn_off
+                    target:
+                      entity_id: input_boolean.cinema_applying
           - conditions: "{{ finish and is_state('input_boolean.cinema_active', 'on') }}"
             sequence:
               - action: input_boolean.turn_on
@@ -47,11 +103,21 @@ script:
                   sequence:
                     - if: >-
                         {{ is_state('input_boolean.cinema_override_' ~ repeat.item, 'off')
-                           and states('scene.cinema_before_' ~ repeat.item) not in ['unknown', 'unavailable'] }}
+                           and state_attr('scene.cinema_before_' ~ repeat.item, 'entity_id') is not none }}
                       then:
                         - action: scene.turn_on
                           target:
                             entity_id: "{{ 'scene.cinema_before_' ~ repeat.item }}"
+              - if: "{{ lamp_saved }}"
+                then:
+                  - if: "{{ front_managed and has_value(lamp) }}"
+                    then:
+                      - action: scene.turn_on
+                        target:
+                          entity_id: scene.cinema_before_lamp
+                  - action: scene.delete
+                    target:
+                      entity_id: scene.cinema_before_lamp
               - action: input_boolean.turn_off
                 target:
                   entity_id: input_boolean.cinema_active
@@ -70,6 +136,12 @@ script:
             sequence:
               - if: "{{ is_state('input_boolean.cinema_active', 'off') }}"
                 then:
+                  - if: "{{ has_value(lamp) }}"
+                    then:
+                      - action: scene.create
+                        data:
+                          scene_id: cinema_before_lamp
+                          snapshot_entities: "{{ [lamp] }}"
                   - repeat:
                       for_each: ['front', 'rear']
                       sequence:
@@ -94,7 +166,7 @@ script:
                 then:
                   - action: light.turn_off
                     target:
-                      entity_id: light.living_room_front
+                      entity_id: "{{ front_targets }}"
               - if: "{{ is_state('input_boolean.cinema_override_rear', 'off') }}"
                 then:
                   - action: light.turn_on
@@ -119,7 +191,7 @@ script:
                 then:
                   - action: light.turn_on
                     target:
-                      entity_id: light.living_room_front
+                      entity_id: "{{ front_targets }}"
                     data:
                       brightness_pct: 10
                       color_temp_kelvin: 2237
@@ -199,6 +271,7 @@ automation:
         entity_id:
           - light.living_room_fireplace_light
           - light.living_room_palm_light
+          - light.living_room_lamp
         id: front
       - trigger: state
         entity_id: light.living_room_bookshelf_light
