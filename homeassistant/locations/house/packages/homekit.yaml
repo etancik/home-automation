@@ -102,6 +102,7 @@ homekit:
         - light.bedroom_led_strip
         - light.kids_room_door_led_strip
         - light.living_room_light
+        - light.living_room_lamp
         - light.living_room_palm_light
         - light.living_room_fireplace_light
         - light.living_room_bookshelf_light
@@ -288,6 +289,8 @@ homekit:
         name: "Kids Room Door LED Strip"
       light.living_room_light:
         name: "Living Room Light"
+      light.living_room_lamp:
+        name: "Living Room Lamp"
       light.living_room_palm_light:
         name: "Living Room Palm"
       light.living_room_fireplace_light:

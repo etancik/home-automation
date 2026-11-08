@@ -14,22 +14,49 @@ REAR = 'light.living_room_rear'
 FIREPLACE = 'light.living_room_fireplace_light'
 PALM = 'light.living_room_palm_light'
 BOOKSHELF = 'light.living_room_bookshelf_light'
+LAMP = 'light.living_room_lamp'
+SHUTTER = 'cover.living_room_roller_shutter'
+LAMP_SCENE = 'scene.cinema_before_lamp'
 
 
 @pytest.fixture
-async def cinema(hass):
+async def cinema(hass, freezer):
+    freezer.move_to('2026-11-07T22:00:00Z')
+    await hass.config.async_set_time_zone('Europe/Prague')
     config = yaml.safe_load(PACKAGE.read_text())
+    living_room = yaml.safe_load(PACKAGE.with_name('lighting_living_room.yaml').read_text())
+    config['automation'].extend(
+        item for item in living_room['automation'] if item['id'] == 'living_room_lamp_schedule'
+    )
     # Device settling delays are exercised by guards separately; avoid wall-clock sleeps.
-    for branch in config['script']['cinema_lighting']['sequence'][1]['choose']:
-        for action in branch['sequence']:
+    def skip_delays(actions):
+        for action in actions:
             if 'delay' in action:
                 action['delay'] = 0
+            for branch in action.get('choose', []):
+                skip_delays(branch['sequence'])
+            for key in ['then', 'else']:
+                skip_delays(action.get(key, []))
+
+    skip_delays(config['script']['cinema_lighting']['sequence'])
     calls = []
 
     async def record(call):
         calls.append((call.domain, call.service, dict(call.data)))
 
-    for domain, services in [('light', ['turn_on', 'turn_off']), ('scene', ['create', 'turn_on'])]:
+    async def create_scene(call):
+        await record(call)
+        members = call.data.get('snapshot_entities') or list(call.data['entities'])
+        hass.states.async_set('scene.' + call.data['scene_id'], 'unknown', {'entity_id': members})
+
+    async def delete_scene(call):
+        await record(call)
+        for entity in call.data['entity_id']:
+            hass.states.async_remove(entity)
+
+    hass.services.async_register('scene', 'create', create_scene)
+    hass.services.async_register('scene', 'delete', delete_scene)
+    for domain, services in [('light', ['turn_on', 'turn_off']), ('scene', ['turn_on'])]:
         for service in services:
             hass.services.async_register(domain, service, record)
     hass.states.async_set(FIREPLACE, 'on', {'brightness': 150})
@@ -39,17 +66,18 @@ async def cinema(hass):
     hass.states.async_set(REAR, 'on', {'entity_id': [BOOKSHELF]})
     for side in ['front', 'rear']:
         hass.states.async_set('input_boolean.lighting_manual_living_room_' + side, 'off')
-        hass.states.async_set('scene.cinema_before_' + side, 'scening')
     hass.states.async_set(PLAYER, 'idle', {'app_name': 'YouTube'})
     assert await async_setup_component(hass, 'input_boolean', {'input_boolean': config['input_boolean']})
     assert await async_setup_component(hass, 'script', {'script': config['script']})
     await hass.services.async_call('input_boolean', 'turn_on', {'entity_id': 'input_boolean.cinema_enabled'}, blocking=True)
     assert await async_setup_component(hass, 'automation', {'automation': config['automation']})
+    await hass.async_start()
     await hass.async_block_till_done()
     yield calls
     await hass.services.async_call('automation', 'turn_off', {
         'entity_id': [s.entity_id for s in hass.states.async_all('automation')], 'stop_actions': True,
     }, blocking=True)
+    await hass.async_stop(force=True)
 
 
 async def play(hass, app='YouTube'):
@@ -208,3 +236,77 @@ async def test_pause_shorter_than_two_seconds_does_not_brighten(hass, cinema):
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=3))
     await hass.async_block_till_done()
     assert light_calls(cinema) == []
+
+
+async def close_shutter(hass):
+    hass.states.async_set(SHUTTER, 'closing')
+    await hass.async_block_till_done()
+    hass.states.async_set(SHUTTER, 'closed')
+    await hass.async_block_till_done()
+
+
+async def advance(hass, freezer, when):
+    freezer.move_to(when)
+    async_fire_time_changed(hass, dt_util.utcnow())
+    await hass.async_block_till_done()
+
+
+async def test_lamp_follows_shutter_and_local_cutoff(hass, cinema, freezer):
+    hass.states.async_set(LAMP, 'off')
+    hass.states.async_set(SHUTTER, 'closed')
+    await hass.async_block_till_done()
+    assert light_calls(cinema) == []
+    await close_shutter(hass)
+    assert light_calls(cinema) == [
+        ('light', 'turn_on', {'entity_id': [LAMP], 'brightness_pct': 100, 'color_temp_kelvin': 2237}),
+    ]
+    cinema.clear()
+    await advance(hass, freezer, '2026-11-07T23:59:59Z')
+    assert light_calls(cinema) == []
+    await advance(hass, freezer, '2026-11-08T00:00:01Z')
+    assert light_calls(cinema) == [('light', 'turn_off', {'entity_id': [LAMP]})]
+
+
+async def test_lamp_follows_front_lights_until_nightly_cutoff(hass, cinema, freezer):
+    hass.states.async_set(LAMP, 'on', {'brightness': 255})
+    await play(hass)
+    assert light_calls(cinema)[0] == ('light', 'turn_off', {'entity_id': [FRONT, LAMP]})
+    assert hass.states.get(LAMP_SCENE).attributes['entity_id'] == [LAMP]
+
+    cinema.clear()
+    hass.states.async_set(PLAYER, 'paused', {'app_name': 'YouTube'})
+    await hass.async_block_till_done()
+    await advance(hass, freezer, '2026-11-07T22:00:03Z')
+    assert light_calls(cinema)[0] == (
+        'light', 'turn_on', {'entity_id': [FRONT, LAMP], 'brightness_pct': 10,
+                             'color_temp_kelvin': 2237, 'transition': 3},
+    )
+
+    cinema.clear()
+    await advance(hass, freezer, '2026-11-08T00:00:01Z')
+    assert light_calls(cinema) == [('light', 'turn_off', {'entity_id': [LAMP]})]
+    assert hass.states.get(LAMP_SCENE) is None
+    cinema.clear()
+    await play(hass)
+    hass.states.async_set(PLAYER, 'paused', {'app_name': 'YouTube'})
+    await hass.async_block_till_done()
+    await advance(hass, freezer, '2026-11-08T00:00:07Z')
+    assert all(LAMP not in call[2]['entity_id'] for call in light_calls(cinema))
+    await play(hass, 'Spotify')
+    assert all(LAMP_SCENE not in call[2].get('entity_id', []) for call in cinema if call[0] == 'scene')
+
+
+async def test_shutter_closing_during_playback_sets_lamp_restore_scene(hass, cinema):
+    hass.states.async_set(LAMP, 'off')
+    await play(hass)
+    cinema.clear()
+    await close_shutter(hass)
+    assert light_calls(cinema) == []
+    assert cinema == [('scene', 'create', {
+        'scene_id': 'cinema_before_lamp',
+        'entities': {LAMP: {'state': 'on', 'brightness': 255,
+                            'color_mode': 'color_temp', 'color_temp_kelvin': 2237}},
+    })]
+    await play(hass, 'Spotify')
+    assert ('scene', 'turn_on', {'entity_id': [LAMP_SCENE]}) in cinema
+    assert hass.states.get(LAMP_SCENE) is None

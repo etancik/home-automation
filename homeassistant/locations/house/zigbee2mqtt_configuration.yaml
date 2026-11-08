@@ -205,9 +205,9 @@ devices:
     retain: false
     description: 'Hue Essential bulb at the living room palm'
   '0x001788010f7289f2':
-    friendly_name: 'Spare Hue Light 1'
+    friendly_name: 'Living Room Lamp'
     retain: false
-    description: 'Hue Essential bulb with no assigned location yet'
+    description: 'Hue Essential bulb in the living room lamp'
   '0x001788010f7273f2':
     friendly_name: 'Outdoor Light'
     retain: false
@@ -299,14 +299,6 @@ devices:
     friendly_name: 'Laundry Room Washing Machine Smart Plug'
     retain: false
     description: 'Lidl Silvercrest smart plug with power monitoring for washing machine (supports >300W motors)'
-  '0x348d13fffe3d7bac':
-    friendly_name: 'Living Room PC Smart Plug'
-    retain: false
-    description: 'Smart plug for living room PC and electronics'
-  '0x348d13fffeeaf3ff':
-    friendly_name: 'Workshop Smart Plug'
-    retain: false
-    description: 'Smart plug for workshop power control'
 
   # ========================================
   # BOILER CONTROL

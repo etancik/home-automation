@@ -57,13 +57,7 @@ binary_sensor.laundry_room_leak_sensor:
   area: laundry_room
   device_class: opening
 
-# Smart Plugs (IKEA E22x4)
-switch.workshop_smart_plug:
-  friendly_name: "House Workshop Smart Plug"
-  area: workshop
-switch.living_room_pc_smart_plug:
-  friendly_name: "House Living Room PC Smart Plug"
-  area: living_room
+# Smart Plugs
 switch.laundry_room_smart_plug:
   friendly_name: "House Laundry Room Smart Plug"
   area: laundry_room
