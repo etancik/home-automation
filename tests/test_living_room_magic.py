@@ -68,46 +68,45 @@ def light_frames(calls):
     return [data for domain, _, data in calls if domain == 'light']
 
 
-async def test_magic_spreads_one_color_into_a_rainbow_and_restores_on_idle(hass, magic):
+async def test_magic_changes_whole_room_only_on_press_and_restores_on_idle(hass, magic):
     calls, press, advance = magic
     await press('double')
     assert calls[0] == ('scene', 'create', {
         'scene_id': 'living_room_magic_before', 'snapshot_entities': LIGHTS,
     })
-    first_frame = light_frames(calls)
-    assert [data['entity_id'] for data in first_frame] == [[light] for light in LIGHTS]
-    first_hue = first_frame[0]['hs_color'][0]
-    assert [data['hs_color'] for data in first_frame] == [[first_hue, 80]] * 4
+    assert len(light_frames(calls)) == 1
+    first_color = light_frames(calls)[0]
+    assert first_color['entity_id'] == LIGHTS
+    first_hue = first_color['hs_color'][0]
     await advance(2)
-    assert [data['hs_color'] for data in light_frames(calls)[4:]] == [
-        [(first_hue + 40 + index * 65) % 360, 80] for index in range(4)
-    ]
+    await advance(3)
+    assert light_frames(calls) == [first_color]
+    await press()
+    assert len(light_frames(calls)) == 2
+    assert light_frames(calls)[1] == {**first_color, 'hs_color': [(first_hue + 72) % 360, 80]}
     await advance(2)
-    await advance(2)
-    assert len(light_frames(calls)) == 12
+    await advance(4)
+    assert len(light_frames(calls)) == 2
     assert calls[-1] == ('scene', 'turn_on', {'entity_id': ['scene.living_room_magic_before'], 'transition': 1})
     await advance(2)
     assert hass.states.get(ROUND).state == 'off'
     assert calls[-1][:2] == ('scene', 'delete')
 
 
-async def test_rapid_taps_extend_rainbow_without_speeding_it_up(hass, magic):
+async def test_rapid_taps_are_combined_into_one_color_change(hass, magic):
     calls, press, advance = magic
     await press()
     for gesture in ['single', 'double', 'double', 'single']:
         await press(gesture)
-    assert len(light_frames(calls)) == 4
+    assert len(light_frames(calls)) == 1
     await advance(2)
-    assert len(light_frames(calls)) == 8
+    assert len(light_frames(calls)) == 2
     await advance(2)
-    await press()
-    assert len(light_frames(calls)) == 12
-    await advance(2)
-    assert len(light_frames(calls)) == 16
     assert hass.states.get(ROUND).state == 'on'
+    assert len(light_frames(calls)) == 2
     assert len([call for call in calls if call[:2] == ('scene', 'create')]) == 1
-    await advance(2)
-    await advance(2)
+    await advance(4)
+    assert len(light_frames(calls)) == 2
     assert calls[-1][:2] == ('scene', 'turn_on')
 
 

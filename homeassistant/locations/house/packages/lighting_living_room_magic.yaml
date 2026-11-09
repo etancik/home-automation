@@ -30,32 +30,28 @@ script:
         data:
           scene_id: living_room_magic_before
           snapshot_entities: "{{ lights }}"
-      - variables:
-          started_at: "{{ as_timestamp(now()) }}"
       - repeat:
           sequence:
+            - variables:
+                last_press: "{{ states('input_button.living_room_magic_press') }}"
             - if: "{{ is_state('input_boolean.living_room_magic_cancel_requested', 'off') }}"
               then:
-                - variables:
-                    base_hue: "{{ (start_hue + (repeat.index - 1) * 40) % 360 }}"
-                    spread: "{{ 0 if repeat.first else 65 }}"
-                - repeat:
-                    for_each: "{{ lights }}"
-                    sequence:
-                      - action: light.turn_on
-                        continue_on_error: true
-                        target:
-                          entity_id: "{{ repeat.item }}"
-                        data:
-                          hs_color: "{{ [(base_hue + (repeat.index - 1) * spread) % 360, 80] }}"
-                          brightness_pct: 45
-                          transition: 1.5
-            # Taps extend the rainbow without changing its pace.
+                - action: light.turn_on
+                  continue_on_error: true
+                  target:
+                    entity_id: "{{ lights }}"
+                  data:
+                    hs_color: "{{ [(start_hue + (repeat.index - 1) * 72) % 360, 80] }}"
+                    brightness_pct: 45
+                    transition: 1.5
+            # Multiple taps during the fade become at most one pending color change.
             - wait_template: "{{ is_state('input_boolean.living_room_magic_cancel_requested', 'on') }}"
               timeout: 2
-          until: >-
-            {{ is_state('input_boolean.living_room_magic_cancel_requested', 'on')
-               or as_timestamp(now()) - [started_at, as_timestamp(states('input_button.living_room_magic_press'), 0)] | max >= 6 }}
+            - wait_template: >-
+                {{ is_state('input_boolean.living_room_magic_cancel_requested', 'on')
+                   or states('input_button.living_room_magic_press') != last_press }}
+              timeout: 4
+          until: "{{ is_state('input_boolean.living_room_magic_cancel_requested', 'on') or not wait.completed }}"
       - action: scene.turn_on
         continue_on_error: true
         target:
