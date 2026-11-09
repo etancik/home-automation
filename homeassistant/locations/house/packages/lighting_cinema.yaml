@@ -27,9 +27,6 @@ script:
         selector:
           text:
     sequence:
-      - if: "{{ is_state('script.living_room_magic_round', 'on') }}"
-        then:
-          - action: script.living_room_magic_cancel
       - variables:
           player: media_player.living_room_apple_tv
           lamp: light.living_room_lamp
@@ -52,6 +49,9 @@ script:
       - choose:
           - conditions: "{{ intent in ['lamp_on', 'lamp_off'] }}"
             sequence:
+              - if: "{{ is_state('script.living_room_magic_round', 'on') }}"
+                then:
+                  - action: script.living_room_magic_cancel
               # Update the lamp's restore state without changing the front bulbs' snapshot.
               - if: "{{ intent == 'lamp_on' and front_managed }}"
                 then:
@@ -138,6 +138,9 @@ script:
                           and expand('light.living_room_front', 'light.living_room_rear')
                               | rejectattr('state', 'in', ['on', 'off']) | list | count == 0)) }}
             sequence:
+              - if: "{{ is_state('script.living_room_magic_round', 'on') }}"
+                then:
+                  - action: script.living_room_magic_cancel
               - if: "{{ is_state('input_boolean.cinema_active', 'off') }}"
                 then:
                   - if: "{{ has_value(lamp) }}"
@@ -261,7 +264,10 @@ automation:
         id: ready
     conditions:
       - condition: template
-        value_template: "{{ trigger.id != 'ready' or is_state('input_boolean.cinema_active', 'off') }}"
+        value_template: >-
+          {{ trigger.id != 'ready'
+             or (is_state('input_boolean.cinema_active', 'off')
+                 and not is_state('script.living_room_magic_round', 'on')) }}
     actions:
       - action: script.cinema_lighting
         data:

@@ -17,6 +17,7 @@ BOOKSHELF = 'light.living_room_bookshelf_light'
 LAMP = 'light.living_room_lamp'
 SHUTTER = 'cover.living_room_roller_shutter'
 LAMP_SCENE = 'scene.cinema_before_lamp'
+MAGIC_ROUND = 'script.living_room_magic_round'
 
 
 @pytest.fixture
@@ -101,6 +102,32 @@ async def test_play_starts_cinema_and_snapshots_each_zone(hass, cinema):
         ('light', 'turn_off', {'entity_id': [FRONT]}),
         ('light', 'turn_on', {'entity_id': [REAR], 'brightness_pct': 10, 'color_temp_kelvin': 2237, 'transition': 1}),
     ]
+
+
+async def test_cinema_readiness_check_leaves_active_magic_round_alone(hass, cinema):
+    async def cancel(call):
+        pytest.fail('Readiness check canceled the active magic round')
+
+    hass.services.async_register('script', 'living_room_magic_cancel', cancel)
+    hass.states.async_set(MAGIC_ROUND, 'on')
+    hass.states.async_set(REAR, 'off', {'entity_id': [BOOKSHELF]})
+    hass.states.async_set(REAR, 'on', {'entity_id': [BOOKSHELF]})
+    await hass.async_block_till_done()
+    await hass.services.async_call('script', 'cinema_lighting', {'intent': 'ready'}, blocking=True)
+    assert cinema == []
+    assert hass.states.get(MAGIC_ROUND).state == 'on'
+
+
+async def test_video_playback_restores_magic_round_before_cinema_snapshot(hass, cinema):
+    async def cancel(call):
+        cinema.append(('script', 'living_room_magic_cancel', {}))
+        hass.states.async_set(MAGIC_ROUND, 'off')
+
+    hass.services.async_register('script', 'living_room_magic_cancel', cancel)
+    hass.states.async_set(MAGIC_ROUND, 'on')
+    await play(hass)
+    assert [call[:2] for call in cinema[:2]] == [('script', 'living_room_magic_cancel'), ('scene', 'create')]
+    assert hass.states.get('input_boolean.cinema_active').state == 'on'
 
 
 @pytest.mark.parametrize('app', ['Spotify', 'Music', 'Podcasts'])
