@@ -49,6 +49,9 @@ automation:
         payload: toggle_l2
         id: front
     actions:
+      - if: "{{ is_state('script.living_room_magic_round', 'on') }}"
+        then:
+          - action: script.living_room_magic_cancel
       - if: "{{ is_state('input_boolean.cinema_active', 'on') }}"
         then:
           - action: input_boolean.turn_on
