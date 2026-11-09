@@ -30,6 +30,7 @@ script:
       - variables:
           player: media_player.living_room_apple_tv
           lamp: light.living_room_lamp
+          lamp_brightness_pct: 50
           warm_kelvin: 2237
           lamp_saved: "{{ lamp in (state_attr('scene.cinema_before_lamp', 'entity_id') or []) }}"
           front_managed: >-
@@ -57,7 +58,7 @@ script:
                       entities:
                         light.living_room_lamp:
                           state: 'on'
-                          brightness: 255
+                          brightness: "{{ (lamp_brightness_pct * 255 / 100) | round(0) | int }}"
                           color_mode: color_temp
                           color_temp_kelvin: "{{ warm_kelvin }}"
                   - if: "{{ not is_state(player, 'paused') }}"
@@ -81,7 +82,7 @@ script:
                     target:
                       entity_id: "{{ lamp }}"
                     data:
-                      brightness_pct: "{{ 10 if front_managed else 100 }}"
+                      brightness_pct: "{{ 10 if front_managed else lamp_brightness_pct }}"
                       color_temp_kelvin: "{{ warm_kelvin }}"
                 else:
                   - action: light.turn_off

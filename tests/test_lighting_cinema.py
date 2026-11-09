@@ -258,7 +258,7 @@ async def test_lamp_follows_shutter_and_local_cutoff(hass, cinema, freezer):
     assert light_calls(cinema) == []
     await close_shutter(hass)
     assert light_calls(cinema) == [
-        ('light', 'turn_on', {'entity_id': [LAMP], 'brightness_pct': 100, 'color_temp_kelvin': 2237}),
+        ('light', 'turn_on', {'entity_id': [LAMP], 'brightness_pct': 50, 'color_temp_kelvin': 2237}),
     ]
     cinema.clear()
     await advance(hass, freezer, '2026-11-07T23:59:59Z')
@@ -304,7 +304,7 @@ async def test_shutter_closing_during_playback_sets_lamp_restore_scene(hass, cin
     assert light_calls(cinema) == []
     assert cinema == [('scene', 'create', {
         'scene_id': 'cinema_before_lamp',
-        'entities': {LAMP: {'state': 'on', 'brightness': 255,
+        'entities': {LAMP: {'state': 'on', 'brightness': 128,
                             'color_mode': 'color_temp', 'color_temp_kelvin': 2237}},
     })]
     await play(hass, 'Spotify')
