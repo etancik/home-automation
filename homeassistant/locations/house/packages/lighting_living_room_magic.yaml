@@ -1,0 +1,181 @@
+input_select:
+  living_room_magic_signal:
+    name: Living Room Magic - signal
+    options: [ready, press, cancel]
+    initial: ready
+
+input_text:
+  living_room_magic_last_round:
+    name: Living Room Magic - last round
+    max: 16
+
+script:
+  living_room_magic_round:
+    alias: Kouzelný obývák
+    mode: single
+    sequence:
+      - condition: template
+        value_template: >-
+          {{ is_state('script.cinema_lighting', 'off')
+             and is_state('input_boolean.cinema_active', 'off')
+             and is_state('input_boolean.cinema_applying', 'off') }}
+      - variables:
+          lights:
+            - light.living_room_fireplace_light
+            - light.living_room_palm_light
+            - light.living_room_bookshelf_light
+            - light.living_room_lamp
+          # Each frame is in lamp order. Colors are hue, saturation, and brightness percent.
+          rounds:
+            firefly:
+              palette:
+                night: [231, 65, 20]
+                gold: [43, 85, 55]
+              frames:
+                - [gold, night, night, night]
+                - [night, gold, night, night]
+                - [night, night, gold, night]
+                - [night, night, night, gold]
+            rainbow:
+              palette:
+                coral: [10, 85, 45]
+                yellow: [48, 90, 45]
+                mint: [156, 75, 45]
+                violet: [273, 78, 45]
+              frames:
+                - [coral, yellow, mint, violet]
+                - [violet, coral, yellow, mint]
+                - [mint, violet, coral, yellow]
+                - [yellow, mint, violet, coral]
+            submarine:
+              palette:
+                deep: [222, 85, 24]
+                blue: [203, 80, 32]
+                wave: [175, 78, 48]
+              frames:
+                - [deep, blue, wave, blue]
+                - [deep, wave, blue, deep]
+                - [blue, blue, wave, deep]
+                - [deep, wave, blue, blue]
+            dragon:
+              palette:
+                ember: [12, 88, 22]
+                glow: [27, 93, 38]
+                flame: [38, 88, 55]
+              frames:
+                - [glow, ember, ember, ember]
+                - [flame, glow, ember, glow]
+                - [glow, glow, glow, flame]
+                - [glow, ember, ember, ember]
+      - condition: template
+        value_template: "{{ expand(lights) | selectattr('state', 'in', ['on', 'off']) | list | count == lights | count }}"
+      - variables:
+          previous: "{{ states('input_text.living_room_magic_last_round') }}"
+          round_name: "{{ rounds.keys() | reject('eq', previous) | list | random }}"
+          round: "{{ rounds[round_name] }}"
+      - action: scene.create
+        data:
+          scene_id: living_room_magic_before
+          snapshot_entities: "{{ lights }}"
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.living_room_magic_last_round
+        data:
+          value: "{{ round_name }}"
+      - repeat:
+          for_each: "{{ round.frames }}"
+          sequence:
+            - if: "{{ is_state('input_select.living_room_magic_signal', 'ready') }}"
+              then:
+                - variables:
+                    frame: "{{ repeat.item }}"
+                    catching: "{{ round_name == 'firefly' and repeat.last }}"
+                - repeat:
+                    for_each: "{{ lights }}"
+                    sequence:
+                      - variables:
+                          color: "{{ round.palette[frame[repeat.index - 1]] }}"
+                      - action: light.turn_on
+                        continue_on_error: true
+                        target:
+                          entity_id: "{{ repeat.item }}"
+                        data:
+                          hs_color: "{{ color[:2] }}"
+                          brightness_pct: "{{ color[2] }}"
+                          transition: "{{ 1 if round_name == 'firefly' else 2 }}"
+                - wait_template: "{{ not is_state('input_select.living_room_magic_signal', 'ready') }}"
+                  timeout: '00:00:04'
+                - if: "{{ catching and is_state('input_select.living_room_magic_signal', 'press') }}"
+                  then:
+                    - action: light.turn_on
+                      continue_on_error: true
+                      target:
+                        entity_id: "{{ lights }}"
+                      data:
+                        hs_color: [43, 85]
+                        brightness_pct: 55
+                        transition: 1
+                    - wait_template: "{{ is_state('input_select.living_room_magic_signal', 'cancel') }}"
+                      timeout: '00:00:02'
+      - action: scene.turn_on
+        continue_on_error: true
+        target:
+          entity_id: scene.living_room_magic_before
+        data:
+          transition: 1
+      # Allow the lights to report restored states while the time profile is still paused.
+      - delay: 2
+      - action: scene.delete
+        continue_on_error: true
+        target:
+          entity_id: scene.living_room_magic_before
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.living_room_magic_signal
+        data:
+          option: ready
+
+  living_room_magic_cancel:
+    alias: Living Room Magic - restore before other controls
+    mode: parallel
+    sequence:
+      - condition: state
+        entity_id: script.living_room_magic_round
+        state: 'on'
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.living_room_magic_signal
+        data:
+          option: cancel
+      - wait_template: "{{ is_state('script.living_room_magic_round', 'off') }}"
+
+automation:
+  - id: living_room_magic_button
+    alias: Living Room Magic - Zigbee button
+    mode: queued
+    triggers:
+      # Paired SONOFF SNZB-01P, identified in Zigbee2MQTT by its IEEE address.
+      - trigger: mqtt
+        topic: zigbee2mqtt/0xf044d3fffeba48f1
+        value_template: "{{ value_json.action | default('') }}"
+        payload: single
+    actions:
+      - if: "{{ is_state('script.living_room_magic_round', 'on') }}"
+        then:
+          - condition: state
+            entity_id: input_select.living_room_magic_signal
+            state: ready
+          - action: input_select.select_option
+            target:
+              entity_id: input_select.living_room_magic_signal
+            data:
+              option: press
+        else:
+          - action: input_select.select_option
+            target:
+              entity_id: input_select.living_room_magic_signal
+            data:
+              option: ready
+          - action: script.turn_on
+            target:
+              entity_id: script.living_room_magic_round

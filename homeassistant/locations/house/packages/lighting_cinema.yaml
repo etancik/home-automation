@@ -27,6 +27,9 @@ script:
         selector:
           text:
     sequence:
+      - if: "{{ is_state('script.living_room_magic_round', 'on') }}"
+        then:
+          - action: script.living_room_magic_cancel
       - variables:
           player: media_player.living_room_apple_tv
           lamp: light.living_room_lamp
