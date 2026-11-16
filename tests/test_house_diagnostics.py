@@ -1,6 +1,10 @@
 from pathlib import Path
 
+from datetime import timedelta
+
 import pytest
+from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
 import yaml
 from homeassistant.helpers.template import Template
 from homeassistant.setup import async_setup_component
@@ -178,3 +182,26 @@ async def test_dashboard_templates_render_without_errors(hass, diagnostics):
             for child in value:
                 walk(child)
     walk(config)
+
+
+async def test_attention_flags_silent_charger_until_same_value_is_reported(hass, diagnostics, freezer):
+    charger = 'sensor.go_echarger_600187_power_total'
+    freezer.tick(timedelta(minutes=16))
+    async_fire_time_changed(hass, dt_util.utcnow())
+    await hass.async_block_till_done()
+
+    result = hass.states.get('sensor.house_debug_attention')
+    assert int(result.state) == len(result.attributes['issues'])
+    assert any(
+        issue['entity'] == charger and 'Bez nových údajů' in issue['reason']
+        for issue in result.attributes['issues']
+    )
+
+    hass.states.async_set(charger, '0')
+    freezer.tick(timedelta(minutes=1))
+    async_fire_time_changed(hass, dt_util.utcnow())
+    await hass.async_block_till_done()
+
+    result = hass.states.get('sensor.house_debug_attention')
+    assert int(result.state) == len(result.attributes['issues'])
+    assert all(issue['entity'] != charger for issue in result.attributes['issues'])

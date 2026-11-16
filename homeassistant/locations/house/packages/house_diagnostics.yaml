@@ -714,7 +714,10 @@ template:
           {% if is_state('input_boolean.ev_dynamic_load_balancing_enabled', 'off') %}
             {% set ns.items = ns.items + [dict(entity='input_boolean.ev_dynamic_load_balancing_enabled', title='Nabíjení', reason='Load balancing vypnutý')] %}
           {% endif %}
-          {% if has_value('sensor.go_echarger_600187_error_state') and not is_state('sensor.go_echarger_600187_error_state','NoError') %}
+          {% set charger = 'sensor.go_echarger_600187_power_total' %}
+          {% if has_value(charger) and (now() - states[charger].last_reported).total_seconds() >= 900 %}
+            {% set ns.items = ns.items + [dict(entity=charger, title='Nabíječka', reason='Bez nových údajů alespoň 15 minut. Poslední hlášení: ' ~ (states[charger].last_reported | as_local).strftime('%d.%m.%Y %H:%M'))] %}
+          {% elif has_value('sensor.go_echarger_600187_error_state') and not is_state('sensor.go_echarger_600187_error_state','NoError') %}
             {% set ns.items = ns.items + [dict(entity='sensor.go_echarger_600187_error_state', title='Nabíječka', reason=states('sensor.go_echarger_600187_error_state'))] %}
           {% endif %}
           {% if is_number(states('sensor.water_shaft_temperature_sensor_temperature')) and states('sensor.water_shaft_temperature_sensor_temperature') | float < 3 %}
@@ -770,7 +773,10 @@ template:
             {% if is_state('input_boolean.ev_dynamic_load_balancing_enabled', 'off') %}
               {% set ns.items = ns.items + [dict(entity='input_boolean.ev_dynamic_load_balancing_enabled', title='Nabíjení', reason='Load balancing vypnutý')] %}
             {% endif %}
-            {% if has_value('sensor.go_echarger_600187_error_state') and not is_state('sensor.go_echarger_600187_error_state','NoError') %}
+            {% set charger = 'sensor.go_echarger_600187_power_total' %}
+            {% if has_value(charger) and (now() - states[charger].last_reported).total_seconds() >= 900 %}
+              {% set ns.items = ns.items + [dict(entity=charger, title='Nabíječka', reason='Bez nových údajů alespoň 15 minut. Poslední hlášení: ' ~ (states[charger].last_reported | as_local).strftime('%d.%m.%Y %H:%M'))] %}
+            {% elif has_value('sensor.go_echarger_600187_error_state') and not is_state('sensor.go_echarger_600187_error_state','NoError') %}
               {% set ns.items = ns.items + [dict(entity='sensor.go_echarger_600187_error_state', title='Nabíječka', reason=states('sensor.go_echarger_600187_error_state'))] %}
             {% endif %}
             {% if is_number(states('sensor.water_shaft_temperature_sensor_temperature')) and states('sensor.water_shaft_temperature_sensor_temperature') | float < 3 %}
