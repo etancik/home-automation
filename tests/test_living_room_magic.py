@@ -14,7 +14,7 @@ from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 
 PACKAGE = Path(__file__).resolve().parents[1] / 'homeassistant/locations/house/packages/lighting_living_room_magic.yaml'
-LIGHTS = [f'light.living_room_{name}' for name in ['fireplace_light', 'palm_light', 'bookshelf_light', 'lamp']]
+LIGHTS = [f'light.living_room_{name}' for name in ['fireplace_light', 'palm_light', 'bookshelf_light', 'desk_light', 'lamp']]
 ROUND = 'script.living_room_magic_round'
 CANCEL = 'input_boolean.living_room_magic_cancel_requested'
 
