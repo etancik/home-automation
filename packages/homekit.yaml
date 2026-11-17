@@ -106,6 +106,7 @@ homekit:
         - light.living_room_palm_light
         - light.living_room_fireplace_light
         - light.living_room_bookshelf_light
+        - light.living_room_desk_light
         - light.kitchen_counter_light
         - light.kitchen_table_light
         - light.outdoor_light
@@ -297,6 +298,8 @@ homekit:
         name: "Living Room Fireplace"
       light.living_room_bookshelf_light:
         name: "Living Room Bookshelf"
+      light.living_room_desk_light:
+        name: "Living Room Desk"
       light.kitchen_counter_light:
         name: "Kitchen Counter Light"
       light.kitchen_table_light:

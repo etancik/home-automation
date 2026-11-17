@@ -22,6 +22,7 @@ script:
             - light.living_room_fireplace_light
             - light.living_room_palm_light
             - light.living_room_bookshelf_light
+            - light.living_room_desk_light
             - light.living_room_lamp
           start_hue: "{{ range(360) | random }}"
       - condition: template
@@ -85,9 +86,8 @@ automation:
     alias: Living Room Magic - Zigbee button
     mode: queued
     triggers:
-      # Paired SONOFF SNZB-01P, identified in Zigbee2MQTT by its IEEE address.
       - trigger: mqtt
-        topic: zigbee2mqtt/0xf044d3fffeba48f1
+        topic: zigbee2mqtt/Living Room Magic Button
         value_template: "{{ 'play' if (value_json.action | default('')) in ['single', 'double'] else '' }}"
         payload: play
     actions:

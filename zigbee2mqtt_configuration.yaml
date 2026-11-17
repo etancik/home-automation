@@ -213,9 +213,13 @@ devices:
     retain: false
     description: 'Hue Essential bulb in the outdoor light; permanently powered'
   '0x001788010f71788a':
-    friendly_name: 'Spare Hue Light 3'
+    friendly_name: 'Living Room Desk Light'
     retain: false
-    description: 'Hue Essential bulb with no assigned location yet'
+    description: 'Hue Essential bulb at the living room desk'
+  '0xf044d3fffeba48f1':
+    friendly_name: 'Living Room Magic Button'
+    retain: false
+    description: 'SONOFF SNZB-01P button for Living Room Magic'
   '0x84fd27fffe92fa7c':
     friendly_name: 'Bedroom LED Strip'
     retain: false

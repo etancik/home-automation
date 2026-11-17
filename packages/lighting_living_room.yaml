@@ -12,6 +12,7 @@ light:
     unique_id: living_room_rear_lights
     entities:
       - light.living_room_bookshelf_light
+      - light.living_room_desk_light
 
 automation:
   - id: living_room_passage_switch_groups
