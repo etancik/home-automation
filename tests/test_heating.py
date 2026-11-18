@@ -213,3 +213,66 @@ async def test_window_restores_user_mode(rig,initial):
     rig.state('binary_sensor.bedroom_window_sensor_contact','off')
     await rig.settle()
     assert rig.hass.states.is_state('climate.bedroom_radiator_heat_valve',initial)
+
+
+@pytest.mark.parametrize('requested', ['on', 'off'])
+@pytest.mark.parametrize('offline', ['unknown', 'unavailable'])
+@pytest.mark.parametrize('recovered', ['on', 'off'])
+async def test_disconnect_during_command_recovers_without_latching(
+    rig, requested, offline, recovered
+):
+    if requested == 'off':
+        await rig.enabled()
+        rig.room()
+        await rig.settle()
+    else:
+        await rig.enabled()
+
+    interrupted = False
+
+    async def relay(call):
+        nonlocal interrupted
+        state = 'on' if call.service == 'turn_on' else 'off'
+        rig.calls.append((BOILER, state))
+        if state == requested and not interrupted:
+            interrupted = True
+            rig.state(BOILER, offline)
+        else:
+            rig.state(BOILER, state)
+
+    rig.hass.services.async_register('switch', 'turn_on', relay)
+    rig.hass.services.async_register('switch', 'turn_off', relay)
+    rig.room(temp=19 if requested == 'on' else 21,
+             action='heating' if requested == 'on' else 'idle')
+    await rig.settle()
+    deadline = rig.hass.states.get('input_datetime.heating_boiler_deadline').attributes['timestamp']
+    assert deadline > 0
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+    calls = list(rig.calls)
+    await rig.hass.services.async_call('automation', 'trigger',
+        {'entity_id': 'automation.boiler_heating_control', 'skip_condition': False}, blocking=True)
+    await rig.settle()
+    assert rig.calls == calls
+    assert rig.hass.states.get('input_datetime.heating_boiler_deadline').attributes['timestamp'] == deadline
+
+    rig.state(BOILER, recovered)
+    await rig.settle()
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')
+    assert rig.hass.states.is_state(BOILER, requested)
+    final_deadline = rig.hass.states.get('input_datetime.heating_boiler_deadline').attributes['timestamp']
+    if requested == 'off':
+        assert final_deadline == 0
+    elif recovered == 'on':
+        assert final_deadline == deadline
+    else:
+        assert final_deadline >= deadline
+
+
+@pytest.mark.parametrize('requested', ['on', 'off'])
+async def test_command_while_disconnected_is_deferred(rig, requested):
+    rig.state(BOILER, 'unavailable')
+    await rig.settle()
+    await rig.hass.services.async_call('script', 'heating_set_boiler',
+                                     {'requested': requested}, blocking=True)
+    assert not rig.calls
+    assert rig.hass.states.is_state('input_boolean.heating_safety_lock', 'off')

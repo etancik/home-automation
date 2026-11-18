@@ -31,13 +31,23 @@ script:
     sequence:
       - condition: template
         value_template: "{{ requested in ['on', 'off'] }}"
+      # Connectivity loss is not a rejected command. The controller retries on
+      # recovery (and every 30 seconds), keeping the original run deadline.
+      - condition: template
+        value_template: "{{ has_value('switch.laundry_room_boiler_controller_l2') }}"
       - action: "switch.turn_{{ requested }}"
         continue_on_error: true
         target:
           entity_id: switch.laundry_room_boiler_controller_l2
-      - wait_template: "{{ is_state('switch.laundry_room_boiler_controller_l2', requested) }}"
+      - wait_template: >-
+          {{ is_state('switch.laundry_room_boiler_controller_l2', requested)
+             or not has_value('switch.laundry_room_boiler_controller_l2') }}
         timeout: "00:00:05"
         continue_on_timeout: true
+      - if: "{{ not has_value('switch.laundry_room_boiler_controller_l2') }}"
+        then:
+          - stop: Boiler disconnected during command; reconcile when it recovers.
+      # A reachable relay that fails to acknowledge still requires inspection.
       - if: "{{ not wait.completed }}"
         then:
           - action: input_boolean.turn_on
