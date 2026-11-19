@@ -38,3 +38,49 @@ automation:
                 data:
                   option: color
     mode: single
+
+  # The physical button remains usable; repair an active light every five minutes.
+  - id: twinkly_stairs_night_guard
+    alias: Twinkly stairs night guard
+    description: Restore the saved static color and brightness 8 at night; leave an off light off.
+    triggers:
+      - trigger: time_pattern
+        minutes: '/5'
+      - trigger: homeassistant
+        event: start
+    conditions:
+      - condition: state
+        entity_id: sun.sun
+        state: below_horizon
+      - condition: state
+        entity_id: light.home_stairs
+        state: 'on'
+      - condition: template
+        value_template: >-
+          {{ states('select.home_stairs_mode') not in ['unknown', 'unavailable', 'off']
+             and is_number(state_attr('light.home_stairs', 'brightness')) }}
+    actions:
+      - if:
+          - condition: template
+            value_template: "{{ state_attr('light.home_stairs', 'brightness') | int != 8 }}"
+        then:
+          - action: light.turn_on
+            target:
+              entity_id: light.home_stairs
+            data:
+              brightness: 8
+      - if:
+          - condition: template
+            value_template: "{{ not is_state('select.home_stairs_mode', 'color') }}"
+        then:
+          - condition: state
+            entity_id: light.home_stairs
+            state: 'on'
+          - condition: template
+            value_template: "{{ states('select.home_stairs_mode') not in ['unknown', 'unavailable', 'off'] }}"
+          - action: select.select_option
+            target:
+              entity_id: select.home_stairs_mode
+            data:
+              option: color
+    mode: single
