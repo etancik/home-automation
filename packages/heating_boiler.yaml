@@ -11,11 +11,44 @@ input_boolean:
     name: Heating safety lock
     icon: mdi:lock-alert
 
+input_select:
+  heating_safety_lock_reason:
+    name: Heating safety lock reason
+    options:
+      - unknown
+      - run_limit
+      - relay_fault
+
 input_datetime:
   heating_boiler_deadline:
     name: Boiler run deadline
     has_date: true
     has_time: true
+
+template:
+  - switch:
+      - name: Heating lockout
+        unique_id: heating_lockout
+        default_entity_id: switch.heating_lockout
+        icon: mdi:lock-alert
+        availability: "{{ has_value('input_boolean.heating_safety_lock') }}"
+        state: "{{ is_state('input_boolean.heating_safety_lock', 'on') }}"
+        turn_on:
+          - stop: The boiler controller sets the safety lock.
+            error: true
+        turn_off:
+          - event: heating_run_limit_reset_requested
+          # Report a refused reset back to HomeKit instead of acknowledging it.
+          - wait_template: >-
+              {{ is_state('input_boolean.heating_safety_lock', 'off')
+                 or not is_state('input_select.heating_safety_lock_reason', 'run_limit')
+                 or not is_state('switch.laundry_room_boiler_controller_l2', 'off')
+                 or not is_state('input_boolean.heating_controller_ready', 'on') }}
+            timeout: "00:00:10"
+          - if: "{{ not is_state('input_boolean.heating_safety_lock', 'off') }}"
+            then:
+              - stop: The safety lock is still active.
+                error: true
 
 script:
   heating_set_boiler:
@@ -50,6 +83,11 @@ script:
       # A reachable relay that fails to acknowledge still requires inspection.
       - if: "{{ not wait.completed }}"
         then:
+          - action: input_select.select_option
+            target:
+              entity_id: input_select.heating_safety_lock_reason
+            data:
+              option: relay_fault
           - action: input_boolean.turn_on
             target:
               entity_id: input_boolean.heating_safety_lock
@@ -73,6 +111,11 @@ script:
       - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.heating_safety_lock
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.heating_safety_lock_reason
+        data:
+          option: unknown
       - action: persistent_notification.dismiss
         data:
           notification_id: heating_fault
@@ -92,6 +135,9 @@ automation:
       - trigger: time_pattern
         seconds: "/30"
         id: reconcile
+      - trigger: event
+        event_type: heating_run_limit_reset_requested
+        id: reset_run_limit
       - trigger: state
         entity_id: input_datetime.heating_boiler_deadline
         id: deadline_changed
@@ -133,6 +179,19 @@ automation:
         entity_id: input_boolean.heating_controller_ready
         state: "on"
     actions:
+      # Serialize remote reset with the watchdog and relay command verification.
+      - if:
+          - condition: trigger
+            id: reset_run_limit
+        then:
+          - condition: state
+            entity_id: input_boolean.heating_safety_lock
+            state: "on"
+          - condition: state
+            entity_id: input_select.heating_safety_lock_reason
+            state: run_limit
+          - action: script.heating_reset_safety
+          - stop: Reconcile on the resulting lock state change.
       - variables:
           zones:
             - climate: climate.bedroom_radiator_heat_valve
@@ -188,8 +247,14 @@ automation:
       # Set the deadline BEFORE an automatic ON command, never on every state update.
       - if: >-
           {{ is_state('switch.laundry_room_boiler_controller_l2', 'on')
+             and not is_state('input_boolean.heating_safety_lock', 'on')
              and (deadline <= 0 or as_timestamp(now()) >= deadline) }}
         then:
+          - action: input_select.select_option
+            target:
+              entity_id: input_select.heating_safety_lock_reason
+            data:
+              option: "{{ 'run_limit' if deadline > 0 else 'unknown' }}"
           - action: input_boolean.turn_on
             target:
               entity_id: input_boolean.heating_safety_lock
@@ -197,7 +262,7 @@ automation:
             data:
               notification_id: heating_fault
               title: Heating safety shutoff
-              message: Boiler exceeded four hours or resumed without a known run deadline. Inspect before acknowledging.
+              message: Boiler reached its six-hour run limit or resumed without a known run deadline. Inspect before acknowledging.
       - choose:
           - conditions: "{{ not has_value('switch.laundry_room_boiler_controller_l2') }}"
             sequence:
@@ -226,7 +291,7 @@ automation:
                 target:
                   entity_id: input_datetime.heating_boiler_deadline
                 data:
-                  timestamp: "{{ (as_timestamp(now()) + 4 * 60 * 60) | int }}"
+                  timestamp: "{{ (as_timestamp(now()) + 6 * 60 * 60) | int }}"
               - action: script.heating_set_boiler
                 data:
                   requested: "on"

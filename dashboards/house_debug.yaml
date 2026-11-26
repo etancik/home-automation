@@ -62,7 +62,8 @@ views:
               <ha-alert alert-type="warning">Topení je nouzově zastavené. Nejdřív zkontroluj příčinu, potom lze ochranu ručně odblokovat.</ha-alert>
               {% else %}**Ochrana je připravená, topení neblokuje.**{% endif %}
 
-              Při běhu delším než 4 hodiny, chybě potvrzení povelu nebo nejasném běhu po restartu systém zastaví topení a zabrání dalšímu sepnutí. Vyžaduje kontrolu a ruční odblokování.
+              Po dosažení 6 hodin nepřetržitého běhu, při chybě potvrzení povelu nebo nejasném běhu po restartu systém zastaví topení a zabrání dalšímu sepnutí. Vyžaduje kontrolu a ruční odblokování.
+              Po dosažení časového limitu lze zámek potvrdit také vypnutím dlaždice **Blokace topení** v Apple Domácnosti, jakmile relé hlásí vypnuto.
             grid_options:
               columns: 12
               rows: "auto"

@@ -124,8 +124,8 @@ homekit:
         # ========================================
 
         # Dual Relay Boiler Controller (L2+LOUT wired as single dry contact)
-        # Only expose L2 to HomeKit - L2 relay controls the boiler
         - switch.laundry_room_boiler_controller_l2
+        - switch.heating_lockout
 
         # ========================================
         # GARAGE DOOR
@@ -310,9 +310,10 @@ homekit:
       # ========================================
 
       # Dual Relay Boiler Controller (L2+LOUT wired as single dry contact)
-      # Only L2 exposed to HomeKit - L2 relay controls the boiler
       switch.laundry_room_boiler_controller_l2:
         name: "Boiler Control"
+      switch.heating_lockout:
+        name: "Blokace topení"
 
       # ========================================
       # GARAGE DOOR
