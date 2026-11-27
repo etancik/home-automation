@@ -28,22 +28,13 @@ files again from another configuration section.
 Keep HomeKit in one package, preserving the bridge name, port, filters and entity
 settings. Feature packages do not create additional bridges.
 
-Open a pull request against `ha-config-house` and complete review before merging.
-The Git Pull add-on deploys from that branch. In the review, list changed entities,
-check references and configuration validation, and describe the live checks to run
-after merge. Use English for HomeKit names and HA automation/script aliases.
-
-When pairing a new Zigbee device, give it an English Zigbee2MQTT `friendly_name`
-with its room and function, for example `Kitchen Window Sensor`. Record it under
-the device's IEEE address in `zigbee2mqtt_configuration.yaml`. If Home Assistant
-already discovered the device with hexadecimal entity IDs, replace them with readable
-IDs such as `binary_sensor.kitchen_window_sensor_contact` before adding references to
-them. Keep the hardware IEEE address and integration-managed unique IDs intact.
-
-For an existing device, keep entity IDs, unique IDs and automation IDs when editing
-display names. If an entity ID or Zigbee2MQTT name must change, include the affected
-MQTT topics, automations, scripts, dashboards and HomeKit references in the same
-review, and check dependencies configured in the live UI.
+- Review PRs before merging into `ha-config-house`; Git Pull deploys that branch.
+  Check affected entities, references and config, then verify in HA after merge.
+- Use English names for HomeKit, automations and scripts. Give new Zigbee devices
+  a room-and-function name and readable HA entity IDs before use. Record the name
+  under its IEEE address in `zigbee2mqtt_configuration.yaml`.
+- Keep IDs when changing display names. If an entity ID or Zigbee2MQTT name needs
+  to change, update its MQTT and HA dependencies in the same PR.
 
 The `house-debug` YAML dashboard is a quick diagnostic entry point, with heating,
 attention, energy and concise events together. It does not replace HomeKit or
