@@ -63,7 +63,7 @@ views:
               {% else %}**Ochrana je připravená, topení neblokuje.**{% endif %}
 
               Po dosažení 6 hodin nepřetržitého běhu, při chybě potvrzení povelu nebo nejasném běhu po restartu systém zastaví topení a zabrání dalšímu sepnutí. Vyžaduje kontrolu a ruční odblokování.
-              Po dosažení časového limitu lze zámek potvrdit také vypnutím dlaždice **Blokace topení** v Apple Domácnosti, jakmile relé hlásí vypnuto.
+              Po dosažení časového limitu lze zámek potvrdit také vypnutím dlaždice **Boiler Lockout** v Apple Domácnosti, jakmile relé hlásí vypnuto.
             grid_options:
               columns: 12
               rows: "auto"

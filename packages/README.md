@@ -28,6 +28,12 @@ files again from another configuration section.
 Keep HomeKit in one package, preserving the bridge name, port, filters and entity
 settings. Feature packages do not create additional bridges.
 
+Open a pull request against `ha-config-house` and complete review before merging.
+The Git Pull add-on deploys from that branch. In the review, list changed entities,
+check references and configuration validation, and describe the live checks to run
+after merge. Use English for HomeKit names and HA automation/script aliases. Preserve
+entity IDs, unique IDs and automation IDs when changing display names.
+
 The `house-debug` YAML dashboard is a quick diagnostic entry point, with heating,
 attention, energy and concise events together. It does not replace HomeKit or
 change boiler/charger control. It replaces the separate EV dashboard in navigation;
