@@ -27,7 +27,7 @@ input_datetime:
 
 template:
   - switch:
-      - name: Heating lockout
+      - name: Boiler Lockout
         unique_id: heating_lockout
         default_entity_id: switch.heating_lockout
         icon: mdi:lock-alert

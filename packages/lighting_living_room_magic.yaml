@@ -9,7 +9,7 @@ input_button:
 
 script:
   living_room_magic_round:
-    alias: Kouzelný obývák
+    alias: Living Room Magic - run light effect
     mode: single
     sequence:
       - condition: template

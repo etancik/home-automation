@@ -313,7 +313,7 @@ homekit:
       switch.laundry_room_boiler_controller_l2:
         name: "Boiler Control"
       switch.heating_lockout:
-        name: "Blokace topení"
+        name: "Boiler Lockout"
 
       # ========================================
       # GARAGE DOOR

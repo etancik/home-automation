@@ -28,6 +28,14 @@ files again from another configuration section.
 Keep HomeKit in one package, preserving the bridge name, port, filters and entity
 settings. Feature packages do not create additional bridges.
 
+- Review PRs before merging into `ha-config-house`; Git Pull deploys that branch.
+  Check affected entities, references and config, then verify in HA after merge.
+- Use English names for HomeKit, automations and scripts. Give new Zigbee devices
+  a room-and-function name and readable HA entity IDs before use. Record the name
+  under its IEEE address in `zigbee2mqtt_configuration.yaml`.
+- Keep IDs when changing display names. If an entity ID or Zigbee2MQTT name needs
+  to change, update its MQTT and HA dependencies in the same PR.
+
 The `house-debug` YAML dashboard is a quick diagnostic entry point, with heating,
 attention, energy and concise events together. It does not replace HomeKit or
 change boiler/charger control. It replaces the separate EV dashboard in navigation;
